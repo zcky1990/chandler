@@ -4,6 +4,8 @@ import { ref } from 'vue'
 import { getProductByName } from '@/lib/product'
 import { getCustomerByName } from '@/lib/customer'
 import { useAlertStore } from '@/stores/useAlertStore'
+import DotField from '@/components/ui/dot-field/DotField.vue'
+import TextType from '@/components/ui/text-type/TextType.vue'
 
 const searchQuery = ref<string>('')
 const selectedOption = ref<{ label: string, value: string } | null>(null)
@@ -39,7 +41,29 @@ const handleSearch = async () => {
 
 <template>
   <div class="flex flex-col gap-4 items-center justify-center h-screen">
-    <h1>Welcome</h1>
+    <div class="absolute top-0 left-0 w-full h-full">
+    <DotField
+      :dot-radius="1.5"
+      :dot-spacing="14"
+      :bulge-strength="67"
+      :glow-radius="160"
+      :sparkle="false"
+      :wave-amplitude="0"
+      :cursor-radius="500"
+      :cursor-force="0.1"
+      bulge-only
+      gradient-from="#7cff67"
+      gradient-to="#A0FFBC"
+      glow-color="#120F17"
+    />
+    </div>
+    <TextType 
+    :text="['Selamat Datang', 'di', 'Warung Zavi']"
+    :typing-speed="75"
+    :pause-duration="1500"
+    :show-cursor="true"
+    cursor-character="|"
+  />
     <Search :searchInOptions="searchInOptions" 
       :searchQuery="searchQuery" 
       :selectedOption="selectedOption" 
