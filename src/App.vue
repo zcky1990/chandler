@@ -3,6 +3,7 @@ import { RouterView, useRouter } from 'vue-router'
 import { validateOrRefreshSession } from '@/lib/auth'
 import { onMounted } from 'vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 
 const router = useRouter()
 
@@ -12,8 +13,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center w-full fixed top-0">
+  <div class="flex flex-col items-center justify-center w-full fixed top-0 z-50">
     <AppAlert />
+  </div>
+  <div class="fixed top-4 right-4 z-50">
+    <ThemeSwitcher />
   </div>
   <RouterView />
 </template>
