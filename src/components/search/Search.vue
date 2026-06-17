@@ -39,7 +39,7 @@ const handleOptionSelect = (option: { label: string, value: string }) => {
 
 <template>
   <div class="grid w-full max-w-sm gap-4">
-    <InputGroup class="[--radius:1rem]">
+    <InputGroup class="[--radius:1rem] bg-background">
       <InputGroupInput v-model="queryModel" placeholder="Enter search query" />
       <InputGroupAddon align="inline-end">
         <DropdownMenu>
