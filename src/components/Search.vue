@@ -1,10 +1,4 @@
 <script setup lang="ts">
-import WelcomeItem from './WelcomeItem.vue'
-import DocumentationIcon from './icons/IconDocumentation.vue'
-import ToolingIcon from './icons/IconTooling.vue'
-import EcosystemIcon from './icons/IconEcosystem.vue'
-import CommunityIcon from './icons/IconCommunity.vue'
-import SupportIcon from './icons/IconSupport.vue'
 import Search from '@/components/search/Search.vue'
 import { ref } from 'vue'
 import { getProductByName } from '@/lib/product'
@@ -45,7 +39,7 @@ const handleSearch = async () => {
 
 <template>
   <div class="flex flex-col gap-4 items-center justify-center h-screen">
-    <h1>Welcome to the app</h1>
+    <h1>Welcome</h1>
     <Search :searchInOptions="searchInOptions" 
       :searchQuery="searchQuery" 
       :selectedOption="selectedOption" 
