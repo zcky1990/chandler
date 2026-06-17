@@ -14,9 +14,8 @@ console.log(import.meta.env.VITE_TEST_ENV)
 const searchQuery = ref<string>('')
 const selectedOption = ref<{ label: string, value: string } | null>(null)
 const searchInOptions = ref<{ label: string, value: string }[]>([
-  { label: 'Documentation', value: 'documentation' },
-  { label: 'Blog Posts', value: 'blog-posts' },
-  { label: 'Changelog', value: 'changelog' },
+  { label: 'Pembeli', value: 'customer' },
+  { label: 'Produk', value: 'product' },
 ])
 
 const handleSearchQueryUpdate = (value: string) => {

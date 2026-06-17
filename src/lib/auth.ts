@@ -1,13 +1,8 @@
-import { createClient, type Session } from '@supabase/supabase-js'
+import type { Session } from '@supabase/supabase-js'
 import type { Router } from 'vue-router'
 import { clearAuthCookies, getCookie, setCookie } from './cookies'
 
-const supabaseUrl = import.meta.env.VITE_SUPERBASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPERBASE_PUBLISH_KEY
-
-export const supabase = async () => {
-  return createClient(supabaseUrl, supabaseAnonKey)
-}
+import { supabase } from './supabase'
 
 export const persistAuthSession = (session: Session) => {
   setCookie('_access_token', session.access_token)

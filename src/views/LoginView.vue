@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import LoginForm from '@/components/new-york-v4/blocks/login-01/components/LoginForm.vue'
-import { persistAuthSession, supabase } from '@/lib/auth'
+import { persistAuthSession } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
