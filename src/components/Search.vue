@@ -45,6 +45,6 @@ const handleSearch = async () => {
       :selectedOption="selectedOption" 
       @update:searchQuery="handleSearchQueryUpdate" 
       @update:selectedOption="handleSelectedOptionUpdate" />
-    <Button @click="handleSearch" variant="outline" class="rounded-full py-2 px-4 bg-primary text-white">Search</Button>
+    <Button @click="handleSearch" variant="outline" class="rounded-full py-2 px-4 bg-primary text-primary-foreground">Search</Button>
   </div>
 </template>
