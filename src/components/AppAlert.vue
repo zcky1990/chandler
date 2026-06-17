@@ -1,17 +1,11 @@
 <script setup lang="ts">
 
+import { AlertCircleIcon, CheckCircle2Icon, AlertTriangleIcon } from '@lucide/vue'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
-import { AlertCircleIcon } from 'lucide-vue-next'
 import { useAlertStore } from '@/stores/useAlertStore'
-import { onMounted, computed } from 'vue'
+import { computed, watch } from 'vue'
 const alertStore = useAlertStore()
 const alertState = alertStore.alertState
-
-onMounted(() => {
-  if (alertState.show) {
-    closeAlertAfterFiveseconds()
-  }
-})
 
 const alertVariant = computed(() => {
   return alertState.type === 'success' ? 'success' : 'destructive'
@@ -20,6 +14,15 @@ const alertVariant = computed(() => {
 const alertIcon = computed(() => {
   return alertState.type === 'success' ? 'CheckCircleIcon' : 'AlertCircleIcon'
 })
+
+watch(
+  alertState,
+  (newState) => {
+    if (newState.show) {
+      closeAlertAfterFiveseconds()
+    }
+  }
+)
 
 const closeAlertAfterFiveseconds = () => {
   setTimeout(() => {
