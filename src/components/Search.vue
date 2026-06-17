@@ -7,9 +7,9 @@ import CommunityIcon from './icons/IconCommunity.vue'
 import SupportIcon from './icons/IconSupport.vue'
 import Search from '@/components/search/Search.vue'
 import { ref } from 'vue'
-
-const openReadmeInEditor = () => fetch('/__open-in-editor?file=README.md')
-console.log(import.meta.env.VITE_TEST_ENV)
+import { getProductByName } from '@/lib/product'
+import { getCustomerByName } from '@/lib/customer'
+import { useAlertStore } from '@/stores/useAlertStore'
 
 const searchQuery = ref<string>('')
 const selectedOption = ref<{ label: string, value: string } | null>(null)
@@ -18,12 +18,27 @@ const searchInOptions = ref<{ label: string, value: string }[]>([
   { label: 'Produk', value: 'product' },
 ])
 
+const alertStore = useAlertStore()
+const searchResults = ref<any[]>([])
+
 const handleSearchQueryUpdate = (value: string) => {
   searchQuery.value = value
 }
 
 const handleSelectedOptionUpdate = (option: { label: string, value: string } | null) => {
   selectedOption.value = option
+}
+
+const handleSearch = async () => {
+  if (selectedOption.value?.value === 'product' && searchQuery.value.length > 0) {
+    const products = await getProductByName(searchQuery.value)
+    searchResults.value = products
+  }
+  if (selectedOption.value?.value === 'customer' && searchQuery.value.length > 0) {
+    const customers = await getCustomerByName(searchQuery.value)
+    searchResults.value = customers
+  }
+  alertStore.showAlert('Search Results', 'Search results for ' + searchQuery.value+ ' not found', 'error')
 }
 
 </script>
@@ -36,7 +51,6 @@ const handleSelectedOptionUpdate = (option: { label: string, value: string } | n
       :selectedOption="selectedOption" 
       @update:searchQuery="handleSearchQueryUpdate" 
       @update:selectedOption="handleSelectedOptionUpdate" />
-    <p>Search Query: {{ searchQuery }}</p>
-    <p>Selected Option: {{ selectedOption?.label }}</p>
+    <Button @click="handleSearch" variant="outline" class="rounded-full py-2 px-4 bg-primary text-white">Search</Button>
   </div>
 </template>
