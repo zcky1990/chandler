@@ -1,34 +1,66 @@
 import { supabase } from './supabase'
-import type { Customer } from '@/types/database'
-import { z } from 'zod'
+import { customerSchema } from '@/schema/schema'
+import type { Customer, CustomerInput } from '@/types/database'
+import type { z } from 'zod'
 
-const customerSchema = z.object({
-  name: z.string().min(1, { message: 'Nama harus diisi' }),
-  email: z.email().nullable(),
-  phone: z.string().nullable(),
-  address: z.string().nullable(),
-  notes: z.string().optional().nullable(),
-  is_active: z.boolean().default(true)
-})
+function normalizeCustomerInput(input: z.infer<typeof customerSchema>): CustomerInput {
+  return {
+    name: input.name,
+    email: input.email ?? null,
+    phone: input.phone ?? null,
+    address: input.address ?? null,
+    notes: input.notes ?? null,
+    is_active: input.is_active,
+  }
+}
 
 export const getCustomers = async () => {
-  const supabaseClient = await supabase()
-  const { data, error } = await supabaseClient.from('customers').select('*')
-  return { customers: data, error }
+  const supabaseClient = supabase()
+  const { data, error } = await supabaseClient.from('customers').select('*').order('created_at', { ascending: false })
+  return { customers: data as Customer[] | null, error }
 }
 
 export const getCustomerByName = async (name: string) => {
-  const supabaseClient = await supabase()
+  const supabaseClient = supabase()
   const { data, error } = await supabaseClient.from('customers').select('*').ilike('name', `%${name}%`)
-  return { customers: data, error }
+  return { customers: data as Customer[] | null, error }
 }
 
-export const createCustomer = async (customer: Customer) => {
+export const createCustomer = async (customer: CustomerInput) => {
   const validatedCustomer = customerSchema.safeParse(customer)
   if (!validatedCustomer.success) {
-    return { error: validatedCustomer.error.message }
+    return { customer: null, error: validatedCustomer.error.flatten().fieldErrors }
   }
-  const supabaseClient = await supabase()
-  const { data, error } = await supabaseClient.from('customers').insert(validatedCustomer.data)
-  return { customer: data, error: error ? error.message : null }
+
+  const supabaseClient = supabase()
+  const { data, error } = await supabaseClient
+    .from('customers')
+    .insert(normalizeCustomerInput(validatedCustomer.data))
+    .select()
+    .single()
+
+  return { customer: data as Customer | null, error }
+}
+
+export const updateCustomer = async (id: string, customer: CustomerInput) => {
+  const validatedCustomer = customerSchema.safeParse(customer)
+  if (!validatedCustomer.success) {
+    return { customer: null, error: validatedCustomer.error.flatten().fieldErrors }
+  }
+
+  const supabaseClient = supabase()
+  const { data, error } = await supabaseClient
+    .from('customers')
+    .update(normalizeCustomerInput(validatedCustomer.data))
+    .eq('id', id)
+    .select()
+    .single()
+
+  return { customer: data as Customer | null, error }
+}
+
+export const deleteCustomer = async (id: string) => {
+  const supabaseClient = supabase()
+  const { error } = await supabaseClient.from('customers').delete().eq('id', id)
+  return { error }
 }

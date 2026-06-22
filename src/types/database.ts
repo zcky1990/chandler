@@ -11,6 +11,8 @@ export type Product = {
   updated_at: string
 }
 
+export type ProductInput = Omit<Product, 'id' | 'created_at' | 'updated_at'>
+
 export type Customer = {
   id: string
   name: string
@@ -22,3 +24,5 @@ export type Customer = {
   created_at: string
   updated_at: string
 }
+
+export type CustomerInput = Omit<Customer, 'id' | 'created_at' | 'updated_at'>

@@ -15,7 +15,7 @@ const handleLogin = async (email: string, password: string) => {
     alertStore.showAlert('Error', error as string, 'error')
   } else if (data?.session) {
     persistAuthSession(data?.session)
-    router.push('/')
+    router.push('/dashboard')
   }
 }
 </script>

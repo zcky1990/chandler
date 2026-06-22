@@ -15,7 +15,8 @@ import {
 } from '@/components/ui/sidebar'
 
 import { getCookie, clearAuthCookies } from '@/lib/cookies'
-import { useRouter } from 'vue-router'
+import { useRouter, RouterLink } from 'vue-router'
+import { LayoutDashboard, LogOut, Package, User, Users } from '@lucide/vue'
 
 
 const userEmail = getCookie('_user_email')
@@ -27,31 +28,41 @@ const data = {
   email: userEmail,
   menu: [
     {
-      title: 'Dashboard',
-      url: '/dashboard',
-      icon: 'dashboard',
-      onClick: () => {
-        router.push('/dashboard')
-      },
+      group: 'Account',
+      items: [
+        {
+          title: 'Dashboard',
+          url: '/dashboard',
+          icon: LayoutDashboard,
+          onClick: () => {
+            router.push('/dashboard')
+          },
+        },
+        {
+          title: 'Profile',
+          url: '/profile',
+          icon: User,
+          onClick: () => {
+            router.push('/profile')
+          },
+        },
+      ],
     },
     {
-      title: 'Profile',
-      url: '/profile',
-      icon: 'profile',
-      onClick: () => {
-        router.push('/profile')
-      },
+      group: 'Session',
+      items: [
+        {
+          title: 'Logout',
+          url: '/logout',
+          icon: LogOut,
+          onClick: () => {
+            clearAuthCookies()
+            router.push('/login')
+          },
+        },
+      ],
     },
-    {
-      title: 'Logout',
-      url: '/logout',
-      icon: 'logout',
-      onClick: () => {
-        clearAuthCookies()
-        router.push('/login')
-      },
-    },
-  ]
+  ],
 }
 </script>
 
@@ -65,7 +76,29 @@ const data = {
 
     </SidebarHeader>
     <SidebarContent>
-      
+      <SidebarGroup>
+        <SidebarGroupLabel>Master Data</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child>
+                <RouterLink to="/master/products">
+                  <Package />
+                  <span>Produk</span>
+                </RouterLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child>
+                <RouterLink to="/master/customers">
+                  <Users />
+                  <span>Pembeli</span>
+                </RouterLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
     </SidebarContent>
     <SidebarRail />
   </Sidebar>

@@ -5,6 +5,8 @@ import SignUpView from '@/pages/SignUpPages.vue'
 import { validateOrRefreshSession } from '@/lib/auth'
 import DashboardView from '@/pages/DashboardPages.vue'
 import NotFoundView from '@/pages/NotFoundPages.vue'
+import ProductMasterPages from '@/pages/ProductMasterPages.vue'
+import CustomerMasterPages from '@/pages/CustomerMasterPages.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,6 +30,16 @@ const router = createRouter({
       path: '/dashboard',
       name: 'dashboard',
       component: DashboardView,
+    },
+    {
+      path: '/master/products',
+      name: 'master-products',
+      component: ProductMasterPages,
+    },
+    {
+      path: '/master/customers',
+      name: 'master-customers',
+      component: CustomerMasterPages,
     },
     {
       path: '/:pathMatch(.*)*',
