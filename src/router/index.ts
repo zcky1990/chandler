@@ -11,6 +11,7 @@ import TransactionPages from '@/pages/TransactionPages.vue'
 import TransactionListPages from '@/pages/TransactionListPages.vue'
 import ConfigPages from '@/pages/ConfigPages.vue'
 import QueuePages from '@/pages/QueuePages.vue'
+import QueueDisplayPages from '@/pages/QueueDisplayPages.vue'
 import RestockPages from '@/pages/RestockPages.vue'
 import AnalyticsPages from '@/pages/AnalyticsPages.vue'
 
@@ -63,6 +64,11 @@ const router = createRouter({
       component: QueuePages,
     },
     {
+      path: '/queue/display',
+      name: 'queue-display',
+      component: QueueDisplayPages,
+    },
+    {
       path: '/stock/restock',
       name: 'stock-restock',
       component: RestockPages,
@@ -94,7 +100,11 @@ router.beforeEach(async (to) => {
     return true
   }
 
-  const isGuestRoute = to.path === '/login' 
+  const isGuestRoute = to.path === '/login'
+
+  if (to.path === '/queue/display') {
+    return true
+  }
 
   if (isGuestRoute) {
     const isAuthenticated = await validateOrRefreshSession(router, to.path)

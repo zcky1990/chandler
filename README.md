@@ -272,6 +272,7 @@ Semua skema SQL ada di folder [`DDL/`](DDL/). Jalankan di **Supabase SQL Editor*
 | [`DDL/product_purchase_price.ddl`](DDL/product_purchase_price.ddl) | Jika `products` dibuat **tanpa** kolom `purchase_price` |
 | [`DDL/stock_movements_costing.ddl`](DDL/stock_movements_costing.ddl) | Jika `stock_movements` dibuat **tanpa** kolom costing |
 | [`DDL/order_queues_table_number.ddl`](DDL/order_queues_table_number.ddl) | Jika `order_queues` dibuat **tanpa** `table_number` |
+| [`DDL/order_queues_realtime.ddl`](DDL/order_queues_realtime.ddl) | **Wajib** untuk antrian realtime di halaman `/queue` |
 | [`DDL/masterdata_policies.ddl`](DDL/masterdata_policies.ddl) | Jika insert/update produk/pelanggan mengembalikan **403** |
 
 ### Cara menjalankan di SQL Editor
@@ -566,6 +567,8 @@ flowchart TD
 | HPP selalu 0 | Isi **harga beli** saat tambah produk atau restock; data lama mungkin belum punya costing |
 | Penjualan gagal "stok batch tidak mencukupi" | Restock dulu atau jalankan migrasi `stock_movements_costing.ddl` untuk backfill batch |
 | Variable env tidak terbaca | Nama harus `VITE_SUPERBASE_URL` dan `VITE_SUPERBASE_PUBLISH_KEY`; restart `pnpm dev` setelah ubah `.env` |
+| Antrian tidak update otomatis | Jalankan [`DDL/order_queues_realtime.ddl`](DDL/order_queues_realtime.ddl), atau Database → Publications → `supabase_realtime` → tambah `order_queues` |
+| Badge Live tidak muncul di Antrian | Pastikan sudah login; cek koneksi WebSocket ke Supabase tidak diblokir firewall |
 
 ---
 

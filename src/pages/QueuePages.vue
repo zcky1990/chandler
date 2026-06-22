@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { ChefHat, Check, ClipboardList, Play } from '@lucide/vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { RouterLink } from 'vue-router'
+import { ChefHat, Check, ClipboardList, Monitor, Play, Radio } from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,6 +10,7 @@ import {
   getActiveQueues,
   markQueueReady,
   pickupQueue,
+  subscribeActiveQueues,
 } from '@/lib/queue'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { OrderQueueWithDetails, QueueStatus } from '@/types/database'
@@ -19,7 +21,10 @@ const alertStore = useAlertStore()
 const queues = ref<OrderQueueWithDetails[]>([])
 const isLoading = ref(true)
 const isUpdating = ref(false)
+const isRealtimeConnected = ref(false)
 const activeFilter = ref<FilterStatus>('all')
+
+let unsubscribeRealtime: (() => void) | null = null
 
 const statusLabels: Record<QueueStatus, string> = {
   waiting: 'Menunggu',
@@ -58,13 +63,18 @@ function formatItems(queue: OrderQueueWithDetails) {
     .join(', ')
 }
 
-async function loadQueues() {
-  isLoading.value = true
+async function loadQueues(options?: { silent?: boolean }) {
+  if (!options?.silent) {
+    isLoading.value = true
+  }
+
   const { queues: data, error } = await getActiveQueues()
   isLoading.value = false
 
   if (error) {
-    alertStore.showAlert('Error', error.message, 'error')
+    if (!options?.silent) {
+      alertStore.showAlert('Error', error.message, 'error')
+    }
     return
   }
 
@@ -82,7 +92,6 @@ async function handlePickup(queueId: string) {
   }
 
   alertStore.showAlert('Berhasil', 'Antrian mulai disiapkan', 'success')
-  await loadQueues()
 }
 
 async function handleMarkReady(queueId: string) {
@@ -96,7 +105,6 @@ async function handleMarkReady(queueId: string) {
   }
 
   alertStore.showAlert('Berhasil', 'Pesanan siap diambil', 'success')
-  await loadQueues()
 }
 
 async function handleComplete(queueId: string) {
@@ -110,10 +118,23 @@ async function handleComplete(queueId: string) {
   }
 
   alertStore.showAlert('Berhasil', 'Antrian selesai', 'success')
-  await loadQueues()
 }
 
-onMounted(loadQueues)
+onMounted(async () => {
+  await loadQueues()
+
+  unsubscribeRealtime = subscribeActiveQueues(
+    () => loadQueues({ silent: true }),
+    (status) => {
+      isRealtimeConnected.value = status === 'SUBSCRIBED'
+    },
+  )
+})
+
+onUnmounted(() => {
+  unsubscribeRealtime?.()
+  unsubscribeRealtime = null
+})
 </script>
 
 <template>
@@ -127,11 +148,26 @@ onMounted(loadQueues)
           </h1>
           <p class="text-sm text-muted-foreground">
             Kelola pesanan yang perlu disiapkan.
+            <span
+              v-if="isRealtimeConnected"
+              class="ml-2 inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-300"
+            >
+              <Radio class="size-3" />
+              Live
+            </span>
           </p>
         </div>
-        <Button variant="outline" :disabled="isLoading" @click="loadQueues">
-          Refresh
-        </Button>
+        <div class="flex flex-wrap gap-2">
+          <Button variant="outline" :disabled="isLoading" @click="loadQueues">
+            Refresh
+          </Button>
+          <Button variant="outline" as-child>
+            <RouterLink :to="{ name: 'queue-display' }" target="_blank" rel="noopener noreferrer">
+              <Monitor class="size-4" />
+              Layar Antrian
+            </RouterLink>
+          </Button>
+        </div>
       </div>
 
       <div class="grid gap-3 sm:grid-cols-3">

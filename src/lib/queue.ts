@@ -108,3 +108,33 @@ export const pickupQueue = async (queueId: string) => updateQueueStatus(queueId,
 export const markQueueReady = async (queueId: string) => updateQueueStatus(queueId, 'ready')
 
 export const completeQueue = async (queueId: string) => updateQueueStatus(queueId, 'completed')
+
+type QueueRealtimeStatus = 'SUBSCRIBED' | 'CHANNEL_ERROR' | 'TIMED_OUT' | 'CLOSED'
+
+export const subscribeActiveQueues = (
+  onChange: () => void,
+  onStatusChange?: (status: QueueRealtimeStatus) => void,
+  channelName = 'order_queues_active',
+) => {
+  const supabaseClient = supabase()
+  const channel = supabaseClient
+    .channel(channelName)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'order_queues',
+      },
+      () => onChange(),
+    )
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        onStatusChange?.(status)
+      }
+    })
+
+  return () => {
+    supabaseClient.removeChannel(channel)
+  }
+}
