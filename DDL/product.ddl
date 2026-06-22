@@ -15,9 +15,25 @@ create table public.products (
 -- Enable Row Level Security (RLS)
 alter table public.products enable row level security;
 
--- Create policies (Example: Anyone can read, only authenticated admins can write)
-create policy "Allow public read access" 
-  on public.products for select 
+-- Create policies
+create policy "Allow public read access"
+  on public.products for select
+  using (true);
+
+create policy "Allow authenticated insert on products"
+  on public.products for insert
+  to authenticated
+  with check (true);
+
+create policy "Allow authenticated update on products"
+  on public.products for update
+  to authenticated
+  using (true)
+  with check (true);
+
+create policy "Allow authenticated delete on products"
+  on public.products for delete
+  to authenticated
   using (true);
 
 -- Automatically update the updated_at timestamp

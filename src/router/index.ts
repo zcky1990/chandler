@@ -7,6 +7,7 @@ import DashboardView from '@/pages/DashboardPages.vue'
 import NotFoundView from '@/pages/NotFoundPages.vue'
 import ProductMasterPages from '@/pages/ProductMasterPages.vue'
 import CustomerMasterPages from '@/pages/CustomerMasterPages.vue'
+import TransactionPages from '@/pages/TransactionPages.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -40,6 +41,11 @@ const router = createRouter({
       path: '/master/customers',
       name: 'master-customers',
       component: CustomerMasterPages,
+    },
+    {
+      path: '/transactions',
+      name: 'transactions',
+      component: TransactionPages,
     },
     {
       path: '/:pathMatch(.*)*',

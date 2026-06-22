@@ -14,7 +14,7 @@ export const login = async ({ email, password }: { email: string, password: stri
   if (!validatedLogin.success) {
     return { error: validatedLogin.error.flatten().fieldErrors }
   }
-  const supabaseClient = await supabase()
+  const supabaseClient = supabase()
   const { data, error } = await supabaseClient.auth.signInWithPassword(validatedLogin.data)
   return { data, error: error ? error.message : null }
 }
@@ -24,12 +24,12 @@ export const signUp = async ({ name, email, password, confirmPassword }: { name:
   if (!validatedSignUp.success) {
     return { error: validatedSignUp.error.flatten().fieldErrors }
   }
-  const supabaseClient = await supabase()
+  const supabaseClient = supabase()
   const { data, error } = await supabaseClient.auth.signUp(validatedSignUp.data)
   return { data, error: error ? error.message : null }
 }
 
-export const persistAuthSession = (session: Session) => {
+export const persistAuthSession = async (session: Session) => {
   setCookie('_access_token', session.access_token)
   setCookie('_token_type', session.token_type)
   setCookie('_refresh_token', session.refresh_token)
@@ -37,6 +37,32 @@ export const persistAuthSession = (session: Session) => {
   if (session.user.email) {
     setCookie('_user_email', session.user.email)
   }
+
+  await supabase().auth.setSession({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+  })
+}
+
+export const ensureAuthSession = async (): Promise<boolean> => {
+  const accessToken = getCookie('_access_token')
+  const refreshToken = getCookie('_refresh_token')
+
+  if (!accessToken || !refreshToken) return false
+
+  const supabaseClient = supabase()
+  const { data: { session } } = await supabaseClient.auth.getSession()
+
+  if (session?.access_token === accessToken) {
+    return true
+  }
+
+  const { error } = await supabaseClient.auth.setSession({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  })
+
+  return !error
 }
 
 export const validateOrRefreshSession = async (
@@ -66,7 +92,7 @@ export const validateOrRefreshSession = async (
       await logout()
       return false
     }
-    persistAuthSession(data.session)
+    await persistAuthSession(data.session)
     return true
   }
 
@@ -85,7 +111,7 @@ export const validateOrRefreshSession = async (
   }
 
   if (data.session.access_token !== accessToken) {
-    persistAuthSession(data.session)
+    await persistAuthSession(data.session)
   }
 
   return true

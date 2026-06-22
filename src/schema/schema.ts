@@ -45,3 +45,17 @@ export const customerSchema = z.object({
 
 export type ProductSchema = z.infer<typeof productSchema>
 export type CustomerSchema = z.infer<typeof customerSchema>
+
+export const transactionItemSchema = z.object({
+  product_id: z.string().uuid({ message: 'Produk tidak valid' }),
+  quantity: z.coerce.number().int().min(1, { message: 'Jumlah minimal 1' }),
+  unit_price: z.coerce.number().min(0, { message: 'Harga tidak valid' }),
+})
+
+export const transactionSchema = z.object({
+  customer_id: z.string().uuid({ message: 'Pembeli harus dipilih' }),
+  notes: z.string().nullable().optional(),
+  items: z.array(transactionItemSchema).min(1, { message: 'Minimal 1 produk' }),
+})
+
+export type TransactionSchema = z.infer<typeof transactionSchema>

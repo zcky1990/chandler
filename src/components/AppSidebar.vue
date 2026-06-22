@@ -16,7 +16,7 @@ import {
 
 import { getCookie, clearAuthCookies } from '@/lib/cookies'
 import { useRouter, RouterLink } from 'vue-router'
-import { LayoutDashboard, LogOut, Package, User, Users } from '@lucide/vue'
+import { LayoutDashboard, LogOut, Package, Receipt, User, Users } from '@lucide/vue'
 
 
 const userEmail = getCookie('_user_email')
@@ -76,6 +76,22 @@ const data = {
 
     </SidebarHeader>
     <SidebarContent>
+      <SidebarGroup>
+        <SidebarGroupLabel>Operasional</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child>
+                <RouterLink to="/transactions">
+                  <Receipt />
+                  <span>Transaksi</span>
+                </RouterLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
       <SidebarGroup>
         <SidebarGroupLabel>Master Data</SidebarGroupLabel>
         <SidebarGroupContent>

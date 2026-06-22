@@ -14,9 +14,25 @@ create table public.customers (
 -- Enable Row Level Security (RLS)
 alter table public.customers enable row level security;
 
--- Create policies (Example: Anyone can read, only authenticated admins can write)
+-- Create policies
 create policy "Allow public read access"
   on public.customers for select
+  using (true);
+
+create policy "Allow authenticated insert on customers"
+  on public.customers for insert
+  to authenticated
+  with check (true);
+
+create policy "Allow authenticated update on customers"
+  on public.customers for update
+  to authenticated
+  using (true)
+  with check (true);
+
+create policy "Allow authenticated delete on customers"
+  on public.customers for delete
+  to authenticated
   using (true);
 
 -- Automatically update the updated_at timestamp
