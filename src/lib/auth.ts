@@ -2,16 +2,10 @@ import type { Session } from '@supabase/supabase-js'
 import type { Router } from 'vue-router'
 import { clearAuthCookies, getCookie, setCookie } from './cookies'
 import { supabase } from './supabase'
-import { z } from 'zod'
+import { loginSchema, signUpSchema } from '@/schema/schema'
 
-const loginSchema = z.object({
-  email: z.email().min(1, { message: 'Email harus diisi' }),
-  password: z.string().min(1, { message: 'Password harus diisi' }),
-})
-
-const GUEST_ROUTES = ['/login', '/sign-up'] as const
-
-function isGuestRoute(path: string) {
+export const isGuestRoute = (path: string) => {
+  const GUEST_ROUTES = ['/login', '/sign-up'] as const
   return GUEST_ROUTES.includes(path as (typeof GUEST_ROUTES)[number])
 }
 
@@ -22,6 +16,16 @@ export const login = async ({ email, password }: { email: string, password: stri
   }
   const supabaseClient = await supabase()
   const { data, error } = await supabaseClient.auth.signInWithPassword(validatedLogin.data)
+  return { data, error: error ? error.message : null }
+}
+
+export const signUp = async ({ name, email, password, confirmPassword }: { name: string, email: string, password: string, confirmPassword: string }) => {
+  const validatedSignUp = signUpSchema.safeParse({ name, email, password, confirmPassword })
+  if (!validatedSignUp.success) {
+    return { error: validatedSignUp.error.flatten().fieldErrors }
+  }
+  const supabaseClient = await supabase()
+  const { data, error } = await supabaseClient.auth.signUp(validatedSignUp.data)
   return { data, error: error ? error.message : null }
 }
 

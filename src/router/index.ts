@@ -36,7 +36,7 @@ router.beforeEach(async (to) => {
     return true
   }
 
-  const isGuestRoute = to.path === '/login' || to.path === '/sign-up'
+  const isGuestRoute = to.path === '/login' 
 
   if (isGuestRoute) {
     const isAuthenticated = await validateOrRefreshSession(router, to.path)
