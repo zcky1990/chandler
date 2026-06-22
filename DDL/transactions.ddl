@@ -4,6 +4,8 @@ create table public.transactions (
   customer_id uuid not null references public.customers(id),
   total_amount numeric(10, 2) not null check (total_amount >= 0),
   is_paid boolean not null default false,
+  payment_method text check (payment_method in ('qris', 'cash', 'transfer')),
+  paid_at timestamp with time zone,
   notes text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null

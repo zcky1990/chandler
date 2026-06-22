@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { Minus, Plus, Receipt, ShoppingCart, Trash2 } from '@lucide/vue'
+import { onMounted, ref, watch, computed } from 'vue'
+import { Banknote, Minus, Plus, Receipt, ShoppingCart, Trash2 } from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
+import PaymentMethodDialog from '@/components/transactions/PaymentMethodDialog.vue'
 import { Button } from '@/components/ui/button'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -16,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { getProducts } from '@/lib/product'
 import { createTransaction, getCustomersForTransaction, getPendingTransactionForCustomer } from '@/lib/transaction'
 import { useAlertStore } from '@/stores/useAlertStore'
-import type { Customer, Product, Transaction } from '@/types/database'
+import type { Customer, PaymentMethod, Product, Transaction } from '@/types/database'
 import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
 
 type CartItem = {
@@ -35,6 +36,7 @@ const cart = ref<CartItem[]>([])
 const pendingTransaction = ref<Transaction | null>(null)
 const isLoading = ref(true)
 const isSubmitting = ref(false)
+const paymentDialogOpen = ref(false)
 
 const selectedCustomer = computed(() =>
   customers.value.find((customer) => customer.id === selectedCustomerId.value) ?? null,
@@ -177,20 +179,22 @@ function resetForm() {
   selectedCustomerId.value = walkIn?.id ?? customers.value[0]?.id ?? ''
 }
 
-async function handleSubmit() {
+function validateCart() {
   if (!selectedCustomerId.value) {
     alertStore.showAlert('Error', 'Pilih pembeli terlebih dahulu', 'error')
-    return
+    return false
   }
 
   if (!cart.value.length) {
     alertStore.showAlert('Error', 'Tambahkan minimal 1 produk', 'error')
-    return
+    return false
   }
 
-  isSubmitting.value = true
+  return true
+}
 
-  const { merged, error } = await createTransaction({
+function getTransactionPayload() {
+  return {
     customer_id: selectedCustomerId.value,
     notes: notes.value || null,
     items: cart.value.map((item) => ({
@@ -198,15 +202,32 @@ async function handleSubmit() {
       quantity: item.quantity,
       unit_price: item.product.price,
     })),
-  })
+  }
+}
+
+function getErrorMessage(error: unknown) {
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    return String(error.message)
+  }
+
+  if (typeof error === 'object' && error !== null) {
+    return Object.values(error).flat().join(', ')
+  }
+
+  return 'Gagal menyimpan transaksi'
+}
+
+async function handleSubmit() {
+  if (!validateCart()) return
+
+  isSubmitting.value = true
+
+  const { merged, error } = await createTransaction(getTransactionPayload())
 
   isSubmitting.value = false
 
   if (error) {
-    const message = typeof error === 'object'
-      ? Object.values(error).flat().join(', ')
-      : error.message ?? 'Gagal menyimpan transaksi'
-    alertStore.showAlert('Error', message, 'error')
+    alertStore.showAlert('Error', getErrorMessage(error), 'error')
     return
   }
 
@@ -217,6 +238,30 @@ async function handleSubmit() {
       : 'Transaksi baru berhasil dibuat',
     'success',
   )
+  resetForm()
+  await loadData()
+}
+
+function openPaymentDialog() {
+  if (!validateCart()) return
+  paymentDialogOpen.value = true
+}
+
+async function handlePayment(method: PaymentMethod) {
+  isSubmitting.value = true
+
+  const { error } = await createTransaction(getTransactionPayload(), { paymentMethod: method })
+
+  isSubmitting.value = false
+  paymentDialogOpen.value = false
+
+  if (error) {
+    alertStore.showAlert('Error', getErrorMessage(error), 'error')
+    return
+  }
+
+  const methodLabel = method === 'qris' ? 'QRIS' : method === 'cash' ? 'Cash' : 'Transfer'
+  alertStore.showAlert('Berhasil', `Transaksi lunas (${methodLabel}) berhasil dibuat`, 'success')
   resetForm()
   await loadData()
 }
@@ -408,16 +453,32 @@ onMounted(loadData)
               <span class="text-lg font-bold">{{ formatPrice(totalAmount) }}</span>
             </div>
 
-            <Button
-              class="mt-4 w-full"
-              :disabled="isSubmitting || !cart.length"
-              @click="handleSubmit"
-            >
-              {{ isSubmitting ? 'Menyimpan...' : 'Simpan Transaksi' }}
-            </Button>
+            <div class="mt-4 grid gap-2 sm:grid-cols-2">
+              <Button
+                variant="outline"
+                :disabled="isSubmitting || !cart.length"
+                @click="handleSubmit"
+              >
+                {{ isSubmitting ? 'Menyimpan...' : 'Simpan Hutang' }}
+              </Button>
+              <Button
+                :disabled="isSubmitting || !cart.length"
+                @click="openPaymentDialog"
+              >
+                <Banknote class="size-4" />
+                {{ isSubmitting ? 'Memproses...' : 'Bayar' }}
+              </Button>
+            </div>
           </div>
         </section>
       </div>
+
+      <PaymentMethodDialog
+        v-model:open="paymentDialogOpen"
+        :transaction="null"
+        :amount="totalAmount"
+        @select="handlePayment"
+      />
     </div>
   </DashboardLayout>
 </template>

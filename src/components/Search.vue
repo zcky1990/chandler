@@ -2,14 +2,20 @@
 import Search from '@/components/search/Search.vue'
 import ProductList from '@/components/ProductList.vue'
 import CustomerList from '@/components/CustomerList.vue'
+import CustomerUnpaidItemsDialog from '@/components/transactions/CustomerUnpaidItemsDialog.vue'
+import PaymentInstructionsDialog from '@/components/transactions/PaymentInstructionsDialog.vue'
 import { Button } from '@/components/ui/button'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { Banknote } from '@lucide/vue'
 import { getProductByName } from '@/lib/product'
 import { getCustomerByName } from '@/lib/customer'
+import { getShopConfig, hasPaymentConfig } from '@/lib/config'
+import { getPaymentProofWhatsapp } from '@/lib/payment'
+import { getCustomerTransactionSummary, getCustomersWithDebt } from '@/lib/transaction'
 import { useAlertStore } from '@/stores/useAlertStore'
 import { useThemeStore } from '@/stores/useThemeStore'
 import TextType from '@/components/ui/text-type/TextType.vue'
-import type { Customer, Product } from '@/types/database'
+import type { CustomerWithDebt, CustomerTransactionSummary, Product } from '@/types/database'
 
 const searchQuery = ref<string>('')
 const selectedOption = ref<{ label: string, value: string } | null>(null)
@@ -20,12 +26,17 @@ const searchInOptions = ref<{ label: string, value: string }[]>([
 
 const alertStore = useAlertStore()
 const themeStore = useThemeStore()
+const debtDialogOpen = ref(false)
+const debtDialogLoading = ref(false)
+const paymentInstructionsOpen = ref(false)
+const showPaymentCta = ref(false)
+const selectedCustomerSummary = ref<CustomerTransactionSummary | null>(null)
 
 const theme = computed(() => {
   return themeStore.themeState
 })
 
-const searchResults = ref<(Product | Customer)[]>([])
+const searchResults = ref<(Product | CustomerWithDebt)[]>([])
 const resultType = ref<'product' | 'customers' | null>(null)
 
 const productResults = computed(() =>
@@ -33,7 +44,7 @@ const productResults = computed(() =>
 )
 
 const customerResults = computed(() =>
-  resultType.value === 'customers' ? (searchResults.value as Customer[]) : [],
+  resultType.value === 'customers' ? (searchResults.value as CustomerWithDebt[]) : [],
 )
 
 const hasResults = computed(() =>
@@ -60,6 +71,28 @@ const handleSearchQueryUpdate = (value: string) => {
 
 const handleSelectedOptionUpdate = (option: { label: string, value: string } | null) => {
   selectedOption.value = option
+}
+
+async function enrichCustomersWithDebt(customers: CustomerWithDebt[]) {
+  const { debtByCustomerId, error } = await getCustomersWithDebt(customers.map((customer) => customer.id))
+
+  if (error) {
+    alertStore.showAlert('Error', error.message, 'error')
+    return customers.map((customer) => ({
+      ...customer,
+      outstandingAmount: 0,
+      unpaidCount: 0,
+    }))
+  }
+
+  return customers.map((customer) => {
+    const debt = debtByCustomerId[customer.id]
+    return {
+      ...customer,
+      outstandingAmount: debt?.outstandingAmount ?? 0,
+      unpaidCount: debt?.unpaidCount ?? 0,
+    }
+  })
 }
 
 const handleSearch = async () => {
@@ -101,7 +134,8 @@ const handleSearch = async () => {
       return
     }
 
-    searchResults.value = data || []
+    const customers = await enrichCustomersWithDebt((data ?? []) as CustomerWithDebt[])
+    searchResults.value = customers
     resultType.value = 'customers'
 
     if (!searchResults.value.length) {
@@ -110,11 +144,41 @@ const handleSearch = async () => {
   }
 }
 
+async function handleSelectCustomer(customer: CustomerWithDebt) {
+  debtDialogOpen.value = true
+  debtDialogLoading.value = true
+  selectedCustomerSummary.value = null
+
+  const { summary, error } = await getCustomerTransactionSummary(customer.id, customer.name)
+  debtDialogLoading.value = false
+
+  if (error) {
+    debtDialogOpen.value = false
+    alertStore.showAlert('Error', error.message, 'error')
+    return
+  }
+
+  if (!summary?.unpaidCount) {
+    debtDialogOpen.value = false
+    alertStore.showAlert('Info', 'Pembeli ini tidak memiliki tunggakan', 'error')
+    await handleSearch()
+    return
+  }
+
+  selectedCustomerSummary.value = summary
+}
+
 const textColor = computed(() => {
   const rootStyles = getComputedStyle(document.documentElement);
   return rootStyles.getPropertyValue('--color-text').trim()
 })
 
+async function loadPaymentAvailability() {
+  const { config } = await getShopConfig()
+  showPaymentCta.value = hasPaymentConfig(config) || !!getPaymentProofWhatsapp()
+}
+
+onMounted(loadPaymentAvailability)
 </script>
 
 <template>
@@ -144,6 +208,15 @@ const textColor = computed(() => {
         >
           Search
         </Button>
+        <Button
+          v-if="showPaymentCta"
+          variant="outline"
+          class="rounded-full px-4 py-2"
+          @click="paymentInstructionsOpen = true"
+        >
+          <Banknote class="size-4" />
+          Cara Membayar
+        </Button>
       </div>
 
       <section
@@ -161,8 +234,17 @@ const textColor = computed(() => {
         <CustomerList
           v-if="resultType === 'customers'"
           :customers="customerResults"
+          @select="handleSelectCustomer"
         />
       </section>
     </div>
+
+    <CustomerUnpaidItemsDialog
+      v-model:open="debtDialogOpen"
+      :customer="selectedCustomerSummary"
+      :loading="debtDialogLoading"
+    />
+
+    <PaymentInstructionsDialog v-model:open="paymentInstructionsOpen" />
   </div>
 </template>

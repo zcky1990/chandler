@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
-import { transactionSchema } from '@/schema/schema'
+import { transactionItemsUpdateSchema, transactionSchema } from '@/schema/schema'
 import { createCustomer, getCustomers } from './customer'
-import type { Customer, Transaction, TransactionInput, TransactionItem } from '@/types/database'
+import type { Customer, CreateTransactionOptions, PaymentMethod, Transaction, TransactionInput, TransactionItem, TransactionWithDetails } from '@/types/database'
 import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
 import type { z } from 'zod'
 
@@ -22,22 +22,25 @@ function getTodayRange() {
   }
 }
 
-async function decreaseProductStock(items: TransactionInput['items']) {
+async function adjustProductStock(productId: string, stockDelta: number) {
   const supabaseClient = supabase()
+  const { data: product } = await supabaseClient
+    .from('products')
+    .select('stock_quantity')
+    .eq('id', productId)
+    .single()
 
-  for (const item of items) {
-    const { data: product } = await supabaseClient
+  if (product) {
+    await supabaseClient
       .from('products')
-      .select('stock_quantity')
-      .eq('id', item.product_id)
-      .single()
+      .update({ stock_quantity: Math.max(product.stock_quantity + stockDelta, 0) })
+      .eq('id', productId)
+  }
+}
 
-    if (product) {
-      await supabaseClient
-        .from('products')
-        .update({ stock_quantity: Math.max(product.stock_quantity - item.quantity, 0) })
-        .eq('id', item.product_id)
-    }
+async function decreaseProductStock(items: TransactionInput['items']) {
+  for (const item of items) {
+    await adjustProductStock(item.product_id, -item.quantity)
   }
 }
 
@@ -198,6 +201,7 @@ export const getTransactions = async () => {
       customers ( id, name ),
       transaction_items (
         id,
+        product_id,
         quantity,
         unit_price,
         subtotal,
@@ -206,29 +210,261 @@ export const getTransactions = async () => {
     `)
     .order('created_at', { ascending: false })
 
-  return { transactions: data, error }
+  return { transactions: data as TransactionWithDetails[] | null, error }
 }
 
-export const createTransaction = async (input: TransactionInput): Promise<CreateTransactionResult> => {
+export const getCustomerTransactionSummary = async (customerId: string, customerName: string) => {
+  const supabaseClient = supabase()
+  const { data, error } = await supabaseClient
+    .from('transactions')
+    .select(`
+      *,
+      customers ( id, name ),
+      transaction_items (
+        id,
+        product_id,
+        quantity,
+        unit_price,
+        subtotal,
+        products ( id, name )
+      )
+    `)
+    .eq('customer_id', customerId)
+    .eq('is_paid', false)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    return { summary: null, error }
+  }
+
+  const transactions = (data ?? []) as TransactionWithDetails[]
+  const outstandingAmount = transactions.reduce(
+    (sum, transaction) => sum + Number(transaction.total_amount),
+    0,
+  )
+
+  return {
+    summary: {
+      customerId,
+      customerName,
+      transactionCount: transactions.length,
+      totalAmount: outstandingAmount,
+      outstandingAmount,
+      unpaidCount: transactions.length,
+      transactions,
+    },
+    error: null,
+  }
+}
+
+export const getCustomersWithDebt = async (customerIds: string[]) => {
+  if (!customerIds.length) {
+    return {
+      debtByCustomerId: {} as Record<string, { outstandingAmount: number, unpaidCount: number }>,
+      error: null,
+    }
+  }
+
+  const supabaseClient = supabase()
+  const { data, error } = await supabaseClient
+    .from('transactions')
+    .select('customer_id, total_amount')
+    .in('customer_id', customerIds)
+    .eq('is_paid', false)
+
+  if (error) {
+    return {
+      debtByCustomerId: {} as Record<string, { outstandingAmount: number, unpaidCount: number }>,
+      error,
+    }
+  }
+
+  const debtByCustomerId: Record<string, { outstandingAmount: number, unpaidCount: number }> = {}
+
+  for (const row of data ?? []) {
+    const existing = debtByCustomerId[row.customer_id] ?? { outstandingAmount: 0, unpaidCount: 0 }
+    existing.outstandingAmount += Number(row.total_amount)
+    existing.unpaidCount += 1
+    debtByCustomerId[row.customer_id] = existing
+  }
+
+  return { debtByCustomerId, error: null }
+}
+
+export const markTransactionAsPaid = async (
+  transactionId: string,
+  paymentMethod: PaymentMethod,
+) => {
+  const supabaseClient = supabase()
+  const { data, error } = await supabaseClient
+    .from('transactions')
+    .update({
+      is_paid: true,
+      payment_method: paymentMethod,
+      paid_at: new Date().toISOString(),
+    })
+    .eq('id', transactionId)
+    .select()
+    .single()
+
+  return { transaction: data as Transaction | null, error }
+}
+
+export const updateTransactionNotes = async (transactionId: string, notes: string | null) => {
+  const supabaseClient = supabase()
+  const { data, error } = await supabaseClient
+    .from('transactions')
+    .update({ notes })
+    .eq('id', transactionId)
+    .select()
+    .single()
+
+  return { transaction: data as Transaction | null, error }
+}
+
+export const updateTransactionItems = async (
+  transactionId: string,
+  input: { notes?: string | null, items: { id: string, product_id: string, quantity: number }[] },
+) => {
+  const validated = transactionItemsUpdateSchema.safeParse(input)
+  if (!validated.success) {
+    return { transaction: null, error: validated.error.flatten().fieldErrors }
+  }
+
+  const supabaseClient = supabase()
+  const { data: transactionRow, error: transactionError } = await supabaseClient
+    .from('transactions')
+    .select('is_paid')
+    .eq('id', transactionId)
+    .single()
+
+  if (transactionError || !transactionRow) {
+    return { transaction: null, error: transactionError ?? { message: 'Transaksi tidak ditemukan' } }
+  }
+
+  if (transactionRow.is_paid) {
+    return { transaction: null, error: { message: 'Transaksi sudah lunas dan tidak bisa diubah' } }
+  }
+
+  const { data: currentItems, error: currentItemsError } = await supabaseClient
+    .from('transaction_items')
+    .select('id, product_id, quantity, unit_price')
+    .eq('transaction_id', transactionId)
+
+  if (currentItemsError || !currentItems) {
+    return { transaction: null, error: currentItemsError }
+  }
+
+  const currentById = new Map(currentItems.map((item) => [item.id, item]))
+  const updatedIds = new Set(validated.data.items.map((item) => item.id))
+
+  for (const currentItem of currentItems) {
+    if (updatedIds.has(currentItem.id)) continue
+
+    await adjustProductStock(currentItem.product_id, currentItem.quantity)
+
+    const { error } = await supabaseClient
+      .from('transaction_items')
+      .delete()
+      .eq('id', currentItem.id)
+
+    if (error) {
+      return { transaction: null, error }
+    }
+  }
+
+  for (const item of validated.data.items) {
+    const currentItem = currentById.get(item.id)
+    if (!currentItem) {
+      return { transaction: null, error: { message: 'Item transaksi tidak ditemukan' } }
+    }
+
+    const quantityDelta = item.quantity - currentItem.quantity
+
+    if (quantityDelta > 0) {
+      const { data: product, error: productError } = await supabaseClient
+        .from('products')
+        .select('stock_quantity')
+        .eq('id', item.product_id)
+        .single()
+
+      if (productError || !product) {
+        return { transaction: null, error: productError ?? { message: 'Produk tidak ditemukan' } }
+      }
+
+      if (product.stock_quantity < quantityDelta) {
+        return {
+          transaction: null,
+          error: { message: 'Stok produk tidak mencukupi untuk perubahan jumlah ini' },
+        }
+      }
+    }
+
+    if (quantityDelta !== 0) {
+      await adjustProductStock(item.product_id, -quantityDelta)
+    }
+
+    const subtotal = item.quantity * Number(currentItem.unit_price)
+    const { error } = await supabaseClient
+      .from('transaction_items')
+      .update({ quantity: item.quantity, subtotal })
+      .eq('id', item.id)
+
+    if (error) {
+      return { transaction: null, error }
+    }
+  }
+
+  const { data: updatedItems, error: updatedItemsError } = await supabaseClient
+    .from('transaction_items')
+    .select('subtotal')
+    .eq('transaction_id', transactionId)
+
+  if (updatedItemsError || !updatedItems?.length) {
+    return { transaction: null, error: updatedItemsError ?? { message: 'Transaksi harus memiliki minimal 1 item' } }
+  }
+
+  const totalAmount = updatedItems.reduce((sum, item) => sum + Number(item.subtotal), 0)
+  const { data: transaction, error: updateError } = await supabaseClient
+    .from('transactions')
+    .update({
+      total_amount: totalAmount,
+      notes: validated.data.notes ?? null,
+    })
+    .eq('id', transactionId)
+    .select()
+    .single()
+
+  return { transaction: transaction as Transaction | null, error: updateError }
+}
+
+export const createTransaction = async (
+  input: TransactionInput,
+  options?: CreateTransactionOptions,
+): Promise<CreateTransactionResult> => {
   const validated = transactionSchema.safeParse(input)
   if (!validated.success) {
     return { transaction: null, merged: false, error: validated.error.flatten().fieldErrors }
   }
 
   const payload = validated.data as z.infer<typeof transactionSchema>
-  const { transaction: pendingTransaction, error: pendingError } = await findPendingTransactionToday(payload.customer_id)
+  const payImmediately = !!options?.paymentMethod
 
-  if (pendingError) {
-    return { transaction: null, merged: false, error: pendingError }
-  }
+  if (!payImmediately) {
+    const { transaction: pendingTransaction, error: pendingError } = await findPendingTransactionToday(payload.customer_id)
 
-  if (pendingTransaction) {
-    return mergeIntoTransaction(
-      pendingTransaction.id,
-      (pendingTransaction.transaction_items ?? []) as TransactionItem[],
-      payload.items,
-      payload.notes,
-    )
+    if (pendingError) {
+      return { transaction: null, merged: false, error: pendingError }
+    }
+
+    if (pendingTransaction) {
+      return mergeIntoTransaction(
+        pendingTransaction.id,
+        (pendingTransaction.transaction_items ?? []) as TransactionItem[],
+        payload.items,
+        payload.notes,
+      )
+    }
   }
 
   const totalAmount = payload.items.reduce(
@@ -243,7 +479,9 @@ export const createTransaction = async (input: TransactionInput): Promise<Create
     .insert({
       customer_id: payload.customer_id,
       total_amount: totalAmount,
-      is_paid: false,
+      is_paid: payImmediately,
+      payment_method: payImmediately ? options!.paymentMethod! : null,
+      paid_at: payImmediately ? new Date().toISOString() : null,
       notes: payload.notes ?? null,
     })
     .select()

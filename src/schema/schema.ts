@@ -59,3 +59,24 @@ export const transactionSchema = z.object({
 })
 
 export type TransactionSchema = z.infer<typeof transactionSchema>
+
+export const transactionItemUpdateSchema = z.object({
+  id: z.string().uuid({ message: 'Item tidak valid' }),
+  product_id: z.string().uuid({ message: 'Produk tidak valid' }),
+  quantity: z.coerce.number().int().min(1, { message: 'Jumlah minimal 1' }),
+})
+
+export const transactionItemsUpdateSchema = z.object({
+  notes: z.string().nullable().optional(),
+  items: z.array(transactionItemUpdateSchema).min(1, { message: 'Minimal 1 item' }),
+})
+
+export type TransactionItemsUpdateSchema = z.infer<typeof transactionItemsUpdateSchema>
+
+export const shopConfigSchema = z.object({
+  transfer_bank_name: z.string().nullable().optional(),
+  transfer_account_number: z.string().nullable().optional(),
+  transfer_account_holder: z.string().nullable().optional(),
+})
+
+export type ShopConfigSchema = z.infer<typeof shopConfigSchema>

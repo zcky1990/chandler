@@ -16,7 +16,7 @@ import {
 
 import { getCookie, clearAuthCookies } from '@/lib/cookies'
 import { useRouter, RouterLink } from 'vue-router'
-import { LayoutDashboard, LogOut, Package, Receipt, User, Users } from '@lucide/vue'
+import { LayoutDashboard, List, LogOut, Package, Receipt, Settings, User, Users } from '@lucide/vue'
 
 
 const userEmail = getCookie('_user_email')
@@ -84,7 +84,15 @@ const data = {
               <SidebarMenuButton as-child>
                 <RouterLink to="/transactions">
                   <Receipt />
-                  <span>Transaksi</span>
+                  <span>Buat Transaksi</span>
+                </RouterLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child>
+                <RouterLink to="/transactions/list">
+                  <List />
+                  <span>Daftar Transaksi</span>
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -109,6 +117,21 @@ const data = {
                 <RouterLink to="/master/customers">
                   <Users />
                   <span>Pembeli</span>
+                </RouterLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+      <SidebarGroup>
+        <SidebarGroupLabel>Pengaturan</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child>
+                <RouterLink to="/config">
+                  <Settings />
+                  <span>Konfigurasi</span>
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>

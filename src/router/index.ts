@@ -8,6 +8,8 @@ import NotFoundView from '@/pages/NotFoundPages.vue'
 import ProductMasterPages from '@/pages/ProductMasterPages.vue'
 import CustomerMasterPages from '@/pages/CustomerMasterPages.vue'
 import TransactionPages from '@/pages/TransactionPages.vue'
+import TransactionListPages from '@/pages/TransactionListPages.vue'
+import ConfigPages from '@/pages/ConfigPages.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -46,6 +48,16 @@ const router = createRouter({
       path: '/transactions',
       name: 'transactions',
       component: TransactionPages,
+    },
+    {
+      path: '/transactions/list',
+      name: 'transactions-list',
+      component: TransactionListPages,
+    },
+    {
+      path: '/config',
+      name: 'config',
+      component: ConfigPages,
     },
     {
       path: '/:pathMatch(.*)*',

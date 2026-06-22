@@ -1,0 +1,162 @@
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+import { Landmark, MessageCircle, QrCode } from '@lucide/vue'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { getShopConfig, hasPaymentConfig, hasQrisConfig, hasTransferConfig } from '@/lib/config'
+import {
+  formatWhatsappDisplay,
+  getPaymentProofWhatsapp,
+  getWhatsappProofUrl,
+} from '@/lib/payment'
+import type { ShopConfig } from '@/types/database'
+
+const props = defineProps<{
+  open: boolean
+}>()
+
+const emit = defineEmits<{
+  'update:open': [value: boolean]
+}>()
+
+const shopConfig = ref<ShopConfig | null>(null)
+const isLoading = ref(false)
+
+const paymentConfigured = computed(() => hasPaymentConfig(shopConfig.value))
+const showQris = computed(() => hasQrisConfig(shopConfig.value))
+const showTransfer = computed(() => hasTransferConfig(shopConfig.value))
+
+const proofWhatsapp = computed(() => getPaymentProofWhatsapp())
+const proofWhatsappDisplay = computed(() => formatWhatsappDisplay(proofWhatsapp.value))
+const proofWhatsappUrl = computed(() => getWhatsappProofUrl())
+
+async function loadConfig() {
+  isLoading.value = true
+  const { config } = await getShopConfig()
+  shopConfig.value = config
+  isLoading.value = false
+}
+
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen) {
+      loadConfig()
+    }
+  },
+)
+</script>
+
+<template>
+  <Dialog :open="open" @update:open="emit('update:open', $event)">
+    <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-[480px]">
+      <DialogHeader>
+        <DialogTitle>Cara Membayar</DialogTitle>
+        <DialogDescription>
+          Ikuti metode pembayaran di bawah ini untuk melunasi tunggakan Anda.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div
+        v-if="isLoading"
+        class="rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground"
+      >
+        Memuat informasi pembayaran...
+      </div>
+
+      <div v-else class="space-y-5">
+        <template v-if="paymentConfigured">
+          <section v-if="showQris" class="space-y-3">
+            <div class="flex items-center gap-2">
+              <div class="flex size-9 items-center justify-center rounded-lg bg-foreground text-background">
+                <QrCode class="size-4" />
+              </div>
+              <h3 class="font-semibold">Bayar via QRIS</h3>
+            </div>
+            <div class="flex justify-center rounded-xl border bg-muted/30 p-4">
+              <img
+                :src="shopConfig!.qris_image_url!"
+                alt="QRIS Warung Zavi"
+                class="max-h-64 max-w-full rounded-lg object-contain"
+              >
+            </div>
+            <p class="text-sm text-muted-foreground">
+              Scan kode QR di atas menggunakan aplikasi e-wallet atau mobile banking Anda.
+            </p>
+          </section>
+
+          <section v-if="showTransfer" class="space-y-3">
+            <div class="flex items-center gap-2">
+              <div class="flex size-9 items-center justify-center rounded-lg bg-foreground text-background">
+                <Landmark class="size-4" />
+              </div>
+              <h3 class="font-semibold">Bayar via Transfer Bank</h3>
+            </div>
+            <div class="space-y-3 rounded-xl border bg-muted/30 p-4 text-sm">
+              <div class="flex justify-between gap-4">
+                <span class="text-muted-foreground">Bank</span>
+                <span class="font-medium">{{ shopConfig?.transfer_bank_name || '-' }}</span>
+              </div>
+              <div class="flex justify-between gap-4">
+                <span class="text-muted-foreground">No. Rekening</span>
+                <span class="font-mono font-semibold">{{ shopConfig?.transfer_account_number }}</span>
+              </div>
+              <div class="flex justify-between gap-4">
+                <span class="text-muted-foreground">Atas Nama</span>
+                <span class="font-medium">{{ shopConfig?.transfer_account_holder || '-' }}</span>
+              </div>
+            </div>
+            <p class="text-sm text-muted-foreground">
+              Transfer sesuai nominal tunggakan yang tertera saat Anda memeriksa detail hutang.
+            </p>
+          </section>
+        </template>
+
+        <div
+          v-else
+          class="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground"
+        >
+          Metode pembayaran belum dikonfigurasi. Silakan hubungi kasir Warung Zavi.
+        </div>
+
+        <section class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+          <div class="flex items-start gap-3">
+            <MessageCircle class="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <div class="space-y-2 text-sm">
+              <p class="font-medium">Kirim Bukti Pembayaran</p>
+              <p class="text-muted-foreground">
+                Setelah melakukan pembayaran, kirim bukti transfer atau screenshot pembayaran QRIS ke nomor berikut agar tunggakan dapat diverifikasi:
+              </p>
+              <p v-if="proofWhatsappDisplay" class="font-mono font-semibold">
+                {{ proofWhatsappDisplay }}
+              </p>
+              <p v-else class="text-muted-foreground">
+                Nomor WhatsApp belum dikonfigurasi. Hubungi admin Warung Zavi.
+              </p>
+              <Button
+                v-if="proofWhatsappUrl"
+                as-child
+                class="w-full sm:w-auto"
+              >
+                <a
+                  :href="proofWhatsappUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageCircle class="size-4" />
+                  Kirim via WhatsApp
+                </a>
+              </Button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </DialogContent>
+  </Dialog>
+</template>
