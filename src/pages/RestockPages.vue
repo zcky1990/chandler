@@ -128,7 +128,7 @@ onMounted(loadData)
           class="max-w-sm"
         />
         <label class="flex items-center gap-2 text-sm">
-          <Switch v-model:checked="lowStockOnly" />
+          <Switch v-model="lowStockOnly" />
           <span>Stok menipis (&le; {{ LOW_STOCK_THRESHOLD }})</span>
         </label>
       </div>

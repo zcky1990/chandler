@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { createCustomer, updateCustomer } from '@/lib/customer'
@@ -159,10 +160,15 @@ async function handleSubmit() {
             <Textarea id="customer-notes" v-model="form.notes" placeholder="Catatan tambahan" rows="2" />
           </Field>
 
-          <Field class="flex items-center justify-between rounded-lg border p-3">
-            <FieldLabel for="customer-active">Aktif</FieldLabel>
-            <Switch id="customer-active" v-model:checked="form.is_active" />
-          </Field>
+          <div class="flex items-center justify-between rounded-lg border p-4">
+            <div class="space-y-0.5">
+              <Label for="customer-active">Aktif</Label>
+              <p class="text-xs text-muted-foreground">
+                {{ form.is_active ? 'Pembeli dapat dipilih di transaksi' : 'Pembeli disembunyikan dari transaksi' }}
+              </p>
+            </div>
+            <Switch id="customer-active" v-model="form.is_active" />
+          </div>
         </FieldGroup>
 
         <DialogFooter>
