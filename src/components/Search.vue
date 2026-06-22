@@ -36,6 +36,24 @@ const customerResults = computed(() =>
   resultType.value === 'customers' ? (searchResults.value as Customer[]) : [],
 )
 
+const hasResults = computed(() =>
+  resultType.value === 'product'
+    ? productResults.value.length > 0
+    : resultType.value === 'customers'
+      ? customerResults.value.length > 0
+      : false,
+)
+
+const resultsTitle = computed(() => {
+  if (resultType.value === 'product') {
+    return `${productResults.value.length} produk ditemukan`
+  }
+  if (resultType.value === 'customers') {
+    return `${customerResults.value.length} pembeli ditemukan`
+  }
+  return ''
+})
+
 const handleSearchQueryUpdate = (value: string) => {
   searchQuery.value = value
 }
@@ -100,32 +118,51 @@ const textColor = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4 items-center justify-center h-screen container mx-auto">
-    <TextType 
-    :text="['Selamat Datang', 'Warung Zavi']"
-    :typing-speed="75"
-    :pause-duration="1500"
-    :show-cursor="true"
-    :text-colors="[textColor]"
-    className="max-w-4xl text-foreground sm:text-3xl md:text-4xl lg:text-4xl"
-    cursor-character="|"
-  />
-    <div class="flex flex-col z-2 gap-4 items-center justify-center">
-    <Search :searchInOptions="searchInOptions" 
-      :searchQuery="searchQuery" 
-      :selectedOption="selectedOption" 
-      @update:searchQuery="handleSearchQueryUpdate" 
-      @update:selectedOption="handleSelectedOptionUpdate" />
-    <Button @click="handleSearch" class="rounded-full py-2 px-4 bg-primary text-primary-foreground">Search</Button>
+  <div class="flex min-h-svh w-full flex-col items-center px-4 py-10">
+    <div class="flex w-full max-w-2xl flex-col items-center gap-6">
+      <TextType
+        :text="['Selamat Datang', 'Warung Zavi']"
+        :typing-speed="75"
+        :pause-duration="1500"
+        :show-cursor="true"
+        :text-colors="[textColor]"
+        className="max-w-4xl text-center text-foreground sm:text-3xl md:text-4xl lg:text-4xl"
+        cursor-character="|"
+      />
 
-    <ProductList
-      v-if="resultType === 'product' && productResults.length"
-      :products="productResults"
-    />
-    <CustomerList
-      v-if="resultType === 'customers' && customerResults.length"
-      :customers="customerResults"
-    />
-  </div>
+      <div class="z-2 flex w-full max-w-sm flex-col items-center gap-4">
+        <Search
+          :searchInOptions="searchInOptions"
+          :searchQuery="searchQuery"
+          :selectedOption="selectedOption"
+          @update:searchQuery="handleSearchQueryUpdate"
+          @update:selectedOption="handleSelectedOptionUpdate"
+        />
+        <Button
+          class="rounded-full px-4 py-2"
+          @click="handleSearch"
+        >
+          Search
+        </Button>
+      </div>
+
+      <section
+        v-if="hasResults"
+        class="z-2 w-full max-w-sm space-y-3"
+      >
+        <p class="text-center text-sm font-medium text-muted-foreground">
+          {{ resultsTitle }} untuk "{{ searchQuery }}"
+        </p>
+
+        <ProductList
+          v-if="resultType === 'product'"
+          :products="productResults"
+        />
+        <CustomerList
+          v-if="resultType === 'customers'"
+          :customers="customerResults"
+        />
+      </section>
+    </div>
   </div>
 </template>

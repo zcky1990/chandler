@@ -11,7 +11,7 @@ function getCustomerDetail(customer: Customer) {
 </script>
 
 <template>
-  <div class="w-full max-w-sm space-y-2">
+  <div class="grid w-full gap-2">
     <div
       v-for="customer in customers"
       :key="customer.id"
