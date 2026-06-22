@@ -1,11 +1,23 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { AlertTriangle, RefreshCw } from '@lucide/vue'
+import {
+  AlertTriangle,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Package,
+  RefreshCw,
+  TrendingUp,
+  Wallet,
+} from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
+import PaymentMethodDonut from '@/components/analytics/PaymentMethodDonut.vue'
+import ProfitTrendChart from '@/components/analytics/ProfitTrendChart.vue'
+import RevenueBreakdownDonut from '@/components/analytics/RevenueBreakdownDonut.vue'
+import TopProductsProfitChart from '@/components/analytics/TopProductsProfitChart.vue'
 import { getDateRangePreset, getFullAnalyticsReport } from '@/lib/analytics'
 import { getLowStockProducts } from '@/lib/stock'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -18,6 +30,7 @@ import {
 import { useAlertStore } from '@/stores/useAlertStore'
 import type {
   AnalyticsSummary,
+  DailyAnalyticsRow,
   DateRangePreset,
   PaymentBreakdownRow,
   Product,
@@ -36,6 +49,7 @@ const showAllProducts = ref(false)
 const summary = ref<AnalyticsSummary | null>(null)
 const products = ref<ProductAnalyticsRow[]>([])
 const payments = ref<PaymentBreakdownRow[]>([])
+const dailyTrend = ref<DailyAnalyticsRow[]>([])
 const lowStockProducts = ref<Product[]>([])
 
 const presetOptions: { value: DateRangePreset, label: string }[] = [
@@ -48,6 +62,11 @@ const presetOptions: { value: DateRangePreset, label: string }[] = [
 const displayedProducts = computed(() => {
   if (showAllProducts.value) return products.value
   return products.value.slice(0, 10)
+})
+
+const marginBarWidth = computed(() => {
+  if (!summary.value) return 0
+  return Math.min(Math.max(summary.value.marginPercent, 0), 100)
 })
 
 function formatPrice(price: number) {
@@ -100,6 +119,7 @@ async function loadAnalytics() {
   summary.value = reportResult.summary
   products.value = reportResult.products ?? []
   payments.value = reportResult.payments ?? []
+  dailyTrend.value = reportResult.dailyTrend ?? []
   lowStockProducts.value = lowStockResult.products ?? []
 }
 
@@ -132,7 +152,7 @@ onMounted(() => {
         <div>
           <h1 class="text-2xl font-bold tracking-tight">Analisis Keuntungan</h1>
           <p class="text-sm text-muted-foreground">
-            Ringkasan laba kotor berdasarkan tanggal transaksi dibuat.
+            Visualisasi laba kotor, tren penjualan, dan performa produk.
           </p>
         </div>
         <Button variant="outline" :disabled="isLoading" @click="loadAnalytics">
@@ -173,38 +193,48 @@ onMounted(() => {
       >
         <AlertTriangle class="mt-0.5 size-4 shrink-0" />
         <span>
-          {{ summary.salesWithoutCogsCount }} transaksi dalam periode ini belum memiliki data HPP
-          (kemungkinan transaksi lama sebelum costing FIFO).
+          {{ summary.salesWithoutCogsCount }} transaksi belum memiliki data HPP
+          (kemungkinan data lama sebelum costing FIFO).
         </span>
       </div>
 
-      <div v-if="isLoading" class="text-center text-muted-foreground py-8">
+      <div v-if="isLoading" class="py-12 text-center text-muted-foreground">
         Memuat analisis...
       </div>
 
       <template v-else-if="summary">
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader class="pb-2">
+        <!-- Ringkasan utama -->
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <Card class="border-l-4 border-l-[var(--chart-1)]">
+            <CardHeader class="flex flex-row items-center justify-between pb-2">
               <CardTitle class="text-sm font-medium text-muted-foreground">Pendapatan</CardTitle>
+              <ArrowUpCircle class="size-4 text-[var(--chart-1)]" />
             </CardHeader>
             <CardContent>
               <p class="text-2xl font-bold">{{ formatPrice(summary.revenue) }}</p>
+              <p class="mt-1 text-xs text-muted-foreground">
+                {{ summary.transactionCount }} transaksi dalam periode
+              </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader class="pb-2">
+          <Card class="border-l-4 border-l-[var(--chart-2)]">
+            <CardHeader class="flex flex-row items-center justify-between pb-2">
               <CardTitle class="text-sm font-medium text-muted-foreground">HPP (FIFO)</CardTitle>
+              <ArrowDownCircle class="size-4 text-[var(--chart-2)]" />
             </CardHeader>
             <CardContent>
               <p class="text-2xl font-bold">{{ formatPrice(summary.cogs) }}</p>
+              <p class="mt-1 text-xs text-muted-foreground">
+                Restock keluar: {{ formatPrice(summary.restockSpend) }}
+              </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader class="pb-2">
+          <Card class="border-l-4 border-l-[var(--chart-3)]">
+            <CardHeader class="flex flex-row items-center justify-between pb-2">
               <CardTitle class="text-sm font-medium text-muted-foreground">Laba kotor</CardTitle>
+              <TrendingUp class="size-4 text-[var(--chart-3)]" />
             </CardHeader>
             <CardContent>
               <p
@@ -213,64 +243,116 @@ onMounted(() => {
               >
                 {{ formatPrice(summary.grossProfit) }}
               </p>
+              <div class="mt-2 space-y-1">
+                <div class="flex justify-between text-xs text-muted-foreground">
+                  <span>Margin</span>
+                  <span>{{ formatPercent(summary.marginPercent) }}</span>
+                </div>
+                <div class="h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    class="h-full rounded-full bg-[var(--chart-3)] transition-all"
+                    :style="{ width: `${marginBarWidth}%` }"
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader class="pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">Margin</CardTitle>
+          <Card class="border-l-4 border-l-amber-500">
+            <CardHeader class="flex flex-row items-center justify-between pb-2">
+              <CardTitle class="text-sm font-medium text-muted-foreground">Kas & Piutang</CardTitle>
+              <Wallet class="size-4 text-amber-500" />
             </CardHeader>
             <CardContent>
-              <p class="text-2xl font-bold">{{ formatPercent(summary.marginPercent) }}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader class="pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">Transaksi</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p class="text-2xl font-bold">{{ summary.transactionCount }}</p>
-              <p class="mt-1 text-xs text-muted-foreground">
-                Lunas: {{ summary.paidCount }} ({{ formatPrice(summary.paidAmount) }}) ·
-                Hutang: {{ summary.unpaidCount }} ({{ formatPrice(summary.unpaidAmount) }})
+              <p class="text-lg font-bold text-green-600">{{ formatPrice(summary.paidAmount) }}</p>
+              <p class="text-xs text-muted-foreground">Sudah lunas ({{ summary.paidCount }} trx)</p>
+              <p class="mt-2 text-lg font-bold text-amber-600">{{ formatPrice(summary.unpaidAmount) }}</p>
+              <p class="text-xs text-muted-foreground">
+                Hutang periode ({{ summary.unpaidCount }} trx) · Piutang total {{ formatPrice(summary.outstandingDebt) }}
               </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader class="pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">Restock keluar</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p class="text-2xl font-bold">{{ formatPrice(summary.restockSpend) }}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader class="pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">Piutang</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p class="text-2xl font-bold text-amber-600">{{ formatPrice(summary.outstandingDebt) }}</p>
-              <p class="mt-1 text-xs text-muted-foreground">Total hutang belum lunas (saat ini)</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader class="pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">Nilai stok</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p class="text-2xl font-bold">{{ formatPrice(summary.inventoryValue) }}</p>
-              <p class="mt-1 text-xs text-muted-foreground">Inventaris FIFO saat ini</p>
             </CardContent>
           </Card>
         </div>
 
+        <!-- Charts row 1 -->
+        <div class="grid gap-4 lg:grid-cols-3">
+          <Card class="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Tren harian</CardTitle>
+              <CardDescription>
+                Perbandingan pendapatan, HPP, dan laba per hari dalam periode terpilih.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ProfitTrendChart :data="dailyTrend" />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Komposisi pendapatan</CardTitle>
+              <CardDescription>
+                Berapa bagian pendapatan yang menjadi HPP vs laba kotor.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RevenueBreakdownDonut :summary="summary" />
+            </CardContent>
+          </Card>
+        </div>
+
+        <!-- Charts row 2 -->
+        <div class="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Top produk paling untung</CardTitle>
+              <CardDescription>5 produk dengan laba kotor tertinggi.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TopProductsProfitChart :products="products" :limit="5" />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Metode pembayaran</CardTitle>
+              <CardDescription>Distribusi pembayaran lunas dalam periode.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PaymentMethodDonut :payments="payments" />
+            </CardContent>
+          </Card>
+        </div>
+
+        <!-- Metrik operasional -->
+        <div class="grid gap-4 sm:grid-cols-2">
+          <Card>
+            <CardHeader class="pb-2">
+              <CardTitle class="text-sm font-medium text-muted-foreground">Nilai inventaris</CardTitle>
+            </CardHeader>
+            <CardContent class="flex items-center gap-3">
+              <Package class="size-8 text-muted-foreground" />
+              <div>
+                <p class="text-xl font-bold">{{ formatPrice(summary.inventoryValue) }}</p>
+                <p class="text-xs text-muted-foreground">Stok tersisa (FIFO) saat ini</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader class="pb-2">
+              <CardTitle class="text-sm font-medium text-muted-foreground">Stok menipis</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p class="text-xl font-bold">{{ lowStockProducts.length }} produk</p>
+              <p class="text-xs text-muted-foreground">Stok &le; {{ LOW_STOCK_THRESHOLD }} unit</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <!-- Tabel detail -->
         <div class="space-y-3">
           <div class="flex items-center justify-between">
-            <h2 class="text-lg font-semibold">Produk</h2>
+            <h2 class="text-lg font-semibold">Detail per produk</h2>
             <Button
               v-if="products.length > 10"
               variant="ghost"
@@ -285,7 +367,7 @@ onMounted(() => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Produk</TableHead>
-                  <TableHead class="text-right">Qty terjual</TableHead>
+                  <TableHead class="text-right">Qty</TableHead>
                   <TableHead class="text-right">Pendapatan</TableHead>
                   <TableHead class="text-right">HPP</TableHead>
                   <TableHead class="text-right">Laba</TableHead>
@@ -316,35 +398,8 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="space-y-3">
-          <h2 class="text-lg font-semibold">Metode pembayaran (lunas)</h2>
-          <div class="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Metode</TableHead>
-                  <TableHead class="text-right">Jumlah transaksi</TableHead>
-                  <TableHead class="text-right">Nominal</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow v-if="!payments.length">
-                  <TableCell colspan="3" class="text-center text-muted-foreground">
-                    Belum ada pembayaran lunas dalam periode ini.
-                  </TableCell>
-                </TableRow>
-                <TableRow v-for="row in payments" :key="row.method">
-                  <TableCell class="font-medium">{{ row.label }}</TableCell>
-                  <TableCell class="text-right">{{ row.transactionCount }}</TableCell>
-                  <TableCell class="text-right">{{ formatPrice(row.amount) }}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-
-        <div class="space-y-3">
-          <h2 class="text-lg font-semibold">Stok menipis (&le; {{ LOW_STOCK_THRESHOLD }})</h2>
+        <div v-if="lowStockProducts.length" class="space-y-3">
+          <h2 class="text-lg font-semibold">Produk stok menipis</h2>
           <div class="rounded-md border">
             <Table>
               <TableHeader>
@@ -355,11 +410,6 @@ onMounted(() => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow v-if="!lowStockProducts.length">
-                  <TableCell colspan="3" class="text-center text-muted-foreground">
-                    Semua produk stoknya cukup.
-                  </TableCell>
-                </TableRow>
                 <TableRow v-for="product in lowStockProducts" :key="product.id">
                   <TableCell class="font-medium">{{ product.name }}</TableCell>
                   <TableCell>{{ product.sku || '-' }}</TableCell>

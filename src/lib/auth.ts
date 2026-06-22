@@ -25,7 +25,15 @@ export const signUp = async ({ name, email, password, confirmPassword }: { name:
     return { error: validatedSignUp.error.flatten().fieldErrors }
   }
   const supabaseClient = supabase()
-  const { data, error } = await supabaseClient.auth.signUp(validatedSignUp.data)
+  const { data, error } = await supabaseClient.auth.signUp({
+    email: validatedSignUp.data.email,
+    password: validatedSignUp.data.password,
+    options: {
+      data: {
+        full_name: validatedSignUp.data.name,
+      },
+    },
+  })
   return { data, error: error ? error.message : null }
 }
 

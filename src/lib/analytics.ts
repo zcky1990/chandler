@@ -7,6 +7,7 @@ import type {
   PaymentMethod,
   ProductAnalyticsRow,
   TransactionWithDetails,
+  DailyAnalyticsRow,
 } from '@/types/database'
 
 const PAYMENT_LABELS: Record<PaymentMethod, string> = {
@@ -284,6 +285,55 @@ function computePaymentBreakdown(transactions: TransactionWithDetails[]): Paymen
   return Array.from(byMethod.values()).sort((a, b) => b.amount - a.amount)
 }
 
+function formatDayLabel(dateKey: string) {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  const date = new Date(year!, month! - 1, day)
+  return new Intl.DateTimeFormat('id-ID', {
+    day: 'numeric',
+    month: 'short',
+  }).format(date)
+}
+
+function computeDailyAnalytics(
+  transactions: TransactionWithDetails[],
+  saleMovements: { product_id: string, reference_id: string | null, total_cost: number | null }[],
+): DailyAnalyticsRow[] {
+  const cogsByTransaction = new Map<string, number>()
+  for (const movement of saleMovements) {
+    if (!movement.reference_id) continue
+    const current = cogsByTransaction.get(movement.reference_id) ?? 0
+    cogsByTransaction.set(movement.reference_id, current + Number(movement.total_cost ?? 0))
+  }
+
+  const byDay = new Map<string, DailyAnalyticsRow>()
+
+  for (const transaction of transactions) {
+    const dateKey = transaction.created_at.slice(0, 10)
+    const existing = byDay.get(dateKey) ?? {
+      dateKey,
+      dateLabel: formatDayLabel(dateKey),
+      revenue: 0,
+      cogs: 0,
+      grossProfit: 0,
+      transactionCount: 0,
+    }
+
+    const txRevenue = (transaction.transaction_items ?? []).reduce(
+      (sum, item) => sum + Number(item.subtotal),
+      0,
+    )
+    const txCogs = cogsByTransaction.get(transaction.id) ?? 0
+
+    existing.revenue += txRevenue
+    existing.cogs += txCogs
+    existing.grossProfit += txRevenue - txCogs
+    existing.transactionCount += 1
+    byDay.set(dateKey, existing)
+  }
+
+  return Array.from(byDay.values()).sort((a, b) => a.dateKey.localeCompare(b.dateKey))
+}
+
 export async function getAnalyticsSummary(range: AnalyticsDateRange) {
   const { transactions, error: txError } = await fetchTransactionsInRange(range)
   if (txError) return { summary: null, error: txError }
@@ -337,7 +387,7 @@ export async function getPaymentBreakdown(range: AnalyticsDateRange) {
 export async function getFullAnalyticsReport(range: AnalyticsDateRange) {
   const { transactions, error: txError } = await fetchTransactionsInRange(range)
   if (txError) {
-    return { summary: null, products: null, payments: null, error: txError }
+    return { summary: null, products: null, payments: null, dailyTrend: null, error: txError }
   }
 
   const transactionIds = transactions.map((tx) => tx.id)
@@ -355,13 +405,14 @@ export async function getFullAnalyticsReport(range: AnalyticsDateRange) {
 
   const error = saleError ?? restockError ?? debtError ?? inventoryError
   if (error) {
-    return { summary: null, products: null, payments: null, error }
+    return { summary: null, products: null, payments: null, dailyTrend: null, error }
   }
 
   return {
     summary: computeSummary(transactions, saleMovements, restockSpend, outstandingDebt, inventoryValue),
     products: computeProductAnalytics(transactions, saleMovements),
     payments: computePaymentBreakdown(transactions),
+    dailyTrend: computeDailyAnalytics(transactions, saleMovements),
     error: null,
   }
 }

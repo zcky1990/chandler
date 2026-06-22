@@ -223,3 +223,12 @@ export type PaymentBreakdownRow = {
   transactionCount: number
   amount: number
 }
+
+export type DailyAnalyticsRow = {
+  dateKey: string
+  dateLabel: string
+  revenue: number
+  cogs: number
+  grossProfit: number
+  transactionCount: number
+}
