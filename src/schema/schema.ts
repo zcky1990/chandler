@@ -30,6 +30,7 @@ export const productSchema = z.object({
     z.literal(''),
   ]).nullable().optional(),
   is_active: z.boolean().default(true),
+  product_type: z.enum(['menu', 'addon']).default('menu'),
 })
 
 export const customerSchema = z.object({
@@ -47,10 +48,17 @@ export const customerSchema = z.object({
 export type ProductSchema = z.infer<typeof productSchema>
 export type CustomerSchema = z.infer<typeof customerSchema>
 
+export const transactionItemAddonSchema = z.object({
+  addon_product_id: z.string().uuid({ message: 'Addon tidak valid' }),
+  quantity: z.coerce.number().int().min(1, { message: 'Jumlah addon minimal 1' }),
+  unit_price: z.coerce.number().min(0, { message: 'Harga addon tidak valid' }),
+})
+
 export const transactionItemSchema = z.object({
   product_id: z.string().uuid({ message: 'Produk tidak valid' }),
   quantity: z.coerce.number().int().min(1, { message: 'Jumlah minimal 1' }),
   unit_price: z.coerce.number().min(0, { message: 'Harga tidak valid' }),
+  addons: z.array(transactionItemAddonSchema).optional(),
 })
 
 export const transactionSchema = z.object({

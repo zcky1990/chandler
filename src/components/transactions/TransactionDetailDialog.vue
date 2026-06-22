@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+
 import type { TransactionWithDetails } from '@/types/database'
 
 const props = defineProps<{
@@ -78,6 +79,15 @@ const canEdit = computed(() => props.transaction && !props.transaction.is_paid)
             <p class="font-medium">{{ item.products?.name ?? 'Produk' }}</p>
             <p class="text-sm text-muted-foreground">
               {{ item.quantity }} x {{ formatPrice(item.unit_price) }} = {{ formatPrice(item.subtotal) }}
+            </p>
+            <p
+              v-for="addon in item.transaction_item_addons ?? []"
+              :key="addon.id"
+              class="text-sm text-muted-foreground"
+            >
+              + {{ addon.products?.name ?? 'Addon' }}
+              ({{ item.quantity }} x {{ addon.quantity }} x {{ formatPrice(addon.unit_price) }})
+              = {{ formatPrice(addon.subtotal) }}
             </p>
           </div>
         </div>

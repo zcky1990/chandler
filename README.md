@@ -273,6 +273,7 @@ Semua skema SQL ada di folder [`DDL/`](DDL/). Jalankan di **Supabase SQL Editor*
 | [`DDL/stock_movements_costing.ddl`](DDL/stock_movements_costing.ddl) | Jika `stock_movements` dibuat **tanpa** kolom costing |
 | [`DDL/order_queues_table_number.ddl`](DDL/order_queues_table_number.ddl) | Jika `order_queues` dibuat **tanpa** `table_number` |
 | [`DDL/order_queues_realtime.ddl`](DDL/order_queues_realtime.ddl) | **Wajib** untuk antrian realtime di halaman `/queue` |
+| [`DDL/product_addons.ddl`](DDL/product_addons.ddl) | Tipe produk menu/addon, mapping addon, addon per transaksi |
 | [`DDL/masterdata_policies.ddl`](DDL/masterdata_policies.ddl) | Jika insert/update produk/pelanggan mengembalikan **403** |
 
 ### Cara menjalankan di SQL Editor

@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { formatItemWithAddons } from '@/lib/addon'
 import { getActiveQueues, subscribeActiveQueues } from '@/lib/queue'
 import type { OrderQueueWithDetails, QueueStatus } from '@/types/database'
 
@@ -38,7 +39,7 @@ function formatQueueNumber(number: number) {
 
 function formatItems(queue: OrderQueueWithDetails) {
   return (queue.transactions?.transaction_items ?? [])
-    .map((item) => `${item.products?.name ?? 'Produk'} x${item.quantity}`)
+    .map((item) => formatItemWithAddons(item))
     .join(', ')
 }
 

@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog'
+import { formatItemWithAddons } from '@/lib/addon'
 import type { CustomerTransactionSummary } from '@/types/database'
 
 const props = defineProps<{
@@ -90,14 +91,11 @@ function formatDate(value: string) {
                 class="flex items-start justify-between gap-3 text-sm"
               >
                 <div class="min-w-0">
-                  <p class="font-medium">{{ item.products?.name ?? 'Produk' }}</p>
+                  <p class="font-medium">{{ formatItemWithAddons(item) }}</p>
                   <p class="text-muted-foreground">
-                    {{ item.quantity }} x {{ formatPrice(item.unit_price) }}
+                    {{ formatPrice(item.subtotal + (item.transaction_item_addons ?? []).reduce((sum, addon) => sum + Number(addon.subtotal), 0)) }}
                   </p>
                 </div>
-                <p class="shrink-0 font-medium">
-                  {{ formatPrice(item.subtotal) }}
-                </p>
               </li>
             </ul>
 

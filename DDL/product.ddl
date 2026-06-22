@@ -8,6 +8,7 @@ create table public.products (
   stock_quantity integer not null default 0 check (stock_quantity >= 0),
   sku text unique,
   image_url text,
+  product_type text not null default 'menu' check (product_type in ('menu', 'addon')),
   is_active boolean default true not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null

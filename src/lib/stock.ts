@@ -535,13 +535,29 @@ export const getLowStockProducts = async (threshold = 5) => {
 }
 
 export async function recordSaleStock(
-  items: { product_id: string, quantity: number }[],
+  items: {
+    product_id: string
+    quantity: number
+    addons?: { addon_product_id: string, quantity: number }[]
+  }[],
   transactionId: string,
 ) {
   for (const item of items) {
     const { error } = await recordSaleMovement(item.product_id, item.quantity, transactionId)
     if (error) {
       return { error }
+    }
+
+    for (const addon of item.addons ?? []) {
+      const { error: addonError } = await recordSaleMovement(
+        addon.addon_product_id,
+        item.quantity * addon.quantity,
+        transactionId,
+      )
+
+      if (addonError) {
+        return { error: addonError }
+      }
     }
   }
 

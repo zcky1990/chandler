@@ -13,9 +13,8 @@ import {
   subscribeActiveQueues,
 } from '@/lib/queue'
 import { useAlertStore } from '@/stores/useAlertStore'
+import { formatItemWithAddons } from '@/lib/addon'
 import type { OrderQueueWithDetails, QueueStatus } from '@/types/database'
-
-type FilterStatus = QueueStatus | 'all'
 
 const alertStore = useAlertStore()
 const queues = ref<OrderQueueWithDetails[]>([])
@@ -59,7 +58,7 @@ function formatQueueNumber(number: number) {
 
 function formatItems(queue: OrderQueueWithDetails) {
   return (queue.transactions?.transaction_items ?? [])
-    .map((item) => `${item.products?.name ?? 'Produk'} x${item.quantity}`)
+    .map((item) => formatItemWithAddons(item))
     .join(', ')
 }
 

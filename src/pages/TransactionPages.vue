@@ -3,6 +3,7 @@ import { onMounted, ref, watch, computed } from 'vue'
 import { Banknote, ClipboardList, Minus, Plus, Receipt, ShoppingCart, Trash2 } from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import PaymentMethodDialog from '@/components/transactions/PaymentMethodDialog.vue'
+import AddonSelectDialog from '@/components/transactions/AddonSelectDialog.vue'
 import TableNumberDialog from '@/components/transactions/TableNumberDialog.vue'
 import { Button } from '@/components/ui/button'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
@@ -15,7 +16,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { getProducts } from '@/lib/product'
+import { getProducts, getProductAddonsMap } from '@/lib/product'
+import { buildCartLineKey, cartAddonsToInput, getLineSubtotal, type CartAddonSelection } from '@/lib/addon'
 import { createTransaction, getCustomersForTransaction, getPendingTransactionForCustomer } from '@/lib/transaction'
 import { createQueueEntry } from '@/lib/queue'
 import { useAlertStore } from '@/stores/useAlertStore'
@@ -23,13 +25,16 @@ import type { Customer, PaymentMethod, Product, Transaction } from '@/types/data
 import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
 
 type CartItem = {
+  lineKey: string
   product: Product
   quantity: number
+  addons: CartAddonSelection[]
 }
 
 const alertStore = useAlertStore()
 const customers = ref<Customer[]>([])
 const products = ref<Product[]>([])
+const productAddonsMap = ref<Record<string, Product[]>>({})
 const selectedCustomerId = ref('')
 const selectedProductId = ref('')
 const addQuantity = ref(1)
@@ -43,6 +48,9 @@ const paymentWithQueue = ref(false)
 const tableDialogOpen = ref(false)
 const pendingQueueAction = ref<'debt' | 'pay' | null>(null)
 const pendingTableNumber = ref<string | null>(null)
+const addonDialogOpen = ref(false)
+const pendingProduct = ref<Product | null>(null)
+const pendingQuantity = ref(1)
 
 const selectedCustomer = computed(() =>
   customers.value.find((customer) => customer.id === selectedCustomerId.value) ?? null,
@@ -53,12 +61,41 @@ const selectedProduct = computed(() =>
 )
 
 const availableProducts = computed(() =>
-  products.value.filter((product) => product.stock_quantity > 0),
+  products.value.filter((product) =>
+    product.stock_quantity > 0
+    && (product.product_type ?? 'menu') === 'menu',
+  ),
+)
+
+const pendingProductAddons = computed(() =>
+  pendingProduct.value ? (productAddonsMap.value[pendingProduct.value.id] ?? []) : [],
 )
 
 const totalAmount = computed(() =>
-  cart.value.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
+  cart.value.reduce(
+    (sum, item) => sum + getLineSubtotal(
+      item.quantity,
+      item.product.price,
+      cartAddonsToInput(item.addons),
+    ),
+    0,
+  ),
 )
+
+function getCartLineSubtotal(item: CartItem) {
+  return getLineSubtotal(item.quantity, item.product.price, cartAddonsToInput(item.addons))
+}
+
+function hasEnoughStock(product: Product, addons: CartAddonSelection[], menuQuantity: number) {
+  if (menuQuantity > product.stock_quantity) return false
+
+  for (const addon of addons) {
+    const required = addon.quantity * menuQuantity
+    if (required > addon.product.stock_quantity) return false
+  }
+
+  return true
+}
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -71,9 +108,10 @@ function formatPrice(price: number) {
 async function loadData() {
   isLoading.value = true
 
-  const [customerResult, productResult] = await Promise.all([
+  const [customerResult, productResult, addonMapResult] = await Promise.all([
     getCustomersForTransaction(),
     getProducts(),
+    getProductAddonsMap(),
   ])
 
   isLoading.value = false
@@ -92,6 +130,7 @@ async function loadData() {
   }
 
   products.value = (productResult.products ?? []).filter((product) => product.is_active)
+  productAddonsMap.value = addonMapResult.map ?? {}
   await loadPendingTransaction()
 }
 
@@ -112,30 +151,35 @@ async function loadPendingTransaction() {
 
 watch(selectedCustomerId, loadPendingTransaction)
 
-function getCartItem(productId: string) {
-  return cart.value.find((item) => item.product.id === productId)
+function getCartItem(lineKey: string) {
+  return cart.value.find((item) => item.lineKey === lineKey)
 }
 
-function addToCart(product: Product, quantity = 1) {
-  const existing = getCartItem(product.id)
+function addToCart(product: Product, quantity = 1, addons: CartAddonSelection[] = []) {
+  const lineKey = buildCartLineKey(product.id, addons)
+  const existing = getCartItem(lineKey)
+
   if (existing) {
     const nextQuantity = existing.quantity + quantity
-    if (nextQuantity <= product.stock_quantity) {
-      existing.quantity = nextQuantity
-    } else {
-      alertStore.showAlert('Stok tidak cukup', `Stok tersedia: ${product.stock_quantity}`, 'error')
+    if (!hasEnoughStock(product, addons, nextQuantity)) {
+      alertStore.showAlert('Stok tidak cukup', 'Stok menu atau addon tidak mencukupi', 'error')
+      return
     }
+
+    existing.quantity = nextQuantity
     return
   }
 
-  if (product.stock_quantity <= 0) {
-    alertStore.showAlert('Stok habis', `${product.name} tidak tersedia`, 'error')
+  if (!hasEnoughStock(product, addons, quantity)) {
+    alertStore.showAlert('Stok habis', `${product.name} atau addon tidak tersedia`, 'error')
     return
   }
 
   cart.value.push({
+    lineKey,
     product,
     quantity: Math.min(quantity, product.stock_quantity),
+    addons,
   })
 }
 
@@ -150,30 +194,49 @@ function handleAddSelectedProduct() {
     return
   }
 
+  const mappedAddons = productAddonsMap.value[selectedProduct.value.id] ?? []
+
+  if (mappedAddons.length) {
+    pendingProduct.value = selectedProduct.value
+    pendingQuantity.value = addQuantity.value
+    addonDialogOpen.value = true
+    return
+  }
+
   addToCart(selectedProduct.value, addQuantity.value)
   selectedProductId.value = ''
   addQuantity.value = 1
 }
 
-function updateQuantity(productId: string, quantity: number) {
-  const item = getCartItem(productId)
+function handleAddonConfirm(addons: CartAddonSelection[]) {
+  if (!pendingProduct.value) return
+
+  addToCart(pendingProduct.value, pendingQuantity.value, addons)
+  pendingProduct.value = null
+  pendingQuantity.value = 1
+  selectedProductId.value = ''
+  addQuantity.value = 1
+}
+
+function updateQuantity(lineKey: string, quantity: number) {
+  const item = getCartItem(lineKey)
   if (!item) return
 
   if (quantity <= 0) {
-    removeFromCart(productId)
+    removeFromCart(lineKey)
     return
   }
 
-  if (quantity > item.product.stock_quantity) {
-    alertStore.showAlert('Stok tidak cukup', `Stok tersedia: ${item.product.stock_quantity}`, 'error')
+  if (!hasEnoughStock(item.product, item.addons, quantity)) {
+    alertStore.showAlert('Stok tidak cukup', 'Stok menu atau addon tidak mencukupi', 'error')
     return
   }
 
   item.quantity = quantity
 }
 
-function removeFromCart(productId: string) {
-  cart.value = cart.value.filter((item) => item.product.id !== productId)
+function removeFromCart(lineKey: string) {
+  cart.value = cart.value.filter((item) => item.lineKey !== lineKey)
 }
 
 function resetForm() {
@@ -207,6 +270,7 @@ function getTransactionPayload() {
       product_id: item.product.id,
       quantity: item.quantity,
       unit_price: item.product.price,
+      addons: cartAddonsToInput(item.addons),
     })),
   }
 }
@@ -496,7 +560,7 @@ onMounted(loadData)
             <div v-else class="space-y-2">
               <div
                 v-for="item in cart"
-                :key="item.product.id"
+                :key="item.lineKey"
                 class="rounded-xl border px-4 py-3"
               >
                 <div class="flex items-start justify-between gap-3">
@@ -505,11 +569,18 @@ onMounted(loadData)
                     <p class="text-sm text-muted-foreground">
                       {{ formatPrice(item.product.price) }} / item
                     </p>
+                    <p
+                      v-if="item.addons.length"
+                      class="mt-1 text-xs text-muted-foreground"
+                    >
+                      + {{ item.addons.map((addon) => addon.product.name).join(', ') }}
+                      ({{ formatPrice(item.addons.reduce((sum, addon) => sum + addon.product.price * addon.quantity, 0)) }})
+                    </p>
                   </div>
                   <Button
                     size="icon-sm"
                     variant="ghost"
-                    @click="removeFromCart(item.product.id)"
+                    @click="removeFromCart(item.lineKey)"
                   >
                     <Trash2 class="size-4" />
                   </Button>
@@ -520,7 +591,7 @@ onMounted(loadData)
                     <Button
                       size="icon-sm"
                       variant="outline"
-                      @click="updateQuantity(item.product.id, item.quantity - 1)"
+                      @click="updateQuantity(item.lineKey, item.quantity - 1)"
                     >
                       <Minus class="size-4" />
                     </Button>
@@ -530,18 +601,18 @@ onMounted(loadData)
                       min="1"
                       :max="item.product.stock_quantity"
                       class="w-16 text-center"
-                      @update:model-value="updateQuantity(item.product.id, Number($event))"
+                      @update:model-value="updateQuantity(item.lineKey, Number($event))"
                     />
                     <Button
                       size="icon-sm"
                       variant="outline"
-                      @click="updateQuantity(item.product.id, item.quantity + 1)"
+                      @click="updateQuantity(item.lineKey, item.quantity + 1)"
                     >
                       <Plus class="size-4" />
                     </Button>
                   </div>
                   <p class="font-semibold">
-                    {{ formatPrice(item.product.price * item.quantity) }}
+                    {{ formatPrice(getCartLineSubtotal(item)) }}
                   </p>
                 </div>
               </div>
@@ -598,6 +669,13 @@ onMounted(loadData)
       <TableNumberDialog
         v-model:open="tableDialogOpen"
         @confirm="handleTableNumberConfirm"
+      />
+
+      <AddonSelectDialog
+        v-model:open="addonDialogOpen"
+        :product="pendingProduct"
+        :addons="pendingProductAddons"
+        @confirm="handleAddonConfirm"
       />
     </div>
   </DashboardLayout>

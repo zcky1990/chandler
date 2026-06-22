@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { TRANSACTION_ITEMS_WITH_ADDONS_SELECT } from './addon'
 import type { OrderQueue, OrderQueueWithDetails, QueueStatus } from '@/types/database'
 
 function getTodayDateString() {
@@ -66,7 +67,15 @@ export const getActiveQueues = async () => {
           quantity,
           unit_price,
           subtotal,
-          products ( id, name )
+          products ( id, name ),
+          transaction_item_addons (
+            id,
+            addon_product_id,
+            quantity,
+            unit_price,
+            subtotal,
+            products ( id, name )
+          )
         )
       )
     `)

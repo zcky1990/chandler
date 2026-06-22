@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { TRANSACTION_ITEMS_WITH_ADDONS_SELECT } from './addon'
 import type {
   AnalyticsDateRange,
   AnalyticsSummary,
@@ -78,12 +79,7 @@ async function fetchTransactionsInRange(range: AnalyticsDateRange) {
     .select(`
       *,
       transaction_items (
-        id,
-        product_id,
-        quantity,
-        unit_price,
-        subtotal,
-        products ( id, name )
+        ${TRANSACTION_ITEMS_WITH_ADDONS_SELECT}
       )
     `)
     .gte('created_at', range.start)
@@ -174,10 +170,18 @@ function computeSummary(
   let salesWithoutCogsCount = 0
 
   for (const transaction of transactions) {
-    const txRevenue = (transaction.transaction_items ?? []).reduce(
+    const menuRevenue = (transaction.transaction_items ?? []).reduce(
       (sum, item) => sum + Number(item.subtotal),
       0,
     )
+    const addonRevenue = (transaction.transaction_items ?? []).reduce(
+      (sum, item) => sum + (item.transaction_item_addons ?? []).reduce(
+        (addonSum, addon) => addonSum + Number(addon.subtotal),
+        0,
+      ),
+      0,
+    )
+    const txRevenue = menuRevenue + addonRevenue
     revenue += txRevenue
 
     const txCogs = cogsByTransaction.get(transaction.id) ?? 0
@@ -239,6 +243,24 @@ function computeProductAnalytics(
       existing.quantitySold += item.quantity
       existing.revenue += Number(item.subtotal)
       byProduct.set(productId, existing)
+
+      for (const addon of item.transaction_item_addons ?? []) {
+        const addonId = addon.addon_product_id
+        const addonName = addon.products?.name ?? 'Addon tidak diketahui'
+        const addonExisting = byProduct.get(addonId) ?? {
+          productId: addonId,
+          productName: addonName,
+          quantitySold: 0,
+          revenue: 0,
+          cogs: 0,
+          grossProfit: 0,
+          marginPercent: 0,
+        }
+
+        addonExisting.quantitySold += addon.quantity * item.quantity
+        addonExisting.revenue += Number(addon.subtotal)
+        byProduct.set(addonId, addonExisting)
+      }
     }
   }
 
@@ -318,10 +340,18 @@ function computeDailyAnalytics(
       transactionCount: 0,
     }
 
-    const txRevenue = (transaction.transaction_items ?? []).reduce(
+    const menuRevenue = (transaction.transaction_items ?? []).reduce(
       (sum, item) => sum + Number(item.subtotal),
       0,
     )
+    const addonRevenue = (transaction.transaction_items ?? []).reduce(
+      (sum, item) => sum + (item.transaction_item_addons ?? []).reduce(
+        (addonSum, addon) => addonSum + Number(addon.subtotal),
+        0,
+      ),
+      0,
+    )
+    const txRevenue = menuRevenue + addonRevenue
     const txCogs = cogsByTransaction.get(transaction.id) ?? 0
 
     existing.revenue += txRevenue

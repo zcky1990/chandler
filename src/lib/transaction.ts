@@ -1,8 +1,23 @@
 import { supabase } from './supabase'
 import { transactionItemsUpdateSchema, transactionSchema } from '@/schema/schema'
+import {
+  getAddonSignature,
+  getLineSubtotal,
+  TRANSACTION_ITEMS_WITH_ADDONS_SELECT,
+} from './addon'
 import { createCustomer, getCustomers } from './customer'
 import { applyStockDelta, recordSaleStock, recordStockReturn } from './stock'
-import type { Customer, CreateTransactionOptions, PaymentMethod, Transaction, TransactionInput, TransactionItem, TransactionWithDetails } from '@/types/database'
+import type {
+  Customer,
+  CreateTransactionOptions,
+  PaymentMethod,
+  Transaction,
+  TransactionInput,
+  TransactionItem,
+  TransactionItemInput,
+  TransactionItemWithProduct,
+  TransactionWithDetails,
+} from '@/types/database'
 import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
 import type { z } from 'zod'
 
@@ -10,6 +25,104 @@ type CreateTransactionResult = {
   transaction: Transaction | null
   merged: boolean
   error: unknown
+}
+
+function buildLineKey(productId: string, addons: { addon_product_id: string, quantity: number }[] = []) {
+  return `${productId}::${getAddonSignature(addons)}`
+}
+
+function buildLineKeyFromInput(item: TransactionItemInput) {
+  return buildLineKey(item.product_id, item.addons ?? [])
+}
+
+function buildLineKeyFromDbItem(item: TransactionItemWithProduct) {
+  const addons = (item.transaction_item_addons ?? []).map((addon) => ({
+    addon_product_id: addon.addon_product_id,
+    quantity: addon.quantity,
+  }))
+
+  return buildLineKey(item.product_id, addons)
+}
+
+async function insertTransactionItemAddons(
+  transactionItemId: string,
+  menuQuantity: number,
+  addons: TransactionItemInput['addons'] = [],
+) {
+  if (!addons?.length) return { error: null }
+
+  const supabaseClient = supabase()
+  const rows = addons.map((addon) => ({
+    transaction_item_id: transactionItemId,
+    addon_product_id: addon.addon_product_id,
+    quantity: addon.quantity,
+    unit_price: addon.unit_price,
+    subtotal: addon.quantity * addon.unit_price * menuQuantity,
+  }))
+
+  const { error } = await supabaseClient.from('transaction_item_addons').insert(rows)
+  return { error }
+}
+
+async function updateTransactionItemAddonSubtotals(
+  transactionItemId: string,
+  menuQuantity: number,
+) {
+  const supabaseClient = supabase()
+  const { data: addons, error } = await supabaseClient
+    .from('transaction_item_addons')
+    .select('id, quantity, unit_price')
+    .eq('transaction_item_id', transactionItemId)
+
+  if (error || !addons) {
+    return { error }
+  }
+
+  for (const addon of addons) {
+    const { error: updateError } = await supabaseClient
+      .from('transaction_item_addons')
+      .update({
+        subtotal: addon.quantity * Number(addon.unit_price) * menuQuantity,
+      })
+      .eq('id', addon.id)
+
+    if (updateError) {
+      return { error: updateError }
+    }
+  }
+
+  return { error: null }
+}
+
+async function getTransactionTotalAmount(transactionId: string) {
+  const supabaseClient = supabase()
+  const { data: items, error: itemsError } = await supabaseClient
+    .from('transaction_items')
+    .select('id, subtotal')
+    .eq('transaction_id', transactionId)
+
+  if (itemsError || !items) {
+    return { totalAmount: null, error: itemsError }
+  }
+
+  const itemIds = items.map((item) => item.id)
+  let addonSubtotal = 0
+
+  if (itemIds.length) {
+    const { data: addons, error: addonsError } = await supabaseClient
+      .from('transaction_item_addons')
+      .select('subtotal')
+      .in('transaction_item_id', itemIds)
+
+    if (addonsError) {
+      return { totalAmount: null, error: addonsError }
+    }
+
+    addonSubtotal = (addons ?? []).reduce((sum, addon) => sum + Number(addon.subtotal), 0)
+  }
+
+  const menuSubtotal = items.reduce((sum, item) => sum + Number(item.subtotal), 0)
+  return { totalAmount: menuSubtotal + addonSubtotal, error: null }
 }
 
 function getTodayRange() {
@@ -32,11 +145,7 @@ async function findPendingTransactionToday(customerId: string) {
     .select(`
       *,
       transaction_items (
-        id,
-        product_id,
-        quantity,
-        unit_price,
-        subtotal
+        ${TRANSACTION_ITEMS_WITH_ADDONS_SELECT}
       )
     `)
     .eq('customer_id', customerId)
@@ -52,17 +161,18 @@ async function findPendingTransactionToday(customerId: string) {
 
 async function mergeIntoTransaction(
   transactionId: string,
-  existingItems: TransactionItem[],
+  existingItems: TransactionItemWithProduct[],
   newItems: TransactionInput['items'],
   notes?: string | null,
 ): Promise<CreateTransactionResult> {
   const supabaseClient = supabase()
-  const itemsByProduct = new Map(
-    existingItems.map((item) => [item.product_id, item]),
+  const itemsByLineKey = new Map(
+    existingItems.map((item) => [buildLineKeyFromDbItem(item), item]),
   )
 
   for (const newItem of newItems) {
-    const existingItem = itemsByProduct.get(newItem.product_id)
+    const lineKey = buildLineKeyFromInput(newItem)
+    const existingItem = itemsByLineKey.get(lineKey)
 
     if (existingItem) {
       const quantity = existingItem.quantity + newItem.quantity
@@ -80,31 +190,50 @@ async function mergeIntoTransaction(
       if (error) {
         return { transaction: null, merged: true, error }
       }
-    } else {
-      const { error } = await supabaseClient.from('transaction_items').insert({
-        transaction_id: transactionId,
-        product_id: newItem.product_id,
-        quantity: newItem.quantity,
-        unit_price: newItem.unit_price,
-        subtotal: newItem.quantity * newItem.unit_price,
-      })
 
-      if (error) {
-        return { transaction: null, merged: true, error }
+      const { error: addonUpdateError } = await updateTransactionItemAddonSubtotals(
+        existingItem.id,
+        quantity,
+      )
+
+      if (addonUpdateError) {
+        return { transaction: null, merged: true, error: addonUpdateError }
+      }
+    } else {
+      const { data: insertedItem, error: insertError } = await supabaseClient
+        .from('transaction_items')
+        .insert({
+          transaction_id: transactionId,
+          product_id: newItem.product_id,
+          quantity: newItem.quantity,
+          unit_price: newItem.unit_price,
+          subtotal: newItem.quantity * newItem.unit_price,
+        })
+        .select()
+        .single()
+
+      if (insertError || !insertedItem) {
+        return { transaction: null, merged: true, error: insertError }
+      }
+
+      const { error: addonError } = await insertTransactionItemAddons(
+        insertedItem.id,
+        newItem.quantity,
+        newItem.addons,
+      )
+
+      if (addonError) {
+        return { transaction: null, merged: true, error: addonError }
       }
     }
   }
 
-  const { data: updatedItems, error: itemsError } = await supabaseClient
-    .from('transaction_items')
-    .select('subtotal')
-    .eq('transaction_id', transactionId)
+  const { totalAmount, error: totalError } = await getTransactionTotalAmount(transactionId)
 
-  if (itemsError || !updatedItems) {
-    return { transaction: null, merged: true, error: itemsError }
+  if (totalError || totalAmount === null) {
+    return { transaction: null, merged: true, error: totalError }
   }
 
-  const totalAmount = updatedItems.reduce((sum, item) => sum + Number(item.subtotal), 0)
   const updatePayload: { total_amount: number, notes?: string } = { total_amount: totalAmount }
   if (notes) {
     updatePayload.notes = notes
@@ -182,12 +311,7 @@ export const getTransactions = async () => {
       *,
       customers ( id, name ),
       transaction_items (
-        id,
-        product_id,
-        quantity,
-        unit_price,
-        subtotal,
-        products ( id, name )
+        ${TRANSACTION_ITEMS_WITH_ADDONS_SELECT}
       )
     `)
     .order('created_at', { ascending: false })
@@ -203,12 +327,7 @@ export const getCustomerTransactionSummary = async (customerId: string, customer
       *,
       customers ( id, name ),
       transaction_items (
-        id,
-        product_id,
-        quantity,
-        unit_price,
-        subtotal,
-        products ( id, name )
+        ${TRANSACTION_ITEMS_WITH_ADDONS_SELECT}
       )
     `)
     .eq('customer_id', customerId)
@@ -330,7 +449,16 @@ export const updateTransactionItems = async (
 
   const { data: currentItems, error: currentItemsError } = await supabaseClient
     .from('transaction_items')
-    .select('id, product_id, quantity, unit_price')
+    .select(`
+      id,
+      product_id,
+      quantity,
+      unit_price,
+      transaction_item_addons (
+        addon_product_id,
+        quantity
+      )
+    `)
     .eq('transaction_id', transactionId)
 
   if (currentItemsError || !currentItems) {
@@ -350,6 +478,21 @@ export const updateTransactionItems = async (
 
     if (stockError) {
       return { transaction: null, error: stockError }
+    }
+
+    for (const addon of currentItem.transaction_item_addons ?? []) {
+      const { error: addonStockError } = await recordStockReturn(
+        addon.addon_product_id,
+        currentItem.quantity * addon.quantity,
+        {
+          referenceId: transactionId,
+          notes: 'Pengembalian addon dari hapus item transaksi',
+        },
+      )
+
+      if (addonStockError) {
+        return { transaction: null, error: addonStockError }
+      }
     }
 
     const { error } = await supabaseClient
@@ -375,6 +518,18 @@ export const updateTransactionItems = async (
       if (stockError) {
         return { transaction: null, error: stockError }
       }
+
+      for (const addon of currentItem.transaction_item_addons ?? []) {
+        const { error: addonStockError } = await applyStockDelta(
+          addon.addon_product_id,
+          quantityDelta * addon.quantity,
+          transactionId,
+        )
+
+        if (addonStockError) {
+          return { transaction: null, error: addonStockError }
+        }
+      }
     }
 
     const subtotal = item.quantity * Number(currentItem.unit_price)
@@ -386,18 +541,19 @@ export const updateTransactionItems = async (
     if (error) {
       return { transaction: null, error }
     }
+
+    const { error: addonUpdateError } = await updateTransactionItemAddonSubtotals(item.id, item.quantity)
+    if (addonUpdateError) {
+      return { transaction: null, error: addonUpdateError }
+    }
   }
 
-  const { data: updatedItems, error: updatedItemsError } = await supabaseClient
-    .from('transaction_items')
-    .select('subtotal')
-    .eq('transaction_id', transactionId)
+  const { totalAmount, error: totalError } = await getTransactionTotalAmount(transactionId)
 
-  if (updatedItemsError || !updatedItems?.length) {
-    return { transaction: null, error: updatedItemsError ?? { message: 'Transaksi harus memiliki minimal 1 item' } }
+  if (totalError || totalAmount === null) {
+    return { transaction: null, error: totalError ?? { message: 'Transaksi harus memiliki minimal 1 item' } }
   }
 
-  const totalAmount = updatedItems.reduce((sum, item) => sum + Number(item.subtotal), 0)
   const { data: transaction, error: updateError } = await supabaseClient
     .from('transactions')
     .update({
@@ -433,7 +589,7 @@ export const createTransaction = async (
     if (pendingTransaction) {
       return mergeIntoTransaction(
         pendingTransaction.id,
-        (pendingTransaction.transaction_items ?? []) as TransactionItem[],
+        (pendingTransaction.transaction_items ?? []) as TransactionItemWithProduct[],
         payload.items,
         payload.notes,
       )
@@ -441,7 +597,7 @@ export const createTransaction = async (
   }
 
   const totalAmount = payload.items.reduce(
-    (sum, item) => sum + item.quantity * item.unit_price,
+    (sum, item) => sum + getLineSubtotal(item.quantity, item.unit_price, item.addons),
     0,
   )
 
@@ -464,21 +620,35 @@ export const createTransaction = async (
     return { transaction: null, merged: false, error: transactionError }
   }
 
-  const transactionItems = payload.items.map((item) => ({
-    transaction_id: transaction.id,
-    product_id: item.product_id,
-    quantity: item.quantity,
-    unit_price: item.unit_price,
-    subtotal: item.quantity * item.unit_price,
-  }))
+  for (const item of payload.items) {
+    const { data: insertedItem, error: insertError } = await supabaseClient
+      .from('transaction_items')
+      .insert({
+        transaction_id: transaction.id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        subtotal: item.quantity * item.unit_price,
+      })
+      .select()
+      .single()
 
-  const { error: itemsError } = await supabaseClient
-    .from('transaction_items')
-    .insert(transactionItems)
+    if (insertError || !insertedItem) {
+      await supabaseClient.from('transactions').delete().eq('id', transaction.id)
+      return { transaction: null, merged: false, error: insertError }
+    }
 
-  if (itemsError) {
-    await supabaseClient.from('transactions').delete().eq('id', transaction.id)
-    return { transaction: null, merged: false, error: itemsError }
+    const { error: addonError } = await insertTransactionItemAddons(
+      insertedItem.id,
+      item.quantity,
+      item.addons,
+    )
+
+    if (addonError) {
+      await supabaseClient.from('transaction_items').delete().eq('transaction_id', transaction.id)
+      await supabaseClient.from('transactions').delete().eq('id', transaction.id)
+      return { transaction: null, merged: false, error: addonError }
+    }
   }
 
   const { error: stockError } = await recordSaleStock(payload.items, transaction.id)

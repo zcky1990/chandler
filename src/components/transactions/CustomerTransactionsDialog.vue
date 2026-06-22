@@ -6,6 +6,7 @@ import {
   DialogContent,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { formatItemWithAddons } from '@/lib/addon'
 import PaymentMethodDialog from '@/components/transactions/PaymentMethodDialog.vue'
 import TransactionEditDialog from '@/components/transactions/TransactionEditDialog.vue'
 import { markTransactionAsPaid } from '@/lib/transaction'
@@ -55,7 +56,7 @@ function formatShortDate(value: string) {
 
 function formatItems(transaction: TransactionWithDetails) {
   return transaction.transaction_items
-    .map((item) => `${item.products?.name ?? 'Produk'} (${item.quantity})`)
+    .map((item) => formatItemWithAddons(item))
     .join(' · ')
 }
 

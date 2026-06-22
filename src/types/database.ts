@@ -1,3 +1,5 @@
+export type ProductType = 'menu' | 'addon'
+
 export type Product = {
   id: string
   name: string
@@ -7,6 +9,7 @@ export type Product = {
   stock_quantity: number
   sku: string | null
   image_url: string | null
+  product_type: ProductType
   is_active: boolean
   created_at: string
   updated_at: string
@@ -69,10 +72,38 @@ export type CreateTransactionOptions = {
   paymentMethod?: PaymentMethod
 }
 
+export type ProductAddon = {
+  id: string
+  product_id: string
+  addon_product_id: string
+  sort_order: number
+}
+
+export type TransactionItemAddon = {
+  id: string
+  transaction_item_id: string
+  addon_product_id: string
+  quantity: number
+  unit_price: number
+  subtotal: number
+  created_at: string
+}
+
+export type TransactionItemAddonInput = {
+  addon_product_id: string
+  quantity: number
+  unit_price: number
+}
+
+export type TransactionItemAddonWithProduct = TransactionItemAddon & {
+  products: TransactionProduct | null
+}
+
 export type TransactionItemInput = {
   product_id: string
   quantity: number
   unit_price: number
+  addons?: TransactionItemAddonInput[]
 }
 
 export type TransactionProduct = {
@@ -82,6 +113,7 @@ export type TransactionProduct = {
 
 export type TransactionItemWithProduct = TransactionItem & {
   products: TransactionProduct | null
+  transaction_item_addons?: TransactionItemAddonWithProduct[]
 }
 
 export type TransactionCustomer = {
