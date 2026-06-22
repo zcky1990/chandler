@@ -1,6 +1,15 @@
 -- Profil pengguna terhubung ke auth.users (satu baris per akun login)
+-- Bisa dijalankan sebelum atau sesudah customers.ddl (fungsi handle_updated_at didefinisikan di sini).
 
-create table public.profiles (
+create or replace function public.handle_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = timezone('utc'::text, now());
+  return new;
+end;
+$$ language plpgsql;
+
+create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text,
   email text,
@@ -10,21 +19,25 @@ create table public.profiles (
 
 alter table public.profiles enable row level security;
 
+drop policy if exists "Allow public read on profiles" on public.profiles;
 create policy "Allow public read on profiles"
   on public.profiles for select
   using (true);
 
+drop policy if exists "Allow users insert own profile" on public.profiles;
 create policy "Allow users insert own profile"
   on public.profiles for insert
   to authenticated
   with check (auth.uid() = id);
 
+drop policy if exists "Allow users update own profile" on public.profiles;
 create policy "Allow users update own profile"
   on public.profiles for update
   to authenticated
   using (auth.uid() = id)
   with check (auth.uid() = id);
 
+drop trigger if exists set_profiles_updated_at on public.profiles;
 create trigger set_profiles_updated_at
   before update on public.profiles
   for each row

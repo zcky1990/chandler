@@ -162,16 +162,14 @@ flowchart LR
 | Data user tersebar di metadata auth | Satu tabel mudah di-query dari aplikasi |
 | User lama tidak punya record terstruktur | Backfill otomatis untuk user yang sudah ada |
 
-### Langkah 1 — Pastikan fungsi `handle_updated_at` sudah ada
+### Langkah 1 — Jalankan DDL profiles
 
-File [`DDL/profiles.ddl`](DDL/profiles.ddl) memakai trigger `handle_updated_at()` yang dibuat di [`DDL/customers.ddl`](DDL/customers.ddl).
-
-**Urutan:** jalankan `customers.ddl` dulu, baru `profiles.ddl` (lihat tabel DDL di bawah).
-
-### Langkah 2 — Jalankan DDL profiles
+File [`DDL/profiles.ddl`](DDL/profiles.ddl) sudah menyertakan fungsi `handle_updated_at()` sendiri, jadi **tidak wajib** menjalankan `customers.ddl` terlebih dahulu (meskipun tetap disarankan mengikuti urutan DDL lengkap di bawah).
 
 1. Buka [`DDL/profiles.ddl`](DDL/profiles.ddl).
 2. Salin seluruh isi → Supabase **SQL Editor** → **Run**.
+
+Jika sebelumnya gagal di tengah jalan, aman untuk **jalankan ulang** file yang sama (script sudah idempotent).
 
 Yang dibuat:
 
@@ -180,7 +178,7 @@ Yang dibuat:
 - Fungsi `handle_new_user()` + trigger `on_auth_user_created` di `auth.users`
 - Backfill baris `profiles` untuk user yang sudah terdaftar sebelumnya
 
-### Langkah 3 — Metadata nama saat sign-up
+### Langkah 2 — Metadata nama saat sign-up
 
 Aplikasi mengirim nama ke Supabase Auth lewat `user_metadata`:
 
@@ -195,7 +193,7 @@ supabase.auth.signUp({
 
 Trigger `handle_new_user` membaca `raw_user_meta_data->>'full_name'` dan menyimpannya ke `profiles.full_name`.
 
-### Langkah 4 — Verifikasi profiles
+### Langkah 3 — Verifikasi profiles
 
 Setelah sign-up atau backfill, jalankan di SQL Editor:
 
@@ -213,7 +211,7 @@ order by p.created_at desc nulls last;
 
 Setiap baris di `auth.users` seharusnya punya pasangan di `profiles` (`full_name` bisa kosong untuk user lama tanpa metadata).
 
-### Langkah 5 — (Opsional) User admin via Dashboard
+### Langkah 4 — (Opsional) User admin via Dashboard
 
 Jika membuat user lewat **Authentication → Users → Add user**:
 
@@ -258,7 +256,7 @@ Semua skema SQL ada di folder [`DDL/`](DDL/). Jalankan di **Supabase SQL Editor*
 | No | File | Keterangan |
 |----|------|------------|
 | 1 | [`DDL/customers.ddl`](DDL/customers.ddl) | Tabel `customers` + RLS + fungsi `handle_updated_at()` |
-| 2 | [`DDL/profiles.ddl`](DDL/profiles.ddl) | Tabel `profiles` + trigger auto-create dari `auth.users` |
+| 2 | [`DDL/profiles.ddl`](DDL/profiles.ddl) | Tabel `profiles` + `handle_updated_at()` + trigger auto-create dari `auth.users` |
 | 3 | [`DDL/product.ddl`](DDL/product.ddl) | Tabel `products` (termasuk `purchase_price`) + RLS |
 | 4 | [`DDL/transactions.ddl`](DDL/transactions.ddl) | Tabel `transactions`, `transaction_items` + walk-in customer |
 | 5 | [`DDL/transaction_payment_method.ddl`](DDL/transaction_payment_method.ddl) | Kolom `payment_method`, `paid_at` *(lewati jika sudah ada di langkah 4)* |
