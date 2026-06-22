@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Card, CardContent } from '@/components/ui/card'
 import type { Product } from '@/types/database'
 
 defineProps<{
@@ -16,18 +17,39 @@ function formatPrice(price: number) {
 
 <template>
   <div class="grid w-full gap-2">
-    <div
+    <Card
       v-for="product in products"
       :key="product.id"
-      class="rounded-xl border border-border bg-background/90 px-4 py-3 backdrop-blur-sm"
+      class="gap-0 py-0 shadow-sm"
     >
-      <p class="font-semibold text-foreground">
-        {{ product.name }}
-      </p>
-      <p class="text-sm text-muted-foreground">
-        {{ formatPrice(product.price) }}
-        <span v-if="product.description"> · {{ product.description }}</span>
-      </p>
-    </div>
+      <CardContent class="flex items-start justify-between gap-4 p-4">
+        <div class="min-w-0 space-y-1">
+          <p class="font-medium leading-none">
+            {{ product.name }}
+          </p>
+          <p
+            v-if="product.description"
+            class="line-clamp-2 text-sm text-muted-foreground"
+          >
+            {{ product.description }}
+          </p>
+          <p v-if="product.sku" class="text-xs text-muted-foreground">
+            SKU {{ product.sku }}
+          </p>
+        </div>
+
+        <div class="shrink-0 space-y-1 text-right">
+          <p class="font-semibold tabular-nums">
+            {{ formatPrice(product.price) }}
+          </p>
+          <p
+            class="text-xs text-muted-foreground"
+            :class="product.stock_quantity <= 0 ? 'text-destructive' : ''"
+          >
+            Stok {{ product.stock_quantity }}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   </div>
 </template>

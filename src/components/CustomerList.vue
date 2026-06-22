@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { ChevronRight } from '@lucide/vue'
+import { Card, CardContent } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
 import type { CustomerWithDebt } from '@/types/database'
 
 defineProps<{
@@ -18,7 +21,7 @@ function formatPrice(price: number) {
 }
 
 function getCustomerDetail(customer: CustomerWithDebt) {
-  return customer.address || customer.phone || customer.email || 'Tidak ada detail'
+  return customer.phone || customer.email || customer.address || 'Tidak ada detail kontak'
 }
 
 function handleClick(customer: CustomerWithDebt) {
@@ -30,39 +33,48 @@ function handleClick(customer: CustomerWithDebt) {
 
 <template>
   <div class="grid w-full gap-2">
-    <div
+    <Card
       v-for="customer in customers"
       :key="customer.id"
-      class="rounded-xl border border-border bg-background/90 px-4 py-3 backdrop-blur-sm transition-colors"
+      class="gap-0 py-0 shadow-sm transition-colors"
       :class="customer.unpaidCount > 0 ? 'cursor-pointer hover:bg-accent/50' : ''"
       @click="handleClick(customer)"
     >
-      <p class="font-semibold text-foreground">
-        {{ customer.name }}
-      </p>
-      <p class="text-sm text-muted-foreground">
-        {{ getCustomerDetail(customer) }}
-      </p>
+      <CardContent class="p-4">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0 space-y-1">
+            <p class="font-medium leading-none">
+              {{ customer.name }}
+            </p>
+            <p class="text-sm text-muted-foreground">
+              {{ getCustomerDetail(customer) }}
+            </p>
+          </div>
+          <ChevronRight
+            v-if="customer.unpaidCount > 0"
+            class="mt-0.5 size-4 shrink-0 text-muted-foreground"
+          />
+        </div>
 
-      <p
-        v-if="customer.unpaidCount > 0"
-        class="mt-2 text-sm font-medium text-amber-600 dark:text-amber-400"
-      >
-        Tunggakan: {{ formatPrice(customer.outstandingAmount) }}
-        <span class="font-normal text-muted-foreground">
-          ({{ customer.unpaidCount }} transaksi)
-        </span>
-      </p>
-      <p v-else class="mt-2 text-sm text-muted-foreground">
-        Tidak ada tunggakan
-      </p>
+        <template v-if="customer.unpaidCount > 0">
+          <Separator class="my-3" />
+          <div class="flex items-center justify-between gap-3 text-sm">
+            <span class="text-muted-foreground">Tunggakan</span>
+            <div class="text-right">
+              <p class="font-semibold tabular-nums">
+                {{ formatPrice(customer.outstandingAmount) }}
+              </p>
+              <p class="text-xs text-muted-foreground">
+                {{ customer.unpaidCount }} transaksi
+              </p>
+            </div>
+          </div>
+        </template>
 
-      <p
-        v-if="customer.unpaidCount > 0"
-        class="mt-1 text-xs text-muted-foreground"
-      >
-        Ketuk untuk lihat detail item
-      </p>
-    </div>
+        <p v-else class="mt-2 text-sm text-muted-foreground">
+          Tidak ada tunggakan
+        </p>
+      </CardContent>
+    </Card>
   </div>
 </template>

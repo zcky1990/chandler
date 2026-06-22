@@ -119,3 +119,23 @@ export type ShopConfigInput = {
   transfer_account_number?: string | null
   transfer_account_holder?: string | null
 }
+
+export type QueueStatus = 'waiting' | 'preparing' | 'ready' | 'completed' | 'cancelled'
+
+export type OrderQueue = {
+  id: string
+  transaction_id: string
+  queue_number: number
+  queue_date: string
+  status: QueueStatus
+  table_number: string | null
+  picked_up_at: string | null
+  ready_at: string | null
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type OrderQueueWithDetails = OrderQueue & {
+  transactions: TransactionWithDetails | null
+}

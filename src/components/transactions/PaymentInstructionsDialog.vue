@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Landmark, MessageCircle, QrCode } from '@lucide/vue'
+import { Download, Landmark, MessageCircle, QrCode } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -16,6 +16,7 @@ import {
   getWhatsappProofUrl,
 } from '@/lib/payment'
 import type { ShopConfig } from '@/types/database'
+import { useAlertStore } from '@/stores/useAlertStore'
 
 const props = defineProps<{
   open: boolean
@@ -27,6 +28,8 @@ const emit = defineEmits<{
 
 const shopConfig = ref<ShopConfig | null>(null)
 const isLoading = ref(false)
+const isDownloadingQris = ref(false)
+const alertStore = useAlertStore()
 
 const paymentConfigured = computed(() => hasPaymentConfig(shopConfig.value))
 const showQris = computed(() => hasQrisConfig(shopConfig.value))
@@ -41,6 +44,33 @@ async function loadConfig() {
   const { config } = await getShopConfig()
   shopConfig.value = config
   isLoading.value = false
+}
+
+async function downloadQris() {
+  const url = shopConfig.value?.qris_image_url
+  if (!url) return
+
+  isDownloadingQris.value = true
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error('Gagal mengunduh gambar QRIS')
+    }
+
+    const blob = await response.blob()
+    const extension = blob.type.split('/')[1]?.replace('jpeg', 'jpg') || 'png'
+    const objectUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = objectUrl
+    link.download = `qris-warung-zavi.${extension}`
+    link.click()
+    URL.revokeObjectURL(objectUrl)
+  } catch {
+    alertStore.showAlert('Error', 'Gagal mengunduh QRIS. Coba simpan gambar secara manual.', 'error')
+  } finally {
+    isDownloadingQris.value = false
+  }
 }
 
 watch(
@@ -86,6 +116,15 @@ watch(
                 class="max-h-64 max-w-full rounded-lg object-contain"
               >
             </div>
+            <Button
+              variant="outline"
+              class="w-full"
+              :disabled="isDownloadingQris"
+              @click="downloadQris"
+            >
+              <Download class="size-4" />
+              {{ isDownloadingQris ? 'Mengunduh...' : 'Unduh QRIS' }}
+            </Button>
             <p class="text-sm text-muted-foreground">
               Scan kode QR di atas menggunakan aplikasi e-wallet atau mobile banking Anda.
             </p>

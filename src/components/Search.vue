@@ -5,6 +5,7 @@ import CustomerList from '@/components/CustomerList.vue'
 import CustomerUnpaidItemsDialog from '@/components/transactions/CustomerUnpaidItemsDialog.vue'
 import PaymentInstructionsDialog from '@/components/transactions/PaymentInstructionsDialog.vue'
 import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
 import { ref, computed, onMounted } from 'vue'
 import { Banknote } from '@lucide/vue'
 import { getProductByName } from '@/lib/product'
@@ -183,7 +184,7 @@ onMounted(loadPaymentAvailability)
 
 <template>
   <div class="flex min-h-svh w-full flex-col items-center px-4 py-10">
-    <div class="flex w-full max-w-2xl flex-col items-center gap-6">
+    <div class="flex w-full max-w-2xl flex-col items-center gap-8">
       <TextType
         :text="['Selamat Datang', 'Warung Zavi']"
         :typing-speed="75"
@@ -194,38 +195,44 @@ onMounted(loadPaymentAvailability)
         cursor-character="|"
       />
 
-      <div class="z-2 flex w-full max-w-sm flex-col items-center gap-4">
+      <div class="z-2 flex w-full flex-col gap-3">
         <Search
           :searchInOptions="searchInOptions"
           :searchQuery="searchQuery"
           :selectedOption="selectedOption"
           @update:searchQuery="handleSearchQueryUpdate"
           @update:selectedOption="handleSelectedOptionUpdate"
+          @submit="handleSearch"
         />
-        <Button
-          class="rounded-full px-4 py-2"
-          @click="handleSearch"
-        >
-          Search
-        </Button>
-        <Button
-          v-if="showPaymentCta"
-          variant="outline"
-          class="rounded-full px-4 py-2"
-          @click="paymentInstructionsOpen = true"
-        >
-          <Banknote class="size-4" />
-          Cara Membayar
-        </Button>
+        <div class="flex flex-col gap-2 sm:flex-row">
+          <Button class="flex-1" @click="handleSearch">
+            Cari
+          </Button>
+          <Button
+            v-if="showPaymentCta"
+            variant="outline"
+            class="flex-1"
+            @click="paymentInstructionsOpen = true"
+          >
+            <Banknote class="size-4" />
+            Cara Membayar
+          </Button>
+        </div>
       </div>
 
       <section
         v-if="hasResults"
-        class="z-2 w-full max-w-sm space-y-3"
+        class="z-2 w-full space-y-3"
       >
-        <p class="text-center text-sm font-medium text-muted-foreground">
-          {{ resultsTitle }} untuk "{{ searchQuery }}"
-        </p>
+        <div class="space-y-1 text-center">
+          <p class="text-sm font-medium">
+            {{ resultsTitle }}
+          </p>
+          <p class="text-sm text-muted-foreground">
+            untuk "{{ searchQuery }}"
+          </p>
+        </div>
+        <Separator />
 
         <ProductList
           v-if="resultType === 'product'"

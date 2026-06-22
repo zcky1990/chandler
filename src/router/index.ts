@@ -10,6 +10,7 @@ import CustomerMasterPages from '@/pages/CustomerMasterPages.vue'
 import TransactionPages from '@/pages/TransactionPages.vue'
 import TransactionListPages from '@/pages/TransactionListPages.vue'
 import ConfigPages from '@/pages/ConfigPages.vue'
+import QueuePages from '@/pages/QueuePages.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -53,6 +54,11 @@ const router = createRouter({
       path: '/transactions/list',
       name: 'transactions-list',
       component: TransactionListPages,
+    },
+    {
+      path: '/queue',
+      name: 'queue',
+      component: QueuePages,
     },
     {
       path: '/config',

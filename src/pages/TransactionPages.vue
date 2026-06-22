@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref, watch, computed } from 'vue'
-import { Banknote, Minus, Plus, Receipt, ShoppingCart, Trash2 } from '@lucide/vue'
+import { Banknote, ClipboardList, Minus, Plus, Receipt, ShoppingCart, Trash2 } from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import PaymentMethodDialog from '@/components/transactions/PaymentMethodDialog.vue'
+import TableNumberDialog from '@/components/transactions/TableNumberDialog.vue'
 import { Button } from '@/components/ui/button'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -16,6 +17,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { getProducts } from '@/lib/product'
 import { createTransaction, getCustomersForTransaction, getPendingTransactionForCustomer } from '@/lib/transaction'
+import { createQueueEntry } from '@/lib/queue'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { Customer, PaymentMethod, Product, Transaction } from '@/types/database'
 import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
@@ -37,6 +39,10 @@ const pendingTransaction = ref<Transaction | null>(null)
 const isLoading = ref(true)
 const isSubmitting = ref(false)
 const paymentDialogOpen = ref(false)
+const paymentWithQueue = ref(false)
+const tableDialogOpen = ref(false)
+const pendingQueueAction = ref<'debt' | 'pay' | null>(null)
+const pendingTableNumber = ref<string | null>(null)
 
 const selectedCustomer = computed(() =>
   customers.value.find((customer) => customer.id === selectedCustomerId.value) ?? null,
@@ -217,51 +223,144 @@ function getErrorMessage(error: unknown) {
   return 'Gagal menyimpan transaksi'
 }
 
-async function handleSubmit() {
+async function createQueueForTransaction(transactionId: string, tableNumber: string | null = null) {
+  const { queue, error } = await createQueueEntry(transactionId, { tableNumber })
+
+  if (error) {
+    alertStore.showAlert('Error', `Transaksi tersimpan, tetapi antrian gagal: ${error.message}`, 'error')
+    return null
+  }
+
+  return queue
+}
+
+function queueSuccessMessage(queueNumber: number, tableNumber: string | null, prefix: string) {
+  const tableLabel = tableNumber ? ` · Meja ${tableNumber}` : ''
+  return `${prefix} ${formatQueueNumber(queueNumber)}${tableLabel}`
+}
+
+function formatQueueNumber(number: number) {
+  return `#${String(number).padStart(3, '0')}`
+}
+
+async function handleSubmit(addToQueue = false, tableNumber: string | null = null) {
   if (!validateCart()) return
 
   isSubmitting.value = true
 
-  const { merged, error } = await createTransaction(getTransactionPayload())
-
-  isSubmitting.value = false
+  const { transaction, merged, error } = await createTransaction(getTransactionPayload())
 
   if (error) {
+    isSubmitting.value = false
     alertStore.showAlert('Error', getErrorMessage(error), 'error')
     return
   }
 
-  alertStore.showAlert(
-    'Berhasil',
-    merged
-      ? 'Pembelian ditambahkan ke transaksi belum dibayar hari ini'
-      : 'Transaksi baru berhasil dibuat',
-    'success',
-  )
+  if (addToQueue && transaction) {
+    const queue = await createQueueForTransaction(transaction.id, tableNumber)
+    isSubmitting.value = false
+
+    if (!queue) {
+      resetForm()
+      await loadData()
+      return
+    }
+
+    alertStore.showAlert(
+      'Berhasil',
+      merged
+        ? queueSuccessMessage(queue.queue_number, tableNumber, 'Hutang diperbarui & antrian')
+        : queueSuccessMessage(queue.queue_number, tableNumber, 'Transaksi hutang & antrian'),
+      'success',
+    )
+  } else {
+    isSubmitting.value = false
+    alertStore.showAlert(
+      'Berhasil',
+      merged
+        ? 'Pembelian ditambahkan ke transaksi belum dibayar hari ini'
+        : 'Transaksi baru berhasil dibuat',
+      'success',
+    )
+  }
+
   resetForm()
   await loadData()
 }
 
-function openPaymentDialog() {
+function openQueueFlow(action: 'debt' | 'pay') {
   if (!validateCart()) return
+  pendingQueueAction.value = action
+  tableDialogOpen.value = true
+}
+
+function handleTableNumberConfirm(tableNumber: string | null) {
+  if (pendingQueueAction.value === 'debt') {
+    pendingQueueAction.value = null
+    handleSubmit(true, tableNumber)
+    return
+  }
+
+  if (pendingQueueAction.value === 'pay') {
+    pendingTableNumber.value = tableNumber
+    pendingQueueAction.value = null
+    paymentWithQueue.value = true
+    paymentDialogOpen.value = true
+  }
+}
+
+function openPaymentDialog(withQueue = false) {
+  if (!validateCart()) return
+  paymentWithQueue.value = withQueue
+  pendingTableNumber.value = null
   paymentDialogOpen.value = true
 }
 
 async function handlePayment(method: PaymentMethod) {
   isSubmitting.value = true
+  const addToQueue = paymentWithQueue.value
+  const tableNumber = pendingTableNumber.value
 
-  const { error } = await createTransaction(getTransactionPayload(), { paymentMethod: method })
-
-  isSubmitting.value = false
-  paymentDialogOpen.value = false
+  const { transaction, error } = await createTransaction(getTransactionPayload(), { paymentMethod: method })
 
   if (error) {
+    isSubmitting.value = false
+    paymentDialogOpen.value = false
+    paymentWithQueue.value = false
+    pendingTableNumber.value = null
     alertStore.showAlert('Error', getErrorMessage(error), 'error')
     return
   }
 
-  const methodLabel = method === 'qris' ? 'QRIS' : method === 'cash' ? 'Cash' : 'Transfer'
-  alertStore.showAlert('Berhasil', `Transaksi lunas (${methodLabel}) berhasil dibuat`, 'success')
+  if (addToQueue && transaction) {
+    const queue = await createQueueForTransaction(transaction.id, tableNumber)
+    isSubmitting.value = false
+    paymentDialogOpen.value = false
+    paymentWithQueue.value = false
+    pendingTableNumber.value = null
+
+    if (!queue) {
+      resetForm()
+      await loadData()
+      return
+    }
+
+    const methodLabel = method === 'qris' ? 'QRIS' : method === 'cash' ? 'Cash' : 'Transfer'
+    alertStore.showAlert(
+      'Berhasil',
+      queueSuccessMessage(queue.queue_number, tableNumber, `Transaksi lunas (${methodLabel}) & antrian`),
+      'success',
+    )
+  } else {
+    isSubmitting.value = false
+    paymentDialogOpen.value = false
+    paymentWithQueue.value = false
+    pendingTableNumber.value = null
+
+    const methodLabel = method === 'qris' ? 'QRIS' : method === 'cash' ? 'Cash' : 'Transfer'
+    alertStore.showAlert('Berhasil', `Transaksi lunas (${methodLabel}) berhasil dibuat`, 'success')
+  }
+
   resetForm()
   await loadData()
 }
@@ -457,16 +556,32 @@ onMounted(loadData)
               <Button
                 variant="outline"
                 :disabled="isSubmitting || !cart.length"
-                @click="handleSubmit"
+                @click="handleSubmit(false)"
               >
                 {{ isSubmitting ? 'Menyimpan...' : 'Simpan Hutang' }}
               </Button>
               <Button
+                variant="outline"
                 :disabled="isSubmitting || !cart.length"
-                @click="openPaymentDialog"
+                @click="openQueueFlow('debt')"
+              >
+                <ClipboardList class="size-4" />
+                {{ isSubmitting ? 'Memproses...' : 'Simpan Hutang & Antrian' }}
+              </Button>
+              <Button
+                :disabled="isSubmitting || !cart.length"
+                @click="openPaymentDialog(false)"
               >
                 <Banknote class="size-4" />
                 {{ isSubmitting ? 'Memproses...' : 'Bayar' }}
+              </Button>
+              <Button
+                :disabled="isSubmitting || !cart.length"
+                @click="openQueueFlow('pay')"
+              >
+                <Banknote class="size-4" />
+                <ClipboardList class="size-4" />
+                {{ isSubmitting ? 'Memproses...' : 'Bayar & Antrian' }}
               </Button>
             </div>
           </div>
@@ -478,6 +593,11 @@ onMounted(loadData)
         :transaction="null"
         :amount="totalAmount"
         @select="handlePayment"
+      />
+
+      <TableNumberDialog
+        v-model:open="tableDialogOpen"
+        @confirm="handleTableNumberConfirm"
       />
     </div>
   </DashboardLayout>

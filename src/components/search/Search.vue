@@ -1,9 +1,8 @@
-  <script setup lang="ts">
-import { ChevronDownIcon, MoreHorizontal } from '@lucide/vue'
+<script setup lang="ts">
+import { ChevronDownIcon, Search as SearchIcon } from '@lucide/vue'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group'
-import { Input } from '@/components/ui/input'
-import { computed} from 'vue'
+import { computed } from 'vue'
 
 const props = defineProps<{
   searchInOptions?: { label: string, value: string }[]
@@ -11,50 +10,61 @@ const props = defineProps<{
   selectedOption?: { label: string, value: string } | null
 }>()
 
-const options = computed(() => {
-  return props.searchInOptions || []
-})
+const options = computed(() => props.searchInOptions || [])
 
-const selectedOption = computed(() => {
-  return props.selectedOption || null
-})
+const selectedOption = computed(() => props.selectedOption || null)
 
 const emit = defineEmits<{
   (e: 'update:searchQuery', value: string): void
   (e: 'update:selectedOption', value: { label: string, value: string } | null): void
+  (e: 'submit'): void
 }>()
 
 const queryModel = computed({
-  get: () => props.searchQuery,
+  get: () => props.searchQuery ?? '',
   set: (value) => {
     emit('update:searchQuery', value)
   },
 })
 
-const handleOptionSelect = (option: { label: string, value: string }) => {
-  selectedOption.value = option
+function handleOptionSelect(option: { label: string, value: string }) {
   emit('update:selectedOption', option)
+}
+
+function handleSubmit() {
+  emit('submit')
 }
 </script>
 
 <template>
-  <div class="grid w-full max-w-sm gap-4">
-    <InputGroup class="[--radius:1rem] bg-background min-w-48">
-      <InputGroupInput v-model="queryModel" placeholder="Enter search query" class="min-w-48 w-full" />
-      <InputGroupAddon align="inline-end">
-        <DropdownMenu>
-          <DropdownMenuTrigger as-child>
-            <InputGroupButton variant="ghost" class="!pr-1.5 text-xs">
-              {{ selectedOption?.label || 'Search In...' }} <ChevronDownIcon class="size-3" />
-            </InputGroupButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" class="[--radius:0.95rem]">
-            <DropdownMenuItem v-for="option in options" :key="option.value" @click="handleOptionSelect(option)">
-              {{ option.label }}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </InputGroupAddon>
-    </InputGroup>
-  </div>
+  <InputGroup class="h-11 w-full bg-background">
+    <InputGroupAddon align="inline-start" class="pl-3 text-muted-foreground">
+      <SearchIcon class="size-4" />
+    </InputGroupAddon>
+    <InputGroupInput
+      v-model="queryModel"
+      placeholder="Cari produk atau nama pembeli..."
+      class="text-base"
+      @keyup.enter="handleSubmit"
+    />
+    <InputGroupAddon align="inline-end" class="pr-1">
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <InputGroupButton variant="ghost" class="text-sm">
+            {{ selectedOption?.label || 'Kategori' }}
+            <ChevronDownIcon class="size-3.5 opacity-50" />
+          </InputGroupButton>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            v-for="option in options"
+            :key="option.value"
+            @click="handleOptionSelect(option)"
+          >
+            {{ option.label }}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </InputGroupAddon>
+  </InputGroup>
 </template>
