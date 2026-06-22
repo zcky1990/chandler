@@ -4,6 +4,7 @@ create table public.products (
   name text not null,
   description text,
   price numeric(10, 2) not null check (price >= 0),
+  purchase_price numeric(10, 2) not null default 0 check (purchase_price >= 0),
   stock_quantity integer not null default 0 check (stock_quantity >= 0),
   sku text unique,
   image_url text,

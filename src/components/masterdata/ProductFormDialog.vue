@@ -22,6 +22,7 @@ type ProductFormState = {
   name: string
   description: string
   price: number
+  purchase_price: number
   stock_quantity: number
   sku: string
   image_url: string
@@ -46,6 +47,7 @@ const defaultForm = (): ProductFormState => ({
   name: '',
   description: '',
   price: 0,
+  purchase_price: 0,
   stock_quantity: 0,
   sku: '',
   image_url: '',
@@ -65,6 +67,7 @@ watch(
           name: props.product.name,
           description: props.product.description ?? '',
           price: props.product.price,
+          purchase_price: props.product.purchase_price ?? 0,
           stock_quantity: props.product.stock_quantity,
           sku: props.product.sku ?? '',
           image_url: props.product.image_url ?? '',
@@ -90,6 +93,7 @@ async function handleSubmit() {
     name: form.value.name,
     description: form.value.description || null,
     price: form.value.price,
+    purchase_price: form.value.purchase_price,
     stock_quantity: form.value.stock_quantity,
     sku: form.value.sku || null,
     image_url: form.value.image_url || null,
@@ -147,14 +151,50 @@ async function handleSubmit() {
 
           <div class="grid gap-4 sm:grid-cols-2">
             <Field>
-              <FieldLabel for="product-price">Harga</FieldLabel>
+              <FieldLabel for="product-price">Harga jual</FieldLabel>
               <Input id="product-price" v-model.number="form.price" type="number" min="0" step="0.01" required />
               <p v-if="errors.price" class="text-sm text-destructive">{{ errors.price }}</p>
             </Field>
 
             <Field>
-              <FieldLabel for="product-stock">Stok</FieldLabel>
-              <Input id="product-stock" v-model.number="form.stock_quantity" type="number" min="0" required />
+              <FieldLabel for="product-purchase-price">Harga beli (default)</FieldLabel>
+              <Input
+                id="product-purchase-price"
+                v-model.number="form.purchase_price"
+                type="number"
+                min="0"
+                step="0.01"
+                required
+              />
+              <p class="text-xs text-muted-foreground">
+                Dipakai sebagai default saat restock. Batch lama tidak berubah.
+              </p>
+              <p v-if="errors.purchase_price" class="text-sm text-destructive">{{ errors.purchase_price }}</p>
+            </Field>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel for="product-stock">{{ product ? 'Stok saat ini' : 'Stok awal' }}</FieldLabel>
+              <Input
+                v-if="!product"
+                id="product-stock"
+                v-model.number="form.stock_quantity"
+                type="number"
+                min="0"
+                required
+              />
+              <div v-else class="space-y-1">
+                <Input
+                  id="product-stock"
+                  :model-value="form.stock_quantity"
+                  type="number"
+                  disabled
+                />
+                <p class="text-xs text-muted-foreground">
+                  Gunakan menu Restock untuk menambah stok.
+                </p>
+              </div>
               <p v-if="errors.stock_quantity" class="text-sm text-destructive">{{ errors.stock_quantity }}</p>
             </Field>
           </div>

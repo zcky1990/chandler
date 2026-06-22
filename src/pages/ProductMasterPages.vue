@@ -88,7 +88,8 @@ onMounted(loadProducts)
           <TableHeader>
             <TableRow>
               <TableHead>Nama</TableHead>
-              <TableHead>Harga</TableHead>
+              <TableHead>Harga jual</TableHead>
+              <TableHead>Harga beli</TableHead>
               <TableHead>Stok</TableHead>
               <TableHead>SKU</TableHead>
               <TableHead>Status</TableHead>
@@ -97,18 +98,19 @@ onMounted(loadProducts)
           </TableHeader>
           <TableBody>
             <TableRow v-if="isLoading">
-              <TableCell colspan="6" class="text-center text-muted-foreground">
+              <TableCell colspan="7" class="text-center text-muted-foreground">
                 Memuat data...
               </TableCell>
             </TableRow>
             <TableRow v-else-if="!products.length">
-              <TableCell colspan="6" class="text-center text-muted-foreground">
+              <TableCell colspan="7" class="text-center text-muted-foreground">
                 Belum ada produk.
               </TableCell>
             </TableRow>
             <TableRow v-for="product in products" :key="product.id">
               <TableCell class="font-medium">{{ product.name }}</TableCell>
               <TableCell>{{ formatPrice(product.price) }}</TableCell>
+              <TableCell>{{ formatPrice(product.purchase_price ?? 0) }}</TableCell>
               <TableCell>{{ product.stock_quantity }}</TableCell>
               <TableCell>{{ product.sku || '-' }}</TableCell>
               <TableCell>{{ product.is_active ? 'Aktif' : 'Nonaktif' }}</TableCell>

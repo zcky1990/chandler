@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import { transactionItemsUpdateSchema, transactionSchema } from '@/schema/schema'
 import { createCustomer, getCustomers } from './customer'
+import { applyStockDelta, recordSaleStock, recordStockReturn } from './stock'
 import type { Customer, CreateTransactionOptions, PaymentMethod, Transaction, TransactionInput, TransactionItem, TransactionWithDetails } from '@/types/database'
 import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
 import type { z } from 'zod'
@@ -19,28 +20,6 @@ function getTodayRange() {
   return {
     start: start.toISOString(),
     end: end.toISOString(),
-  }
-}
-
-async function adjustProductStock(productId: string, stockDelta: number) {
-  const supabaseClient = supabase()
-  const { data: product } = await supabaseClient
-    .from('products')
-    .select('stock_quantity')
-    .eq('id', productId)
-    .single()
-
-  if (product) {
-    await supabaseClient
-      .from('products')
-      .update({ stock_quantity: Math.max(product.stock_quantity + stockDelta, 0) })
-      .eq('id', productId)
-  }
-}
-
-async function decreaseProductStock(items: TransactionInput['items']) {
-  for (const item of items) {
-    await adjustProductStock(item.product_id, -item.quantity)
   }
 }
 
@@ -142,7 +121,10 @@ async function mergeIntoTransaction(
     return { transaction: null, merged: true, error: updateError }
   }
 
-  await decreaseProductStock(newItems)
+  const { error: stockError } = await recordSaleStock(newItems, transactionId)
+  if (stockError) {
+    return { transaction: null, merged: true, error: stockError }
+  }
 
   return {
     transaction: transaction as Transaction,
@@ -361,7 +343,14 @@ export const updateTransactionItems = async (
   for (const currentItem of currentItems) {
     if (updatedIds.has(currentItem.id)) continue
 
-    await adjustProductStock(currentItem.product_id, currentItem.quantity)
+    const { error: stockError } = await recordStockReturn(currentItem.product_id, currentItem.quantity, {
+      referenceId: transactionId,
+      notes: 'Pengembalian dari hapus item transaksi',
+    })
+
+    if (stockError) {
+      return { transaction: null, error: stockError }
+    }
 
     const { error } = await supabaseClient
       .from('transaction_items')
@@ -381,27 +370,11 @@ export const updateTransactionItems = async (
 
     const quantityDelta = item.quantity - currentItem.quantity
 
-    if (quantityDelta > 0) {
-      const { data: product, error: productError } = await supabaseClient
-        .from('products')
-        .select('stock_quantity')
-        .eq('id', item.product_id)
-        .single()
-
-      if (productError || !product) {
-        return { transaction: null, error: productError ?? { message: 'Produk tidak ditemukan' } }
-      }
-
-      if (product.stock_quantity < quantityDelta) {
-        return {
-          transaction: null,
-          error: { message: 'Stok produk tidak mencukupi untuk perubahan jumlah ini' },
-        }
-      }
-    }
-
     if (quantityDelta !== 0) {
-      await adjustProductStock(item.product_id, -quantityDelta)
+      const { error: stockError } = await applyStockDelta(item.product_id, quantityDelta, transactionId)
+      if (stockError) {
+        return { transaction: null, error: stockError }
+      }
     }
 
     const subtotal = item.quantity * Number(currentItem.unit_price)
@@ -508,7 +481,12 @@ export const createTransaction = async (
     return { transaction: null, merged: false, error: itemsError }
   }
 
-  await decreaseProductStock(payload.items)
+  const { error: stockError } = await recordSaleStock(payload.items, transaction.id)
+  if (stockError) {
+    await supabaseClient.from('transaction_items').delete().eq('transaction_id', transaction.id)
+    await supabaseClient.from('transactions').delete().eq('id', transaction.id)
+    return { transaction: null, merged: false, error: stockError }
+  }
 
   return {
     transaction: transaction as Transaction,

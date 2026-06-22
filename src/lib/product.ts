@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { productSchema } from '@/schema/schema'
+import { recordInitialStockMovement } from './stock'
 import type { Product, ProductInput } from '@/types/database'
 import type { z } from 'zod'
 
@@ -8,6 +9,7 @@ function normalizeProductInput(input: z.infer<typeof productSchema>): ProductInp
     name: input.name,
     description: input.description ?? null,
     price: input.price,
+    purchase_price: input.purchase_price ?? 0,
     stock_quantity: input.stock_quantity,
     sku: input.sku ?? null,
     image_url: input.image_url ?? null,
@@ -34,13 +36,30 @@ export const createProduct = async (product: ProductInput) => {
   }
 
   const supabaseClient = supabase()
+  const normalized = normalizeProductInput(validatedProduct.data)
   const { data, error } = await supabaseClient
     .from('products')
-    .insert(normalizeProductInput(validatedProduct.data))
+    .insert(normalized)
     .select()
     .single()
 
-  return { product: data as Product | null, error }
+  if (error || !data) {
+    return { product: data as Product | null, error }
+  }
+
+  if (normalized.stock_quantity > 0) {
+    const { error: movementError } = await recordInitialStockMovement(
+      data.id,
+      normalized.stock_quantity,
+      normalized.purchase_price,
+    )
+
+    if (movementError) {
+      return { product: data as Product, error: movementError }
+    }
+  }
+
+  return { product: data as Product, error: null }
 }
 
 export const updateProduct = async (id: string, product: ProductInput) => {
@@ -49,10 +68,19 @@ export const updateProduct = async (id: string, product: ProductInput) => {
     return { product: null, error: validatedProduct.error.flatten().fieldErrors }
   }
 
+  const normalized = normalizeProductInput(validatedProduct.data)
   const supabaseClient = supabase()
   const { data, error } = await supabaseClient
     .from('products')
-    .update(normalizeProductInput(validatedProduct.data))
+    .update({
+      name: normalized.name,
+      description: normalized.description,
+      price: normalized.price,
+      purchase_price: normalized.purchase_price,
+      sku: normalized.sku,
+      image_url: normalized.image_url,
+      is_active: normalized.is_active,
+    })
     .eq('id', id)
     .select()
     .single()

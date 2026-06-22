@@ -11,6 +11,7 @@ import TransactionPages from '@/pages/TransactionPages.vue'
 import TransactionListPages from '@/pages/TransactionListPages.vue'
 import ConfigPages from '@/pages/ConfigPages.vue'
 import QueuePages from '@/pages/QueuePages.vue'
+import RestockPages from '@/pages/RestockPages.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -59,6 +60,11 @@ const router = createRouter({
       path: '/queue',
       name: 'queue',
       component: QueuePages,
+    },
+    {
+      path: '/stock/restock',
+      name: 'stock-restock',
+      component: RestockPages,
     },
     {
       path: '/config',

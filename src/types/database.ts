@@ -3,6 +3,7 @@ export type Product = {
   name: string
   description: string | null
   price: number
+  purchase_price: number
   stock_quantity: number
   sku: string | null
   image_url: string | null
@@ -138,4 +139,47 @@ export type OrderQueue = {
 
 export type OrderQueueWithDetails = OrderQueue & {
   transactions: TransactionWithDetails | null
+}
+
+export type StockMovementType = 'restock' | 'sale' | 'adjustment'
+
+export type StockMovement = {
+  id: string
+  product_id: string
+  movement_type: StockMovementType
+  quantity: number
+  stock_before: number
+  stock_after: number
+  reference_id: string | null
+  unit_cost: number | null
+  total_cost: number | null
+  remaining_quantity: number | null
+  notes: string | null
+  created_at: string
+}
+
+export type StockLotAllocation = {
+  id: string
+  sale_movement_id: string
+  lot_movement_id: string
+  quantity: number
+  unit_cost: number
+  created_at: string
+}
+
+export type StockMovementProduct = {
+  id: string
+  name: string
+  sku: string | null
+}
+
+export type StockMovementWithProduct = StockMovement & {
+  products: StockMovementProduct | null
+}
+
+export type RestockInput = {
+  product_id: string
+  quantity: number
+  unit_cost: number
+  notes?: string | null
 }

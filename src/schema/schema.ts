@@ -22,6 +22,7 @@ export const productSchema = z.object({
   name: z.string().min(1, { message: 'Nama produk harus diisi' }),
   description: z.string().nullable().optional(),
   price: z.coerce.number().min(0, { message: 'Harga tidak boleh negatif' }),
+  purchase_price: z.coerce.number().min(0, { message: 'Harga beli tidak boleh negatif' }).default(0),
   stock_quantity: z.coerce.number().int().min(0, { message: 'Stok tidak boleh negatif' }),
   sku: z.string().nullable().optional(),
   image_url: z.union([
@@ -80,3 +81,12 @@ export const shopConfigSchema = z.object({
 })
 
 export type ShopConfigSchema = z.infer<typeof shopConfigSchema>
+
+export const restockSchema = z.object({
+  product_id: z.string().uuid({ message: 'Produk tidak valid' }),
+  quantity: z.coerce.number().int().min(1, { message: 'Jumlah minimal 1' }),
+  unit_cost: z.coerce.number().min(0, { message: 'Harga beli tidak boleh negatif' }),
+  notes: z.string().nullable().optional(),
+})
+
+export type RestockSchema = z.infer<typeof restockSchema>
