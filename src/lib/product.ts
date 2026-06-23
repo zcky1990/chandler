@@ -4,6 +4,65 @@ import { recordInitialStockMovement } from './stock'
 import type { Product, ProductInput } from '@/types/database'
 import type { z } from 'zod'
 
+const PRODUCT_IMAGE_BUCKET = 'shop-assets'
+const PRODUCT_IMAGE_MAX_BYTES = 5 * 1024 * 1024
+
+export function isWebpImageFile(file: File) {
+  const extension = file.name.split('.').pop()?.toLowerCase()
+  return extension === 'webp' && file.type === 'image/webp'
+}
+
+function getProductImagePath(storageId: string) {
+  return `products/${storageId}.webp`
+}
+
+function getStoragePathFromImageUrl(imageUrl: string | null) {
+  if (!imageUrl) return null
+
+  try {
+    const pathname = new URL(imageUrl).pathname
+    const marker = '/products/'
+    const index = pathname.indexOf(marker)
+    if (index === -1) return null
+
+    return pathname.slice(index + 1)
+  } catch {
+    return null
+  }
+}
+
+export const uploadProductImage = async (file: File, storageId: string) => {
+  if (!isWebpImageFile(file)) {
+    return { url: null, error: { message: 'Gambar harus berformat WEBP' } }
+  }
+
+  if (file.size > PRODUCT_IMAGE_MAX_BYTES) {
+    return { url: null, error: { message: 'Ukuran gambar maksimal 5 MB' } }
+  }
+
+  const path = getProductImagePath(storageId)
+  const supabaseClient = supabase()
+  const { error: uploadError } = await supabaseClient.storage
+    .from(PRODUCT_IMAGE_BUCKET)
+    .upload(path, file, { upsert: true, contentType: 'image/webp' })
+
+  if (uploadError) {
+    return { url: null, error: uploadError }
+  }
+
+  const { data } = supabaseClient.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(path)
+  return { url: `${data.publicUrl}?t=${Date.now()}`, error: null }
+}
+
+export const removeProductImageByUrl = async (imageUrl: string | null) => {
+  const path = getStoragePathFromImageUrl(imageUrl)
+  if (!path) return { error: null }
+
+  const supabaseClient = supabase()
+  const { error } = await supabaseClient.storage.from(PRODUCT_IMAGE_BUCKET).remove([path])
+  return { error }
+}
+
 function normalizeProductInput(input: z.infer<typeof productSchema>): ProductInput {
   return {
     name: input.name,
@@ -183,6 +242,16 @@ export const updateProduct = async (id: string, product: ProductInput) => {
 
 export const deleteProduct = async (id: string) => {
   const supabaseClient = supabase()
+  const { data } = await supabaseClient
+    .from('products')
+    .select('image_url')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (data?.image_url) {
+    await removeProductImageByUrl(data.image_url)
+  }
+
   const { error } = await supabaseClient.from('products').delete().eq('id', id)
   return { error }
 }

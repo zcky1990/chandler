@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { ImageIcon, Trash2, Upload } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -27,8 +28,11 @@ import {
   createProduct,
   getAddonProducts,
   getProductAddons,
+  isWebpImageFile,
+  removeProductImageByUrl,
   saveProductAddons,
   updateProduct,
+  uploadProductImage,
 } from '@/lib/product'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { Product, ProductCategory } from '@/types/database'
@@ -60,8 +64,10 @@ const emit = defineEmits<{
 
 const alertStore = useAlertStore()
 const isSubmitting = ref(false)
+const isUploadingImage = ref(false)
 const isLoadingAddons = ref(false)
 const errors = ref<Record<string, string>>({})
+const imageStorageId = ref('')
 const addonOptions = ref<Product[]>([])
 const categoryOptions = ref<ProductCategory[]>([])
 const selectedAddonIds = ref<string[]>([])
@@ -141,11 +147,60 @@ function toggleAddon(addonId: string, checked: boolean) {
   selectedAddonIds.value = selectedAddonIds.value.filter((id) => id !== addonId)
 }
 
+function resetImageStorageId() {
+  imageStorageId.value = props.product?.id ?? crypto.randomUUID()
+}
+
+async function handleImageUpload(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+
+  if (!file) return
+
+  if (!isWebpImageFile(file)) {
+    alertStore.showAlert('Error', 'Gambar harus berformat WEBP', 'error')
+    return
+  }
+
+  isUploadingImage.value = true
+  const previousUrl = form.value.image_url || null
+  const { url, error } = await uploadProductImage(file, imageStorageId.value)
+  isUploadingImage.value = false
+
+  if (error) {
+    alertStore.showAlert('Error', error.message, 'error')
+    return
+  }
+
+  if (previousUrl && previousUrl !== url) {
+    await removeProductImageByUrl(previousUrl)
+  }
+
+  form.value.image_url = url ?? ''
+}
+
+async function handleRemoveImage() {
+  if (!form.value.image_url) return
+
+  isUploadingImage.value = true
+  const { error } = await removeProductImageByUrl(form.value.image_url)
+  isUploadingImage.value = false
+
+  if (error) {
+    alertStore.showAlert('Error', error.message, 'error')
+    return
+  }
+
+  form.value.image_url = ''
+}
+
 watch(
   () => props.open,
   async (isOpen) => {
     if (!isOpen) return
 
+    resetImageStorageId()
     errors.value = {}
     form.value = props.product
       ? {
@@ -327,18 +382,57 @@ async function handleSubmit() {
             </Field>
           </div>
 
-          <div class="grid gap-4 sm:grid-cols-2">
-            <Field>
-              <FieldLabel for="product-sku">SKU</FieldLabel>
-              <Input id="product-sku" v-model="form.sku" placeholder="SKU-001" />
-            </Field>
+          <Field>
+            <FieldLabel for="product-sku">SKU</FieldLabel>
+            <Input id="product-sku" v-model="form.sku" placeholder="SKU-001" />
+          </Field>
 
-            <Field>
-              <FieldLabel for="product-image">URL Gambar</FieldLabel>
-              <Input id="product-image" v-model="form.image_url" placeholder="https://..." />
-              <p v-if="errors.image_url" class="text-sm text-destructive">{{ errors.image_url }}</p>
-            </Field>
-          </div>
+          <Field>
+            <FieldLabel>Gambar Produk</FieldLabel>
+            <div
+              class="flex min-h-[160px] items-center justify-center rounded-xl border border-dashed bg-muted/30 p-4"
+            >
+              <img
+                v-if="form.image_url"
+                :src="form.image_url"
+                :alt="form.name || 'Gambar produk'"
+                class="max-h-40 max-w-full rounded-lg object-contain"
+              >
+              <div v-else class="text-center text-sm text-muted-foreground">
+                <ImageIcon class="mx-auto mb-2 size-8 opacity-50" />
+                Belum ada gambar
+              </div>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <Button as-child :disabled="isUploadingImage || isSubmitting">
+                <label class="cursor-pointer">
+                  <Upload class="size-4" />
+                  {{ isUploadingImage ? 'Mengunggah...' : 'Unggah WEBP' }}
+                  <input
+                    type="file"
+                    accept="image/webp,.webp"
+                    class="hidden"
+                    :disabled="isUploadingImage || isSubmitting"
+                    @change="handleImageUpload"
+                  >
+                </label>
+              </Button>
+              <Button
+                v-if="form.image_url"
+                type="button"
+                variant="outline"
+                :disabled="isUploadingImage || isSubmitting"
+                @click="handleRemoveImage"
+              >
+                <Trash2 class="size-4" />
+                Hapus
+              </Button>
+            </div>
+            <p class="text-xs text-muted-foreground">
+              Format wajib WEBP. Maksimal 5 MB.
+            </p>
+            <p v-if="errors.image_url" class="text-sm text-destructive">{{ errors.image_url }}</p>
+          </Field>
 
           <div class="flex items-start gap-3 rounded-lg border p-4">
             <input
@@ -406,7 +500,7 @@ async function handleSubmit() {
           <DialogClose as-child>
             <Button type="button" variant="outline">Batal</Button>
           </DialogClose>
-          <Button type="submit" :disabled="isSubmitting">
+          <Button type="submit" :disabled="isSubmitting || isUploadingImage">
             {{ isSubmitting ? 'Menyimpan...' : 'Simpan' }}
           </Button>
         </DialogFooter>
