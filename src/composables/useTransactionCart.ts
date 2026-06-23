@@ -3,6 +3,7 @@ import { buildCartLineKey, cartAddonsToInput, getLineSubtotal, type CartAddonSel
 import { formatPrice, formatQueueNumber } from '@/lib/format'
 import { getProducts, getProductAddonsMap } from '@/lib/product'
 import { createQueueEntry } from '@/lib/queue'
+import { isWalkInCustomer } from '@/lib/customer'
 import { createTransaction, getCustomersForTransaction, getPendingTransactionForCustomer } from '@/lib/transaction'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { Customer, PaymentMethod, Product, Transaction } from '@/types/database'
@@ -37,9 +38,11 @@ export function useTransactionCart() {
   const pendingProduct = ref<Product | null>(null)
   const pendingQuantity = ref(1)
 
-  const selectedCustomer = computed(() =>
-    customers.value.find((customer) => customer.id === selectedCustomerId.value) ?? null,
-  )
+const selectedCustomer = computed(() =>
+  customers.value.find((customer) => customer.id === selectedCustomerId.value) ?? null,
+)
+
+const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustomer.value))
 
   const selectedProduct = computed(() =>
     products.value.find((product) => product.id === selectedProductId.value) ?? null,
@@ -283,6 +286,11 @@ export function useTransactionCart() {
   async function handleSubmit(addToQueue = false, tableNumber: string | null = null) {
     if (!validateCart()) return
 
+    if (requiresImmediatePayment.value) {
+      alertStore.showAlert('Perhatian', 'Pembeli walk-in harus bayar langsung, tidak bisa berhutang', 'error')
+      return
+    }
+
     isSubmitting.value = true
 
     const { transaction, merged, error } = await createTransaction(getTransactionPayload())
@@ -327,6 +335,12 @@ export function useTransactionCart() {
 
   function openQueueFlow(action: 'debt' | 'pay') {
     if (!validateCart()) return
+
+    if (action === 'debt' && requiresImmediatePayment.value) {
+      alertStore.showAlert('Perhatian', 'Pembeli walk-in harus bayar langsung, tidak bisa berhutang', 'error')
+      return
+    }
+
     pendingQueueAction.value = action
     tableDialogOpen.value = true
   }
@@ -408,6 +422,7 @@ export function useTransactionCart() {
     customers,
     selectedCustomerId,
     selectedCustomer,
+    requiresImmediatePayment,
     notes,
     selectedProductId,
     selectedProduct,

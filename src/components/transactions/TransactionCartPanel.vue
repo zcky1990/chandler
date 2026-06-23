@@ -9,6 +9,7 @@ defineProps<{
   cart: CartItem[]
   totalAmount: number
   isSubmitting: boolean
+  requiresImmediatePayment?: boolean
   getCartLineSubtotal: (item: CartItem) => number
 }>()
 
@@ -102,6 +103,7 @@ const emit = defineEmits<{
 
       <div class="mt-4 grid gap-2 sm:grid-cols-2">
         <Button
+          v-if="!requiresImmediatePayment"
           variant="outline"
           :disabled="isSubmitting || !cart.length"
           @click="emit('submitDebt')"
@@ -109,6 +111,7 @@ const emit = defineEmits<{
           {{ isSubmitting ? 'Menyimpan...' : 'Simpan Hutang' }}
         </Button>
         <Button
+          v-if="!requiresImmediatePayment"
           variant="outline"
           :disabled="isSubmitting || !cart.length"
           @click="emit('submitDebtQueue')"

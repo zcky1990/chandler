@@ -12,6 +12,7 @@ const {
   customers,
   selectedCustomerId,
   selectedCustomer,
+  requiresImmediatePayment,
   notes,
   selectedProductId,
   selectedProduct,
@@ -55,7 +56,7 @@ const {
       </div>
 
       <div
-        v-if="pendingTransaction"
+        v-if="pendingTransaction && !requiresImmediatePayment"
         class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm"
       >
         <p class="font-medium text-foreground">Transaksi belum dibayar hari ini</p>
@@ -77,6 +78,7 @@ const {
           v-model:add-quantity="addQuantity"
           :customers="customers"
           :selected-customer="selectedCustomer"
+          :requires-immediate-payment="requiresImmediatePayment"
           :available-products="availableProducts"
           :selected-product="selectedProduct"
           @add-product="handleAddSelectedProduct"
@@ -86,6 +88,7 @@ const {
           :cart="cart"
           :total-amount="totalAmount"
           :is-submitting="isSubmitting"
+          :requires-immediate-payment="requiresImmediatePayment"
           :get-cart-line-subtotal="getCartLineSubtotal"
           @update-quantity="updateQuantity"
           @remove="removeFromCart"

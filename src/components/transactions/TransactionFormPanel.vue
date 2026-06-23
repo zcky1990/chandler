@@ -18,6 +18,7 @@ import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
 defineProps<{
   customers: Customer[]
   selectedCustomer: Customer | null
+  requiresImmediatePayment?: boolean
   availableProducts: Product[]
   selectedProduct: Product | null
 }>()
@@ -53,6 +54,12 @@ const emit = defineEmits<{
           </select>
           <p v-if="selectedCustomer" class="text-sm text-muted-foreground">
             {{ selectedCustomer.phone || selectedCustomer.email || selectedCustomer.address || 'Tanpa detail kontak' }}
+          </p>
+          <p
+            v-if="requiresImmediatePayment"
+            class="text-sm text-amber-600 dark:text-amber-400"
+          >
+            Pembeli default wajib bayar langsung, tidak bisa berhutang.
           </p>
         </Field>
 

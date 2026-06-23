@@ -1,7 +1,12 @@
 import { supabase } from './supabase'
 import { customerSchema } from '@/schema/schema'
 import type { Customer, CustomerInput } from '@/types/database'
+import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
 import type { z } from 'zod'
+
+export function isWalkInCustomer(customer: { name: string } | null | undefined) {
+  return customer?.name === WALK_IN_CUSTOMER_NAME
+}
 
 function normalizeCustomerInput(input: z.infer<typeof customerSchema>): CustomerInput {
   return {

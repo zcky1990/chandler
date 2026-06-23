@@ -710,6 +710,15 @@ export const createTransaction = async (
   const payImmediately = !!options?.paymentMethod
 
   if (!payImmediately) {
+    const walkInCustomer = await getWalkInCustomer()
+    if (walkInCustomer && payload.customer_id === walkInCustomer.id) {
+      return {
+        transaction: null,
+        merged: false,
+        error: { message: 'Pembeli walk-in harus bayar langsung, tidak bisa berhutang' },
+      }
+    }
+
     const { transaction: pendingTransaction, error: pendingError } = await findPendingTransactionToday(payload.customer_id)
 
     if (pendingError) {
