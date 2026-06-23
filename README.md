@@ -127,20 +127,20 @@ Aplikasi memakai alur berikut:
 5. Route publik: `/` (halaman pelanggan), `/login`
 6. Route terproteksi: semua path lain (dashboard, transaksi, master data, dll.)
 
-### Buat user admin pertama
+### Buat akun login pertama
 
-**Opsi A — lewat aplikasi**
+Jalankan [`21-auth_login_seed.ddl`](DDL/21-auth_login_seed.ddl) di SQL Editor **setelah** `04-profiles_role.ddl`.
 
-1. Jalankan `pnpm dev`
-2. Buka `http://localhost:5173/sign-up`
-3. Daftar akun
-4. Login di `/login`
+1. Buka file tersebut, **ganti** email/password di bagian `select public.seed_login_owner(...)` (default: `owner@warung.local` / `ChangeMe123!`).
+2. Run script → akun owner siap dipakai di `/login`.
 
-**Opsi B — lewat Supabase Dashboard**
+Script ini juga:
+- Membuat baris `auth.users` + `auth.identities` (bisa login langsung)
+- Menyinkronkan `public.profiles` untuk semua user auth
+- Mengatur role **owner** pada akun seed
+- Mengisi `email_confirmed_at` agar tidak terblokir "Email not confirmed"
 
-1. **Authentication** → **Users** → **Add user**
-2. Isi email & password → centang **Auto Confirm User**
-3. Login lewat aplikasi dengan kredensial tersebut
+**Alternatif:** daftar lewat `/sign-up` (user pertama otomatis jadi owner lewat trigger di `04-profiles_role.ddl`).
 
 ### Redirect URL (opsional, untuk production)
 
@@ -170,40 +170,19 @@ flowchart LR
 | Data user tersebar di metadata auth | Satu tabel mudah di-query dari aplikasi |
 | User lama tidak punya record terstruktur | Backfill otomatis untuk user yang sudah ada |
 
-### Langkah 1 — Jalankan DDL profiles
+### Setup otomatis (DDL)
 
-File [`DDL/profiles.ddl`](DDL/profiles.ddl) sudah menyertakan fungsi `handle_updated_at()` sendiri, jadi **tidak wajib** menjalankan `customers.ddl` terlebih dahulu (meskipun tetap disarankan mengikuti urutan DDL lengkap di bawah).
+| Kebutuhan | File |
+|-----------|------|
+| Tabel `profiles` + trigger signup | [`03-profiles.ddl`](DDL/03-profiles.ddl) |
+| Role owner/staff + trigger diperbarui | [`04-profiles_role.ddl`](DDL/04-profiles_role.ddl) |
+| Akun login owner + backfill profiles | [`21-auth_login_seed.ddl`](DDL/21-auth_login_seed.ddl) |
 
-1. Buka [`DDL/profiles.ddl`](DDL/profiles.ddl).
-2. Salin seluruh isi → Supabase **SQL Editor** → **Run**.
+Tidak perlu menyalin SQL manual dari README — cukup jalankan file di atas berurutan.
 
-Jika sebelumnya gagal di tengah jalan, aman untuk **jalankan ulang** file yang sama (script sudah idempotent).
+### Verifikasi profiles
 
-Yang dibuat:
-
-- Tabel `profiles` (`id`, `full_name`, `email`, `created_at`, `updated_at`)
-- RLS: baca publik; insert/update hanya user sendiri (`auth.uid() = id`)
-- Fungsi `handle_new_user()` + trigger `on_auth_user_created` di `auth.users`
-- Backfill baris `profiles` untuk user yang sudah terdaftar sebelumnya
-
-### Langkah 2 — Metadata nama saat sign-up
-
-Aplikasi mengirim nama ke Supabase Auth lewat `user_metadata`:
-
-```ts
-// src/lib/auth.ts
-supabase.auth.signUp({
-  email,
-  password,
-  options: { data: { full_name: name } },
-})
-```
-
-Trigger `handle_new_user` membaca `raw_user_meta_data->>'full_name'` dan menyimpannya ke `profiles.full_name`.
-
-### Langkah 3 — Verifikasi profiles
-
-Setelah sign-up atau backfill, jalankan di SQL Editor:
+Setelah `21-auth_login_seed.ddl`, cek di SQL Editor:
 
 ```sql
 select
@@ -217,29 +196,11 @@ left join public.profiles p on p.id = u.id
 order by p.created_at desc nulls last;
 ```
 
-Setiap baris di `auth.users` seharusnya punya pasangan di `profiles` (`full_name` bisa kosong untuk user lama tanpa metadata).
+Setiap baris di `auth.users` seharusnya punya pasangan di `profiles`.
 
-### Langkah 4 — (Opsional) User admin via Dashboard
+### Metadata nama saat sign-up
 
-Jika membuat user lewat **Authentication → Users → Add user**:
-
-1. Centang **Auto Confirm User**
-2. Di **User Metadata**, tambahkan JSON:
-
-```json
-{
-  "full_name": "Admin Warung"
-}
-```
-
-3. Jika user dibuat **sebelum** `profiles.ddl` dijalankan, jalankan ulang bagian backfill di akhir file DDL, atau:
-
-```sql
-insert into public.profiles (id, full_name, email)
-select id, coalesce(raw_user_meta_data->>'full_name', 'Admin'), email
-from auth.users
-where id not in (select id from public.profiles);
-```
+Aplikasi mengirim `full_name` lewat `user_metadata` saat `signUp()` — trigger `handle_new_user` (di `03` / `04`) menyalinnya ke `profiles.full_name`.
 
 ### Diagram: pembuatan profile otomatis
 
@@ -257,45 +218,74 @@ flowchart TD
 
 ## Menjalankan DDL Database
 
-Semua skema SQL ada di folder [`DDL/`](DDL/). Jalankan di **Supabase SQL Editor** (**SQL** → **New query**) **berurutan** seperti di bawah.
+Semua skema SQL ada di folder [`DDL/`](DDL/). Nama file diawali angka urutan (`01-`, `02-`, …) — **jalankan berurutan** di **Supabase SQL Editor**.
 
-> Untuk instalasi **baru**, ikuti urutan 1–9. File migrasi (alter) boleh dilewati jika tabel sudah dibuat dengan versi terbaru dari file dasar.
+> **Instalasi baru:** jalankan **01–21**. File **90–94** hanya untuk database lama (boleh dilewati).
 
-| No | File | Keterangan |
-|----|------|------------|
-| 1 | [`DDL/customers.ddl`](DDL/customers.ddl) | Tabel `customers` + RLS + fungsi `handle_updated_at()` |
-| 2 | [`DDL/profiles.ddl`](DDL/profiles.ddl) | Tabel `profiles` + `handle_updated_at()` + trigger auto-create dari `auth.users` |
-| 3 | [`DDL/product.ddl`](DDL/product.ddl) | Tabel `products` (termasuk `purchase_price`) + RLS |
-| 4 | [`DDL/product_categories.ddl`](DDL/product_categories.ddl) | Tabel `product_categories` + kolom `category_id` di `products` |
-| 5 | [`DDL/transactions.ddl`](DDL/transactions.ddl) | Tabel `transactions`, `transaction_items` + walk-in customer |
-| 6 | [`DDL/transaction_payment_method.ddl`](DDL/transaction_payment_method.ddl) | Kolom `payment_method`, `paid_at` *(lewati jika sudah ada di langkah 4)* |
-| 7 | [`DDL/shop_config.ddl`](DDL/shop_config.ddl) | Tabel `shop_config`, bucket storage `shop-assets` |
-| 8 | [`DDL/order_queues.ddl`](DDL/order_queues.ddl) | Tabel `order_queues` (antrian dapur) |
-| 9 | [`DDL/pre_orders.ddl`](DDL/pre_orders.ddl) | Tabel `pre_orders`, `pre_order_items`, addon + RLS anon insert + realtime |
-| 10 | [`DDL/stock_movements.ddl`](DDL/stock_movements.ddl) | Tabel audit stok `stock_movements` |
-| 11 | [`DDL/stock_lot_allocations.ddl`](DDL/stock_lot_allocations.ddl) | Alokasi FIFO penjualan ke batch restock |
+### 01–04 · Fondasi & auth
 
-**Migrasi — hanya jika database sudah ada sebelum fitur tersebut:**
+| File | Keterangan | Lewati jika… |
+|------|------------|--------------|
+| [`01-customers.ddl`](DDL/01-customers.ddl) | Tabel `customers` + RLS + `handle_updated_at()` | — |
+| [`02-roles.ddl`](DDL/02-roles.ddl) | Tabel referensi role (`owner`, `staff`) | — |
+| [`03-profiles.ddl`](DDL/03-profiles.ddl) | Tabel `profiles` + trigger dari `auth.users` | — |
+| [`04-profiles_role.ddl`](DDL/04-profiles_role.ddl) | Kolom `profiles.role`, `is_owner()`, trigger signup | — |
 
-| File | Kapan dijalankan |
-|------|------------------|
-| [`DDL/product_purchase_price.ddl`](DDL/product_purchase_price.ddl) | Jika `products` dibuat **tanpa** kolom `purchase_price` |
-| [`DDL/stock_movements_costing.ddl`](DDL/stock_movements_costing.ddl) | Jika `stock_movements` dibuat **tanpa** kolom costing |
-| [`DDL/order_queues_table_number.ddl`](DDL/order_queues_table_number.ddl) | Jika `order_queues` dibuat **tanpa** `table_number` |
-| [`DDL/order_queues_realtime.ddl`](DDL/order_queues_realtime.ddl) | **Wajib** untuk antrian realtime di halaman `/queue` |
-| [`DDL/order_queues_daily_reset.ddl`](DDL/order_queues_daily_reset.ddl) | Reset nomor antrian per hari (timezone Asia/Jakarta) |
-| [`DDL/pre_orders_confirmed_payment.ddl`](DDL/pre_orders_confirmed_payment.ddl) | Kolom `confirmed_payment_method` untuk konfirmasi bayar pre-order `pay_now` |
-| [`DDL/cashier_shifts.ddl`](DDL/cashier_shifts.ddl) | Tabel `cashier_shifts` + kolom `transactions.shift_id` untuk rekonsiliasi kas |
-| [`DDL/roles.ddl`](DDL/roles.ddl) | Tabel referensi role (`owner`, `staff`) |
-| [`DDL/profiles_role.ddl`](DDL/profiles_role.ddl) | Kolom `profiles.role`, trigger signup, fungsi `is_owner()` |
-| [`DDL/role_owner_policies.ddl`](DDL/role_owner_policies.ddl) | RLS tulis master data & restock hanya untuk owner |
-| [`DDL/product_addons.ddl`](DDL/product_addons.ddl) | Kolom `is_addons`, mapping addon, addon per transaksi |
-| [`DDL/product_is_addons.ddl`](DDL/product_is_addons.ddl) | Migrasi `product_type` → `is_addons` jika DB sudah pakai kolom lama |
-| [`DDL/masterdata_policies.ddl`](DDL/masterdata_policies.ddl) | Jika insert/update produk/pelanggan mengembalikan **403** |
+### 05–09 · Master data & transaksi
+
+| File | Keterangan | Lewati jika… |
+|------|------------|--------------|
+| [`05-product.ddl`](DDL/05-product.ddl) | Tabel `products` + RLS | — |
+| [`06-product_categories.ddl`](DDL/06-product_categories.ddl) | Kategori + `category_id` di produk | — |
+| [`07-transactions.ddl`](DDL/07-transactions.ddl) | `transactions`, `transaction_items`, walk-in | — |
+| [`08-transaction_payment_method.ddl`](DDL/08-transaction_payment_method.ddl) | Kolom `payment_method`, `paid_at` | Sudah ada di `07-transactions.ddl` |
+| [`09-product_addons.ddl`](DDL/09-product_addons.ddl) | Addon produk + `transaction_item_addons` | — |
+
+### 10–11 · Konfigurasi toko
+
+| File | Keterangan | Lewati jika… |
+|------|------------|--------------|
+| [`10-shop_config.ddl`](DDL/10-shop_config.ddl) | `shop_config` + bucket `shop-assets` | — |
+| [`11-shop_config_invoice.ddl`](DDL/11-shop_config_invoice.ddl) | `shop_name`, `shop_address` untuk struk | Sudah ada di `10-shop_config.ddl` |
+
+### 12–16 · Operasional (antrian & pre-order)
+
+| File | Keterangan | Lewati jika… |
+|------|------------|--------------|
+| [`12-order_queues.ddl`](DDL/12-order_queues.ddl) | Antrian dapur | — |
+| [`13-order_queues_realtime.ddl`](DDL/13-order_queues_realtime.ddl) | Realtime antrian | — |
+| [`14-order_queues_daily_reset.ddl`](DDL/14-order_queues_daily_reset.ddl) | Reset nomor antrian harian | — |
+| [`15-pre_orders.ddl`](DDL/15-pre_orders.ddl) | Pre-order publik + realtime | — |
+| [`16-pre_orders_confirmed_payment.ddl`](DDL/16-pre_orders_confirmed_payment.ddl) | Konfirmasi bayar `pay_now` | — |
+
+### 17–19 · Stok & shift kasir
+
+| File | Keterangan | Lewati jika… |
+|------|------------|--------------|
+| [`17-stock_movements.ddl`](DDL/17-stock_movements.ddl) | Audit stok / HPP | — |
+| [`18-stock_lot_allocations.ddl`](DDL/18-stock_lot_allocations.ddl) | Alokasi FIFO | — |
+| [`19-cashier_shifts.ddl`](DDL/19-cashier_shifts.ddl) | Shift kasir + `transactions.shift_id` | — |
+
+### 20–21 · Keamanan & login
+
+| File | Keterangan | Lewati jika… |
+|------|------------|--------------|
+| [`20-role_owner_policies.ddl`](DDL/20-role_owner_policies.ddl) | RLS tulis master data & restock (owner) | — |
+| [`21-auth_login_seed.ddl`](DDL/21-auth_login_seed.ddl) | Akun owner awal + sinkronisasi profiles | — |
+
+### 90–94 · Migrasi database lama (opsional)
+
+| File | Keterangan | Lewati jika… |
+|------|------------|--------------|
+| [`90-product_purchase_price.ddl`](DDL/90-product_purchase_price.ddl) | Tambah `purchase_price` | `05-product.ddl` sudah dipakai |
+| [`91-stock_movements_costing.ddl`](DDL/91-stock_movements_costing.ddl) | Kolom costing stok | `17-stock_movements.ddl` sudah lengkap |
+| [`92-order_queues_table_number.ddl`](DDL/92-order_queues_table_number.ddl) | Tambah `table_number` antrian | `12-order_queues.ddl` sudah dipakai |
+| [`93-product_is_addons.ddl`](DDL/93-product_is_addons.ddl) | Migrasi `product_type` → `is_addons` | DB tidak pakai `product_type` |
+| [`94-masterdata_policies.ddl`](DDL/94-masterdata_policies.ddl) | Perbaiki RLS master data (403) | `20-role_owner_policies.ddl` sudah cukup |
 
 ### Cara menjalankan di SQL Editor
 
-1. Buka file `.ddl` di editor teks.
+1. Buka file `.ddl` berikutnya (urutkan berdasarkan prefix angka di folder `DDL/`).
 2. Salin seluruh isinya.
 3. Di Supabase → **SQL** → **New query** → paste → **Run**.
 4. Pastikan muncul pesan sukses sebelum lanjut ke file berikutnya.
@@ -379,7 +369,7 @@ Buka browser: `http://localhost:5173`
 
 ```
 vue-superbase-project/
-├── DDL/                    # Skrip SQL Supabase (jalankan manual)
+├── DDL/                    # Skrip SQL Supabase (01–21 instalasi baru, 90–94 migrasi)
 ├── src/
 │   ├── pages/              # Halaman per route
 │   ├── components/         # UI & form
@@ -587,14 +577,15 @@ flowchart TD
 |---------|--------|
 | Login gagal "Invalid login credentials" | Cek email/password; pastikan user sudah confirmed di Supabase |
 | Sign up tidak bisa login | Matikan **Confirm email** di Supabase Auth, atau konfirmasi lewat email |
-| Setelah sign-up, `profiles` kosong | Pastikan [`DDL/profiles.ddl`](DDL/profiles.ddl) sudah dijalankan **setelah** `customers.ddl`; cek trigger `on_auth_user_created` |
+| Setelah sign-up, `profiles` kosong | Jalankan [`21-auth_login_seed.ddl`](DDL/21-auth_login_seed.ddl) atau pastikan `03` + `04` sudah dijalankan |
+| Login gagal "Email not confirmed" | Jalankan [`21-auth_login_seed.ddl`](DDL/21-auth_login_seed.ddl) atau matikan Confirm email di Dashboard Auth |
 | User Dashboard tanpa baris `profiles` | Jalankan query backfill di bagian [Setup Profiles](#langkah-5--opsional-user-admin-via-dashboard) |
-| Insert produk/pelanggan **403** | Jalankan [`DDL/masterdata_policies.ddl`](DDL/masterdata_policies.ddl); pastikan sudah login |
-| Upload QRIS gagal | Pastikan [`DDL/shop_config.ddl`](DDL/shop_config.ddl) sudah dijalankan (bucket `shop-assets`) |
+| Insert produk/pelanggan **403** | Jalankan [`94-masterdata_policies.ddl`](DDL/94-masterdata_policies.ddl) atau pastikan [`20-role_owner_policies.ddl`](DDL/20-role_owner_policies.ddl) + login sebagai owner |
+| Upload QRIS gagal | Pastikan [`10-shop_config.ddl`](DDL/10-shop_config.ddl) sudah dijalankan (bucket `shop-assets`) |
 | HPP selalu 0 | Isi **harga beli** saat tambah produk atau restock; data lama mungkin belum punya costing |
-| Penjualan gagal "stok batch tidak mencukupi" | Restock dulu atau jalankan migrasi `stock_movements_costing.ddl` untuk backfill batch |
+| Penjualan gagal "stok batch tidak mencukupi" | Restock dulu atau jalankan [`91-stock_movements_costing.ddl`](DDL/91-stock_movements_costing.ddl) untuk backfill batch |
 | Variable env tidak terbaca | Nama harus `VITE_SUPERBASE_URL` dan `VITE_SUPERBASE_PUBLISH_KEY`; restart `pnpm dev` setelah ubah `.env` |
-| Antrian tidak update otomatis | Jalankan [`DDL/order_queues_realtime.ddl`](DDL/order_queues_realtime.ddl), atau Database → Publications → `supabase_realtime` → tambah `order_queues` |
+| Antrian tidak update otomatis | Jalankan [`13-order_queues_realtime.ddl`](DDL/13-order_queues_realtime.ddl), atau Database → Publications → `supabase_realtime` → tambah `order_queues` |
 | Badge Live tidak muncul di Antrian | Pastikan sudah login; cek koneksi WebSocket ke Supabase tidak diblokir firewall |
 
 ---
