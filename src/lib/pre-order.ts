@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getShopDateString } from './date'
 import { useLocaleStore } from '@/stores/useLocaleStore'
 import {
   getLineSubtotal,
@@ -18,10 +19,6 @@ import type {
   Product,
 } from '@/types/database'
 import type { z } from 'zod'
-
-function getTodayDateString() {
-  return new Date().toISOString().slice(0, 10)
-}
 
 async function getNextPreOrderNumber(orderDate: string) {
   const supabaseClient = supabase()
@@ -130,7 +127,7 @@ export const createPreOrder = async (input: PreOrderInput) => {
     return { preOrder: null, error: { message: stockCheck.message! } }
   }
 
-  const orderDate = getTodayDateString()
+  const orderDate = getShopDateString()
   const { orderNumber, error: numberError } = await getNextPreOrderNumber(orderDate)
   if (numberError || orderNumber === null) {
     return { preOrder: null, error: numberError }

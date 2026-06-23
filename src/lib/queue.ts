@@ -1,10 +1,7 @@
 import { supabase } from './supabase'
 import { TRANSACTION_ITEMS_WITH_ADDONS_SELECT } from './addon'
+import { getShopDateString } from './date'
 import type { OrderQueue, OrderQueueWithDetails, QueueStatus } from '@/types/database'
-
-function getTodayDateString() {
-  return new Date().toISOString().slice(0, 10)
-}
 
 async function getNextQueueNumber(queueDate: string) {
   const supabaseClient = supabase()
@@ -27,7 +24,7 @@ export const createQueueEntry = async (
   transactionId: string,
   options?: { tableNumber?: string | null },
 ) => {
-  const queueDate = getTodayDateString()
+  const queueDate = getShopDateString()
   const { queueNumber, error: numberError } = await getNextQueueNumber(queueDate)
 
   if (numberError || queueNumber === null) {
@@ -79,6 +76,7 @@ export const getActiveQueues = async () => {
         )
       )
     `)
+    .eq('queue_date', getShopDateString())
     .in('status', ['waiting', 'preparing', 'ready'])
     .order('queue_number', { ascending: true })
 
