@@ -1,4 +1,5 @@
 import { shopConfigSchema } from '@/schema/schema'
+import { useLocaleStore } from '@/stores/useLocaleStore'
 import { supabase } from './supabase'
 import type { ShopConfig, ShopConfigInput } from '@/types/database'
 
@@ -18,7 +19,7 @@ export const getShopConfig = async () => {
 }
 
 export const updateShopConfig = async (input: ShopConfigInput) => {
-  const validated = shopConfigSchema.safeParse(input)
+  const validated = shopConfigSchema().safeParse(input)
   if (!validated.success) {
     return { config: null, error: validated.error.flatten().fieldErrors }
   }
@@ -69,7 +70,7 @@ export const uploadQrisImage = async (file: File) => {
   const extension = file.name.split('.').pop()?.toLowerCase() ?? 'png'
   const allowed = ['png', 'jpg', 'jpeg', 'webp']
   if (!allowed.includes(extension)) {
-    return { url: null, error: { message: 'Format gambar harus PNG, JPG, atau WEBP' } }
+    return { url: null, error: { message: useLocaleStore().translate('config.imageMustBeImage') } }
   }
 
   const path = `${QRIS_STORAGE_PATH}.${extension}`
@@ -87,7 +88,7 @@ export const uploadQrisImage = async (file: File) => {
 
   const { config, error } = await updateShopConfig({ qris_image_url: cacheBustedUrl })
   if (error) {
-    return { url: null, error: typeof error === 'object' && 'message' in error ? error : { message: 'Gagal menyimpan URL QRIS' } }
+    return { url: null, error: typeof error === 'object' && 'message' in error ? error : { message: useLocaleStore().translate('error.qrisSaveFailed') } }
   }
 
   return { url: config?.qris_image_url ?? cacheBustedUrl, error: null }

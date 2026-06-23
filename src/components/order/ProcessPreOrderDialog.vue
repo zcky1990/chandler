@@ -15,6 +15,7 @@ import {
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import { useI18n } from '@/composables/useI18n'
 import { formatPreOrderItemWithAddons } from '@/lib/addon'
 import { formatPrice } from '@/lib/format'
 import { buildInvoiceFromTransaction, type InvoiceData } from '@/lib/invoice'
@@ -33,6 +34,7 @@ const emit = defineEmits<{
   processed: []
 }>()
 
+const { t } = useI18n()
 const alertStore = useAlertStore()
 const addToQueue = ref(true)
 const tableNumber = ref('')
@@ -57,7 +59,7 @@ function getErrorMessage(error: unknown) {
     return String(error.message)
   }
 
-  return 'Gagal memproses pesanan'
+  return t('order.processFailed')
 }
 
 async function handlePayment(method: PaymentMethod) {
@@ -73,19 +75,19 @@ async function handlePayment(method: PaymentMethod) {
   paymentDialogOpen.value = false
 
   if (error) {
-    alertStore.showAlert('Error', getErrorMessage(error), 'error')
+    alertStore.showAlert(t('alert.error'), getErrorMessage(error), 'error')
     return
   }
 
   if (!transaction) {
-    alertStore.showAlert('Error', 'Transaksi tidak ditemukan', 'error')
+    alertStore.showAlert(t('alert.error'), t('order.transactionNotFound'), 'error')
     return
   }
 
   const { transaction: transactionDetails, error: fetchError } = await getTransactionById(transaction.id)
 
   if (fetchError || !transactionDetails) {
-    alertStore.showAlert('Error', fetchError?.message ?? 'Gagal memuat data transaksi', 'error')
+    alertStore.showAlert(t('alert.error'), fetchError?.message ?? t('order.loadTransactionFailed'), 'error')
     emit('update:open', false)
     emit('processed')
     return
@@ -110,7 +112,7 @@ function handleProcessClick() {
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-[520px]">
       <DialogHeader>
-        <DialogTitle>Proses Pesanan</DialogTitle>
+        <DialogTitle>{{ t('order.processTitle') }}</DialogTitle>
         <DialogDescription v-if="preOrder">
           {{ formatPreOrderNumber(preOrder.order_number) }} · {{ getPreOrderPaymentLabel(preOrder) }}
         </DialogDescription>
@@ -129,38 +131,38 @@ function handleProcessClick() {
         </div>
 
         <div class="flex items-center justify-between border-t pt-4">
-          <span class="text-sm text-muted-foreground">Total</span>
+          <span class="text-sm text-muted-foreground">{{ t('common.total') }}</span>
           <span class="text-lg font-bold">{{ formatPrice(preOrder.total_amount) }}</span>
         </div>
 
         <Field>
-          <FieldLabel for="process-table-number">Nomor meja</FieldLabel>
+          <FieldLabel for="process-table-number">{{ t('order.processTable') }}</FieldLabel>
           <Input
             id="process-table-number"
             v-model="tableNumber"
-            placeholder="Opsional"
+            :placeholder="t('common.optional')"
           />
         </Field>
 
         <div class="flex items-center justify-between rounded-lg border px-3 py-3">
           <div>
-            <p class="text-sm font-medium">Masukkan antrian dapur</p>
-            <p class="text-xs text-muted-foreground">Pesanan akan muncul di halaman antrian</p>
+            <p class="text-sm font-medium">{{ t('order.addToQueue') }}</p>
+            <p class="text-xs text-muted-foreground">{{ t('order.addToQueueDesc') }}</p>
           </div>
           <Switch v-model="addToQueue" />
         </div>
 
         <p class="text-sm text-muted-foreground">
-          Pembeli walk-in wajib lunas saat diproses. Pilih metode pembayaran pada langkah berikutnya.
+          {{ t('order.walkInPayNote') }}
         </p>
       </div>
 
       <DialogFooter>
         <DialogClose as-child>
-          <Button type="button" variant="outline">Batal</Button>
+          <Button type="button" variant="outline">{{ t('common.cancel') }}</Button>
         </DialogClose>
         <Button :disabled="isSubmitting || !preOrder" @click="handleProcessClick">
-          {{ isSubmitting ? 'Memproses...' : 'Lanjut Bayar' }}
+          {{ isSubmitting ? t('order.processing') : t('order.continuePay') }}
         </Button>
       </DialogFooter>
     </DialogContent>

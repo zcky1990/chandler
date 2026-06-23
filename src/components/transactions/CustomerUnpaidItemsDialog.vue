@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Receipt } from '@lucide/vue'
 import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog'
+import { useI18n } from '@/composables/useI18n'
 import { formatItemWithAddons } from '@/lib/addon'
 import { formatPrice } from '@/lib/format'
+import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
 import type { CustomerTransactionSummary } from '@/types/database'
 
 const props = defineProps<{
@@ -15,9 +17,13 @@ const props = defineProps<{
   loading?: boolean
 }>()
 
+const { t, locale } = useI18n()
+
 const emit = defineEmits<{
   'update:open': [value: boolean]
 }>()
+
+const dateLocale = computed(() => (locale.value === 'en' ? 'en-US' : 'id-ID'))
 
 const unpaidTransactions = computed(() =>
   (props.customer?.transactions ?? [])
@@ -29,8 +35,14 @@ const totalOutstanding = computed(() =>
   unpaidTransactions.value.reduce((sum, transaction) => sum + Number(transaction.total_amount), 0),
 )
 
+function displayCustomerName(name: string | undefined | null) {
+  if (!name) return ''
+  if (name === WALK_IN_CUSTOMER_NAME) return t('common.walkIn')
+  return name
+}
+
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat('id-ID', {
+  return new Intl.DateTimeFormat(dateLocale.value, {
     dateStyle: 'medium',
   }).format(new Date(value))
 }
@@ -44,10 +56,10 @@ function formatDate(value: string) {
           <Receipt class="size-7" />
         </div>
         <h2 class="text-3xl font-bold tracking-tight uppercase">
-          {{ customer?.customerName }}
+          {{ displayCustomerName(customer?.customerName) }}
         </h2>
         <p class="mt-1 text-xs font-medium tracking-[0.2em] text-muted-foreground uppercase">
-          Daftar Belum Dibayar
+          {{ t('customerList.unpaidList') }}
         </p>
       </div>
 
@@ -56,14 +68,14 @@ function formatDate(value: string) {
           v-if="loading"
           class="rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground"
         >
-          Memuat data tunggakan...
+          {{ t('customerList.loadingDebt') }}
         </div>
 
         <div
           v-else-if="!unpaidTransactions.length"
           class="rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground"
         >
-          Tidak ada item yang belum dibayar.
+          {{ t('customerList.noUnpaid') }}
         </div>
 
         <div v-else class="space-y-4">
@@ -105,16 +117,16 @@ function formatDate(value: string) {
       <div class="grid grid-cols-2 gap-4 border-t px-6 py-5">
         <div>
           <p class="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase">
-            Jumlah Transaksi
+            {{ t('customerList.txCount') }}
           </p>
           <p class="mt-1 text-2xl font-bold">
             {{ unpaidTransactions.length }}
-            <span class="text-base font-medium text-muted-foreground">entri</span>
+            <span class="text-base font-medium text-muted-foreground">{{ t('common.entries') }}</span>
           </p>
         </div>
         <div class="text-right">
           <p class="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase">
-            Total Tunggakan
+            {{ t('customerList.totalDebt') }}
           </p>
           <p class="mt-1 text-3xl font-bold tracking-tight">
             {{ formatPrice(totalOutstanding) }}

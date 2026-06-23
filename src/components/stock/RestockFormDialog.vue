@@ -13,6 +13,7 @@ import {
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { useI18n } from '@/composables/useI18n'
 import { restockProduct } from '@/lib/stock'
 import { formatPrice } from '@/lib/format'
 import { useAlertStore } from '@/stores/useAlertStore'
@@ -28,6 +29,8 @@ const props = defineProps<{
   open: boolean
   product: Product | null
 }>()
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
@@ -89,14 +92,14 @@ async function handleSubmit() {
   if (result.error) {
     const message = 'message' in (result.error as object)
       ? (result.error as { message: string }).message
-      : 'Gagal menambah stok'
-    alertStore.showAlert('Error', message, 'error')
+      : t('restock.failed')
+    alertStore.showAlert(t('alert.error'), message, 'error')
     return
   }
 
   alertStore.showAlert(
-    'Berhasil',
-    `Stok ${props.product.name} berhasil ditambah (${formatPrice(totalCost.value)})`,
+    t('alert.success'),
+    t('restock.successQty', { name: props.product.name, qty: form.value.quantity }),
     'success',
   )
   emit('update:open', false)
@@ -108,21 +111,21 @@ async function handleSubmit() {
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent class="sm:max-w-[440px]">
       <DialogHeader>
-        <DialogTitle>Restock Produk</DialogTitle>
+        <DialogTitle>{{ t('restock.dialogTitle') }}</DialogTitle>
         <DialogDescription>
-          Tambah stok untuk {{ product?.name ?? 'produk' }}. Harga beli dicatat per batch restock.
+          {{ t('restock.dialogDesc', { name: product?.name ?? t('common.product') }) }}
         </DialogDescription>
       </DialogHeader>
 
       <form v-if="product" class="grid gap-4" @submit.prevent="handleSubmit">
         <FieldGroup>
           <Field>
-            <FieldLabel>Stok saat ini</FieldLabel>
+            <FieldLabel>{{ t('restock.currentStock') }}</FieldLabel>
             <Input :model-value="product.stock_quantity" type="number" disabled />
           </Field>
 
           <Field>
-            <FieldLabel for="restock-quantity">Jumlah masuk</FieldLabel>
+            <FieldLabel for="restock-quantity">{{ t('restock.qtyInLabel') }}</FieldLabel>
             <Input
               id="restock-quantity"
               v-model.number="form.quantity"
@@ -134,7 +137,7 @@ async function handleSubmit() {
           </Field>
 
           <Field>
-            <FieldLabel for="restock-unit-cost">Harga beli per unit</FieldLabel>
+            <FieldLabel for="restock-unit-cost">{{ t('restock.unitCostLabel') }}</FieldLabel>
             <Input
               id="restock-unit-cost"
               v-model.number="form.unit_cost"
@@ -144,22 +147,22 @@ async function handleSubmit() {
               required
             />
             <p class="text-xs text-muted-foreground">
-              Default dari produk. Ubah jika harga beli batch ini berbeda.
+              {{ t('restock.costHint') }}
             </p>
             <p v-if="errors.unit_cost" class="text-sm text-destructive">{{ errors.unit_cost }}</p>
           </Field>
 
           <div class="rounded-lg border bg-muted/40 px-3 py-2 text-sm">
-            <span class="text-muted-foreground">Total biaya restock: </span>
+            <span class="text-muted-foreground">{{ t('restock.totalCostLabel') }} </span>
             <span class="font-semibold">{{ formatPrice(totalCost) }}</span>
           </div>
 
           <Field>
-            <FieldLabel for="restock-notes">Catatan (opsional)</FieldLabel>
+            <FieldLabel for="restock-notes">{{ t('restock.notesOptional') }}</FieldLabel>
             <Textarea
               id="restock-notes"
               v-model="form.notes"
-              placeholder="Supplier, no faktur, dll."
+              :placeholder="t('restock.notesPh')"
               rows="3"
             />
           </Field>
@@ -167,10 +170,10 @@ async function handleSubmit() {
 
         <DialogFooter>
           <DialogClose as-child>
-            <Button type="button" variant="outline">Batal</Button>
+            <Button type="button" variant="outline">{{ t('common.cancel') }}</Button>
           </DialogClose>
           <Button type="submit" :disabled="isSubmitting">
-            {{ isSubmitting ? 'Menyimpan...' : 'Simpan Restock' }}
+            {{ isSubmitting ? t('common.saving') : t('restock.save') }}
           </Button>
         </DialogFooter>
       </form>

@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useI18n } from '@/composables/useI18n'
 import { getShopConfig, hasPaymentConfig, hasQrisConfig, hasTransferConfig } from '@/lib/config'
 import {
   formatWhatsappDisplay,
@@ -21,6 +22,8 @@ import { useAlertStore } from '@/stores/useAlertStore'
 const props = defineProps<{
   open: boolean
 }>()
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
@@ -55,7 +58,7 @@ async function downloadQris() {
   try {
     const response = await fetch(url)
     if (!response.ok) {
-      throw new Error('Gagal mengunduh gambar QRIS')
+      throw new Error(t('paymentInstructions.downloadQrisFailed'))
     }
 
     const blob = await response.blob()
@@ -67,7 +70,7 @@ async function downloadQris() {
     link.click()
     URL.revokeObjectURL(objectUrl)
   } catch {
-    alertStore.showAlert('Error', 'Gagal mengunduh QRIS. Coba simpan gambar secara manual.', 'error')
+    alertStore.showAlert(t('alert.error'), t('paymentInstructions.downloadFailed'), 'error')
   } finally {
     isDownloadingQris.value = false
   }
@@ -87,9 +90,9 @@ watch(
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-[480px]">
       <DialogHeader>
-        <DialogTitle>Cara Membayar</DialogTitle>
+        <DialogTitle>{{ t('paymentInstructions.title') }}</DialogTitle>
         <DialogDescription>
-          Ikuti metode pembayaran di bawah ini untuk melunasi tunggakan Anda.
+          {{ t('paymentInstructions.descDebt') }}
         </DialogDescription>
       </DialogHeader>
 
@@ -97,7 +100,7 @@ watch(
         v-if="isLoading"
         class="rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground"
       >
-        Memuat informasi pembayaran...
+        {{ t('paymentInstructions.loading') }}
       </div>
 
       <div v-else class="space-y-5">
@@ -107,12 +110,12 @@ watch(
               <div class="flex size-9 items-center justify-center rounded-lg bg-foreground text-background">
                 <QrCode class="size-4" />
               </div>
-              <h3 class="font-semibold">Bayar via QRIS</h3>
+              <h3 class="font-semibold">{{ t('paymentInstructions.qris') }}</h3>
             </div>
             <div class="flex justify-center rounded-xl border bg-muted/30 p-4">
               <img
                 :src="shopConfig!.qris_image_url!"
-                alt="QRIS Warung Zavi"
+                alt="QRIS"
                 class="max-h-64 max-w-full rounded-lg object-contain"
               >
             </div>
@@ -123,10 +126,10 @@ watch(
               @click="downloadQris"
             >
               <Download class="size-4" />
-              {{ isDownloadingQris ? 'Mengunduh...' : 'Unduh QRIS' }}
+              {{ isDownloadingQris ? t('paymentInstructions.downloading') : t('paymentInstructions.downloadQris') }}
             </Button>
             <p class="text-sm text-muted-foreground">
-              Scan kode QR di atas menggunakan aplikasi e-wallet atau mobile banking Anda.
+              {{ t('paymentInstructions.qrisScanNote') }}
             </p>
           </section>
 
@@ -135,24 +138,24 @@ watch(
               <div class="flex size-9 items-center justify-center rounded-lg bg-foreground text-background">
                 <Landmark class="size-4" />
               </div>
-              <h3 class="font-semibold">Bayar via Transfer Bank</h3>
+              <h3 class="font-semibold">{{ t('paymentInstructions.transfer') }}</h3>
             </div>
             <div class="space-y-3 rounded-xl border bg-muted/30 p-4 text-sm">
               <div class="flex justify-between gap-4">
-                <span class="text-muted-foreground">Bank</span>
+                <span class="text-muted-foreground">{{ t('payment.bank') }}</span>
                 <span class="font-medium">{{ shopConfig?.transfer_bank_name || '-' }}</span>
               </div>
               <div class="flex justify-between gap-4">
-                <span class="text-muted-foreground">No. Rekening</span>
+                <span class="text-muted-foreground">{{ t('payment.accountNumber') }}</span>
                 <span class="font-mono font-semibold">{{ shopConfig?.transfer_account_number }}</span>
               </div>
               <div class="flex justify-between gap-4">
-                <span class="text-muted-foreground">Atas Nama</span>
+                <span class="text-muted-foreground">{{ t('payment.accountHolder') }}</span>
                 <span class="font-medium">{{ shopConfig?.transfer_account_holder || '-' }}</span>
               </div>
             </div>
             <p class="text-sm text-muted-foreground">
-              Transfer sesuai nominal tunggakan yang tertera saat Anda memeriksa detail hutang.
+              {{ t('paymentInstructions.transferDebtNote') }}
             </p>
           </section>
         </template>
@@ -161,22 +164,22 @@ watch(
           v-else
           class="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground"
         >
-          Metode pembayaran belum dikonfigurasi. Silakan hubungi kasir Warung Zavi.
+          {{ t('paymentInstructions.notConfigured') }}
         </div>
 
         <section class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
           <div class="flex items-start gap-3">
             <MessageCircle class="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
             <div class="space-y-2 text-sm">
-              <p class="font-medium">Kirim Bukti Pembayaran</p>
+              <p class="font-medium">{{ t('paymentInstructions.proof') }}</p>
               <p class="text-muted-foreground">
-                Setelah melakukan pembayaran, kirim bukti transfer atau screenshot pembayaran QRIS ke nomor berikut agar tunggakan dapat diverifikasi:
+                {{ t('paymentInstructions.proofDesc') }}
               </p>
               <p v-if="proofWhatsappDisplay" class="font-mono font-semibold">
                 {{ proofWhatsappDisplay }}
               </p>
               <p v-else class="text-muted-foreground">
-                Nomor WhatsApp belum dikonfigurasi. Hubungi admin Warung Zavi.
+                {{ t('paymentInstructions.noWhatsappAdmin') }}
               </p>
               <Button
                 v-if="proofWhatsappUrl"
@@ -189,7 +192,7 @@ watch(
                   rel="noopener noreferrer"
                 >
                   <MessageCircle class="size-4" />
-                  Kirim via WhatsApp
+                  {{ t('paymentInstructions.whatsapp') }}
                 </a>
               </Button>
             </div>

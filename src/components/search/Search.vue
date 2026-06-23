@@ -1,14 +1,17 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { ChevronDownIcon, Search as SearchIcon } from '@lucide/vue'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group'
-import { computed } from 'vue'
+import { useI18n } from '@/composables/useI18n'
 
 const props = defineProps<{
   searchInOptions?: { label: string, value: string }[]
   searchQuery?: string
   selectedOption?: { label: string, value: string } | null
 }>()
+
+const { t } = useI18n()
 
 const options = computed(() => props.searchInOptions || [])
 
@@ -43,7 +46,7 @@ function handleSubmit() {
     </InputGroupAddon>
     <InputGroupInput
       v-model="queryModel"
-      placeholder="Cari produk atau nama pembeli..."
+      :placeholder="t('home.searchPlaceholder')"
       class="text-base"
       @keyup.enter="handleSubmit"
     />
@@ -51,7 +54,7 @@ function handleSubmit() {
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
           <InputGroupButton variant="ghost" class="text-sm">
-            {{ selectedOption?.label || 'Kategori' }}
+            {{ selectedOption?.label || t('home.category') }}
             <ChevronDownIcon class="size-3.5 opacity-50" />
           </InputGroupButton>
         </DropdownMenuTrigger>

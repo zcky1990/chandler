@@ -10,7 +10,7 @@ export const isGuestRoute = (path: string) => {
 }
 
 export const login = async ({ email, password }: { email: string, password: string }) => {
-  const validatedLogin = loginSchema.safeParse({ email, password })
+  const validatedLogin = loginSchema().safeParse({ email, password })
   if (!validatedLogin.success) {
     return { error: validatedLogin.error.flatten().fieldErrors }
   }
@@ -20,7 +20,7 @@ export const login = async ({ email, password }: { email: string, password: stri
 }
 
 export const signUp = async ({ name, email, password, confirmPassword }: { name: string, email: string, password: string, confirmPassword: string }) => {
-  const validatedSignUp = signUpSchema.safeParse({ name, email, password, confirmPassword })
+  const validatedSignUp = signUpSchema().safeParse({ name, email, password, confirmPassword })
   if (!validatedSignUp.success) {
     return { error: validatedSignUp.error.flatten().fieldErrors }
   }

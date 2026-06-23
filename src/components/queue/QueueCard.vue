@@ -2,8 +2,10 @@
 import { Check, ChefHat, Play } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useI18n } from '@/composables/useI18n'
 import { formatItemWithAddons } from '@/lib/addon'
 import { formatQueueNumber } from '@/lib/format'
+import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
 import type { OrderQueueWithDetails } from '@/types/database'
 
 defineProps<{
@@ -12,11 +14,19 @@ defineProps<{
   isUpdating: boolean
 }>()
 
+const { t } = useI18n()
+
 const emit = defineEmits<{
   pickup: [queueId: string]
   markReady: [queueId: string]
   complete: [queueId: string]
 }>()
+
+function displayCustomerName(name: string | undefined | null) {
+  if (!name) return t('common.unknownBuyer')
+  if (name === WALK_IN_CUSTOMER_NAME) return t('common.walkIn')
+  return name
+}
 
 function formatItems(queue: OrderQueueWithDetails) {
   return (queue.transactions?.transaction_items ?? [])
@@ -34,8 +44,8 @@ function formatItems(queue: OrderQueueWithDetails) {
             {{ formatQueueNumber(queue.queue_number) }}
           </CardTitle>
           <p class="mt-1 text-sm text-muted-foreground">
-            {{ queue.transactions?.customers?.name ?? 'Pembeli tidak diketahui' }}
-            <span v-if="queue.table_number"> · Meja {{ queue.table_number }}</span>
+            {{ displayCustomerName(queue.transactions?.customers?.name) }}
+            <span v-if="queue.table_number"> · {{ t('order.table', { number: queue.table_number }) }}</span>
           </p>
         </div>
         <span class="rounded-md border px-2 py-1 text-xs font-medium">
@@ -47,7 +57,7 @@ function formatItems(queue: OrderQueueWithDetails) {
     <CardContent class="space-y-4 p-4">
       <div>
         <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Item Pesanan
+          {{ t('queue.orderItems') }}
         </p>
         <p class="mt-1 text-sm">
           {{ formatItems(queue) || '-' }}
@@ -69,7 +79,7 @@ function formatItems(queue: OrderQueueWithDetails) {
           @click="emit('pickup', queue.id)"
         >
           <Play class="size-4" />
-          Pickup
+          {{ t('queue.pickup') }}
         </Button>
         <Button
           v-if="queue.status === 'preparing'"
@@ -79,7 +89,7 @@ function formatItems(queue: OrderQueueWithDetails) {
           @click="emit('markReady', queue.id)"
         >
           <ChefHat class="size-4" />
-          Siap
+          {{ t('status.ready') }}
         </Button>
         <Button
           v-if="queue.status === 'ready'"
@@ -89,7 +99,7 @@ function formatItems(queue: OrderQueueWithDetails) {
           @click="emit('complete', queue.id)"
         >
           <Check class="size-4" />
-          Selesai
+          {{ t('common.done') }}
         </Button>
       </div>
     </CardContent>

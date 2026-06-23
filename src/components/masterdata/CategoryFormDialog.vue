@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { createCategory, updateCategory } from '@/lib/category'
+import { useI18n } from '@/composables/useI18n'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { ProductCategory } from '@/types/database'
 
@@ -35,6 +36,7 @@ const emit = defineEmits<{
   saved: []
 }>()
 
+const { t } = useI18n()
 const alertStore = useAlertStore()
 const isSubmitting = ref(false)
 const errors = ref<Record<string, string>>({})
@@ -93,13 +95,13 @@ async function handleSubmit() {
   }
 
   if (result.error) {
-    alertStore.showAlert('Error', 'Gagal menyimpan kategori', 'error')
+    alertStore.showAlert(t('alert.error'), t('master.categorySaveFailed'), 'error')
     return
   }
 
   alertStore.showAlert(
-    'Berhasil',
-    props.category ? 'Kategori berhasil diperbarui' : 'Kategori berhasil ditambahkan',
+    t('alert.success'),
+    props.category ? t('master.categoryUpdated') : t('master.categoryCreated'),
     'success',
   )
   emit('update:open', false)
@@ -111,30 +113,30 @@ async function handleSubmit() {
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent class="sm:max-w-[480px]">
       <DialogHeader>
-        <DialogTitle>{{ category ? 'Edit Kategori' : 'Tambah Kategori' }}</DialogTitle>
+        <DialogTitle>{{ category ? t('master.editCategory') : t('master.addCategory') }}</DialogTitle>
         <DialogDescription>
-          {{ category ? 'Perbarui data kategori di bawah ini.' : 'Isi form untuk menambahkan kategori baru.' }}
+          {{ category ? t('master.categoryEditDesc') : t('master.categoryAddDesc') }}
         </DialogDescription>
       </DialogHeader>
 
       <form class="grid gap-4" @submit.prevent="handleSubmit">
         <FieldGroup>
           <Field>
-            <FieldLabel for="category-name">Nama</FieldLabel>
-            <Input id="category-name" v-model="form.name" placeholder="Contoh: Minuman, Makanan" required />
+            <FieldLabel for="category-name">{{ t('master.name') }}</FieldLabel>
+            <Input id="category-name" v-model="form.name" :placeholder="t('master.categoryNamePh')" required />
             <p v-if="errors.name" class="text-sm text-destructive">{{ errors.name }}</p>
           </Field>
 
           <Field>
-            <FieldLabel for="category-description">Deskripsi</FieldLabel>
-            <Textarea id="category-description" v-model="form.description" placeholder="Deskripsi kategori (opsional)" rows="2" />
+            <FieldLabel for="category-description">{{ t('master.description') }}</FieldLabel>
+            <Textarea id="category-description" v-model="form.description" :placeholder="t('master.categoryDescPh')" rows="2" />
           </Field>
 
           <div class="flex items-center justify-between rounded-lg border p-4">
             <div class="space-y-0.5">
-              <Label for="category-active">Aktif</Label>
+              <Label for="category-active">{{ t('common.active') }}</Label>
               <p class="text-xs text-muted-foreground">
-                {{ form.is_active ? 'Kategori dapat dipilih pada produk' : 'Kategori disembunyikan dari form produk' }}
+                {{ form.is_active ? t('master.categoryActiveHint') : t('master.categoryInactiveHint') }}
               </p>
             </div>
             <Switch id="category-active" v-model="form.is_active" />
@@ -143,10 +145,10 @@ async function handleSubmit() {
 
         <DialogFooter>
           <DialogClose as-child>
-            <Button type="button" variant="outline">Batal</Button>
+            <Button type="button" variant="outline">{{ t('common.cancel') }}</Button>
           </DialogClose>
           <Button type="submit" :disabled="isSubmitting">
-            {{ isSubmitting ? 'Menyimpan...' : 'Simpan' }}
+            {{ isSubmitting ? t('common.saving') : t('common.save') }}
           </Button>
         </DialogFooter>
       </form>

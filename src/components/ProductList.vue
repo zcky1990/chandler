@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { Card, CardContent } from '@/components/ui/card'
+import { useI18n } from '@/composables/useI18n'
 import { formatPrice } from '@/lib/format'
 import type { Product } from '@/types/database'
 
 defineProps<{
   products: Product[]
 }>()
+
+const { t } = useI18n()
 </script>
 
 <template>
@@ -27,7 +30,7 @@ defineProps<{
             {{ product.description }}
           </p>
           <p v-if="product.sku" class="text-xs text-muted-foreground">
-            SKU {{ product.sku }}
+            {{ t('common.sku') }} {{ product.sku }}
           </p>
         </div>
 
@@ -39,7 +42,7 @@ defineProps<{
             class="text-xs text-muted-foreground"
             :class="product.stock_quantity <= 0 ? 'text-destructive' : ''"
           >
-            Stok {{ product.stock_quantity }}
+            {{ t('common.stockLabel', { quantity: product.stock_quantity }) }}
           </p>
         </div>
       </CardContent>

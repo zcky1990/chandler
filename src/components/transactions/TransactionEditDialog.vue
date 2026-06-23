@@ -32,6 +32,7 @@ import {
 import { formatPrice } from '@/lib/format'
 import { getProducts, getProductAddonsMap } from '@/lib/product'
 import { updateTransactionItems } from '@/lib/transaction'
+import { useI18n } from '@/composables/useI18n'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { Product, TransactionWithDetails } from '@/types/database'
 
@@ -55,6 +56,7 @@ const emit = defineEmits<{
   saved: []
 }>()
 
+const { t } = useI18n()
 const alertStore = useAlertStore()
 const notes = ref('')
 const items = ref<EditableItem[]>([])
@@ -117,7 +119,7 @@ async function loadProducts() {
   ])
 
   if (productResult.error) {
-    alertStore.showAlert('Error', productResult.error.message, 'error')
+    alertStore.showAlert(t('alert.error'), productResult.error.message, 'error')
     return
   }
 
@@ -151,7 +153,7 @@ function resetForm() {
 
     const base = {
       product_id: item.product_id ?? item.products?.id ?? '',
-      name: item.products?.name ?? 'Produk',
+      name: item.products?.name ?? t('common.unknownProduct'),
       unit_price: Number(item.unit_price),
       addons,
     }
@@ -187,7 +189,7 @@ function addItem(product: Product, quantity: number, addons: CartAddonSelection[
   if (hasBundleAddons(addons)) {
     for (let i = 0; i < quantity; i++) {
       if (!hasEnoughStock(product, addons, 1)) {
-        alertStore.showAlert('Stok tidak cukup', 'Stok menu atau addon tidak mencukupi', 'error')
+        alertStore.showAlert(t('transaction.stockInsufficient'), t('transaction.stockMenuAddon'), 'error')
         return
       }
 
@@ -210,7 +212,7 @@ function addItem(product: Product, quantity: number, addons: CartAddonSelection[
   if (existing) {
     const nextQuantity = existing.quantity + quantity
     if (!hasEnoughStock(product, addons, nextQuantity)) {
-      alertStore.showAlert('Stok tidak cukup', 'Stok menu atau addon tidak mencukupi', 'error')
+      alertStore.showAlert(t('transaction.stockInsufficient'), t('transaction.stockMenuAddon'), 'error')
       return
     }
 
@@ -219,7 +221,7 @@ function addItem(product: Product, quantity: number, addons: CartAddonSelection[
   }
 
   if (!hasEnoughStock(product, addons, quantity)) {
-    alertStore.showAlert('Stok habis', `${product.name} atau addon tidak tersedia`, 'error')
+    alertStore.showAlert(t('transaction.stockOut'), t('transaction.stockOutDetail', { name: product.name }), 'error')
     return
   }
 
@@ -256,12 +258,12 @@ function openAddonDialog(product: Product, quantity = 1) {
 
 function handleAddSelectedProduct() {
   if (!selectedProduct.value) {
-    alertStore.showAlert('Error', 'Pilih produk terlebih dahulu', 'error')
+    alertStore.showAlert(t('alert.error'), t('transaction.selectProductFirst'), 'error')
     return
   }
 
   if (addQuantity.value < 1) {
-    alertStore.showAlert('Error', 'Jumlah minimal 1', 'error')
+    alertStore.showAlert(t('alert.error'), t('transaction.minQty'), 'error')
     return
   }
 
@@ -317,7 +319,7 @@ function updateQuantity(itemId: string, quantity: number) {
   const nextQuantity = Math.max(1, Math.floor(quantity) || 1)
 
   if (product && !hasEnoughStock(product, item.addons, nextQuantity)) {
-    alertStore.showAlert('Stok tidak cukup', 'Stok menu atau addon tidak mencukupi', 'error')
+    alertStore.showAlert(t('transaction.stockInsufficient'), t('transaction.stockMenuAddon'), 'error')
     return
   }
 
@@ -326,7 +328,7 @@ function updateQuantity(itemId: string, quantity: number) {
 
 function removeItem(itemId: string) {
   if (items.value.length <= 1) {
-    alertStore.showAlert('Perhatian', 'Transaksi harus memiliki minimal 1 item', 'error')
+    alertStore.showAlert(t('alert.warning'), t('transaction.minOneItem'), 'error')
     return
   }
 
@@ -345,7 +347,7 @@ async function handleSave() {
   if (!props.transaction) return
 
   if (!items.value.length) {
-    alertStore.showAlert('Perhatian', 'Transaksi harus memiliki minimal 1 item', 'error')
+    alertStore.showAlert(t('alert.warning'), t('transaction.minOneItem'), 'error')
     return
   }
 
@@ -373,7 +375,7 @@ async function handleSave() {
 
   if (error) {
     if (typeof error === 'object' && 'message' in error) {
-      alertStore.showAlert('Error', String(error.message), 'error')
+      alertStore.showAlert(t('alert.error'), String(error.message), 'error')
       return
     }
 
@@ -381,7 +383,7 @@ async function handleSave() {
     return
   }
 
-  alertStore.showAlert('Berhasil', 'Transaksi berhasil diperbarui', 'success')
+  alertStore.showAlert(t('alert.success'), t('transaction.updated'), 'success')
   emit('update:open', false)
   emit('saved')
 }
@@ -391,15 +393,15 @@ async function handleSave() {
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-[560px]">
       <DialogHeader>
-        <DialogTitle>Perbaiki Transaksi</DialogTitle>
+        <DialogTitle>{{ t('transaction.edit') }}</DialogTitle>
         <DialogDescription v-if="transaction">
-          Ubah jumlah item, tambah produk baru, atau ubah catatan transaksi.
+          {{ t('transaction.editDesc') }}
         </DialogDescription>
       </DialogHeader>
 
       <div v-if="transaction" class="space-y-4">
         <div class="space-y-3">
-          <p class="text-sm font-medium">Produk</p>
+          <p class="text-sm font-medium">{{ t('common.product') }}</p>
           <div
             v-for="item in items"
             :key="item.id"
@@ -412,14 +414,14 @@ async function handleSave() {
                   <span
                     v-if="item.isNew"
                     class="ml-1 text-xs font-normal text-primary"
-                  >(baru)</span>
+                  >({{ t('transaction.newItem') }})</span>
                   <span v-if="!hasBundleAddons(item.addons)" class="text-muted-foreground">
                     x{{ item.quantity }}
                   </span>
                 </p>
                 <p class="text-sm text-muted-foreground">
                   {{ formatPrice(item.unit_price) }}
-                  <span v-if="!hasBundleAddons(item.addons)"> / item</span>
+                  <span v-if="!hasBundleAddons(item.addons)"> {{ t('transaction.perItem') }}</span>
                 </p>
                 <ul
                   v-if="item.addons.length"
@@ -484,13 +486,13 @@ async function handleSave() {
         </div>
 
         <div class="rounded-xl border bg-muted/30 p-4">
-          <p class="mb-3 text-sm font-medium">Tambah Produk</p>
+          <p class="mb-3 text-sm font-medium">{{ t('transaction.addProduct') }}</p>
           <FieldGroup>
             <Field>
-              <FieldLabel>Produk</FieldLabel>
+              <FieldLabel>{{ t('common.product') }}</FieldLabel>
               <Select v-model="selectedProductId">
                 <SelectTrigger class="w-full">
-                  <SelectValue placeholder="Pilih produk" />
+                  <SelectValue :placeholder="t('transaction.selectProduct')" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem
@@ -498,7 +500,7 @@ async function handleSave() {
                     :key="product.id"
                     :value="product.id"
                   >
-                    {{ product.name }} · {{ formatPrice(product.price) }} · Stok {{ product.stock_quantity }}
+                    {{ product.name }} · {{ formatPrice(product.price) }} · {{ t('common.stockLabel', { quantity: product.stock_quantity }) }}
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -506,7 +508,7 @@ async function handleSave() {
 
             <div class="flex items-end gap-3">
               <Field class="flex-1">
-                <FieldLabel for="edit-add-quantity">Jumlah</FieldLabel>
+                <FieldLabel for="edit-add-quantity">{{ t('common.quantity') }}</FieldLabel>
                 <Input
                   id="edit-add-quantity"
                   v-model.number="addQuantity"
@@ -522,24 +524,24 @@ async function handleSave() {
                 @click="handleAddSelectedProduct"
               >
                 <Plus class="size-4" />
-                Tambah
+                {{ t('common.add') }}
               </Button>
             </div>
           </FieldGroup>
         </div>
 
         <Field>
-          <FieldLabel for="edit-notes">Catatan</FieldLabel>
+          <FieldLabel for="edit-notes">{{ t('common.notes') }}</FieldLabel>
           <Textarea
             id="edit-notes"
             v-model="notes"
-            placeholder="Catatan transaksi"
+            :placeholder="t('transaction.editNotesPh')"
             rows="3"
           />
         </Field>
 
         <div class="flex items-center justify-between border-t pt-4">
-          <span class="text-sm text-muted-foreground">Total</span>
+          <span class="text-sm text-muted-foreground">{{ t('common.total') }}</span>
           <span class="text-lg font-bold">{{ formatPrice(totalAmount) }}</span>
         </div>
 
@@ -548,10 +550,10 @@ async function handleSave() {
 
       <DialogFooter>
         <DialogClose as-child>
-          <Button type="button" variant="outline">Batal</Button>
+          <Button type="button" variant="outline">{{ t('common.cancel') }}</Button>
         </DialogClose>
         <Button :disabled="isSubmitting" @click="handleSave">
-          {{ isSubmitting ? 'Menyimpan...' : 'Simpan' }}
+          {{ isSubmitting ? t('common.saving') : t('common.save') }}
         </Button>
       </DialogFooter>
     </DialogContent>

@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { productSchema } from '@/schema/schema'
+import { useLocaleStore } from '@/stores/useLocaleStore'
 import { recordInitialStockMovement } from './stock'
 import type { Product, ProductInput } from '@/types/database'
 import type { z } from 'zod'
@@ -33,11 +34,11 @@ function getStoragePathFromImageUrl(imageUrl: string | null) {
 
 export const uploadProductImage = async (file: File, storageId: string) => {
   if (!isWebpImageFile(file)) {
-    return { url: null, error: { message: 'Gambar harus berformat WEBP' } }
+    return { url: null, error: { message: useLocaleStore().translate('master.imageWebpRequired') } }
   }
 
   if (file.size > PRODUCT_IMAGE_MAX_BYTES) {
-    return { url: null, error: { message: 'Ukuran gambar maksimal 5 MB' } }
+    return { url: null, error: { message: useLocaleStore().translate('config.imageMaxSize') } }
   }
 
   const path = getProductImagePath(storageId)
@@ -63,7 +64,7 @@ export const removeProductImageByUrl = async (imageUrl: string | null) => {
   return { error }
 }
 
-function normalizeProductInput(input: z.infer<typeof productSchema>): ProductInput {
+function normalizeProductInput(input: z.infer<ReturnType<typeof productSchema>>): ProductInput {
   return {
     name: input.name,
     description: input.description ?? null,
@@ -180,7 +181,7 @@ export const getProductByName = async (name: string) => {
 }
 
 export const createProduct = async (product: ProductInput) => {
-  const validatedProduct = productSchema.safeParse(product)
+  const validatedProduct = productSchema().safeParse(product)
   if (!validatedProduct.success) {
     return { product: null, error: validatedProduct.error.flatten().fieldErrors }
   }
@@ -213,7 +214,7 @@ export const createProduct = async (product: ProductInput) => {
 }
 
 export const updateProduct = async (id: string, product: ProductInput) => {
-  const validatedProduct = productSchema.safeParse(product)
+  const validatedProduct = productSchema().safeParse(product)
   if (!validatedProduct.success) {
     return { product: null, error: validatedProduct.error.flatten().fieldErrors }
   }

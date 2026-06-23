@@ -34,6 +34,7 @@ import {
   updateProduct,
   uploadProductImage,
 } from '@/lib/product'
+import { useI18n } from '@/composables/useI18n'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { Product, ProductCategory } from '@/types/database'
 
@@ -62,6 +63,7 @@ const emit = defineEmits<{
   saved: []
 }>()
 
+const { t, locale } = useI18n()
 const alertStore = useAlertStore()
 const isSubmitting = ref(false)
 const isUploadingImage = ref(false)
@@ -98,7 +100,7 @@ function toCategoryId(value: string) {
 async function loadCategoryOptions() {
   const { categories, error } = await getCategories()
   if (error) {
-    alertStore.showAlert('Error', error.message, 'error')
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
     categoryOptions.value = []
     return
   }
@@ -114,7 +116,7 @@ async function loadAddonData(productId?: string) {
 
   const { products, error } = await getAddonProducts()
   if (error) {
-    alertStore.showAlert('Error', error.message, 'error')
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
     isLoadingAddons.value = false
     return
   }
@@ -124,7 +126,7 @@ async function loadAddonData(productId?: string) {
   if (productId) {
     const { addons, error: mappingError } = await getProductAddons(productId)
     if (mappingError) {
-      alertStore.showAlert('Error', mappingError.message, 'error')
+      alertStore.showAlert(t('alert.error'), mappingError.message, 'error')
       selectedAddonIds.value = []
     } else {
       selectedAddonIds.value = addons.map((addon) => addon.id)
@@ -159,7 +161,7 @@ async function handleImageUpload(event: Event) {
   if (!file) return
 
   if (!isWebpImageFile(file)) {
-    alertStore.showAlert('Error', 'Gambar harus berformat WEBP', 'error')
+    alertStore.showAlert(t('alert.error'), t('master.imageWebpRequired'), 'error')
     return
   }
 
@@ -169,7 +171,7 @@ async function handleImageUpload(event: Event) {
   isUploadingImage.value = false
 
   if (error) {
-    alertStore.showAlert('Error', error.message, 'error')
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
     return
   }
 
@@ -188,7 +190,7 @@ async function handleRemoveImage() {
   isUploadingImage.value = false
 
   if (error) {
-    alertStore.showAlert('Error', error.message, 'error')
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
     return
   }
 
@@ -258,7 +260,7 @@ async function handleSubmit() {
 
   if (result.error || !result.product) {
     isSubmitting.value = false
-    alertStore.showAlert('Error', 'Gagal menyimpan produk', 'error')
+    alertStore.showAlert(t('alert.error'), t('master.productSaveFailed'), 'error')
     return
   }
 
@@ -266,7 +268,7 @@ async function handleSubmit() {
     const { error: mappingError } = await saveProductAddons(result.product.id, selectedAddonIds.value)
     if (mappingError) {
       isSubmitting.value = false
-      alertStore.showAlert('Error', mappingError.message, 'error')
+      alertStore.showAlert(t('alert.error'), mappingError.message, 'error')
       return
     }
   } else if (props.product) {
@@ -276,8 +278,8 @@ async function handleSubmit() {
   isSubmitting.value = false
 
   alertStore.showAlert(
-    'Berhasil',
-    props.product ? 'Produk berhasil diperbarui' : 'Produk berhasil ditambahkan',
+    t('alert.success'),
+    props.product ? t('master.productUpdated') : t('master.productCreated'),
     'success',
   )
   emit('update:open', false)
@@ -289,9 +291,9 @@ async function handleSubmit() {
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent class="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[520px]">
       <DialogHeader class="shrink-0 border-b px-6 pt-6 pb-4">
-        <DialogTitle>{{ product ? 'Edit Produk' : 'Tambah Produk' }}</DialogTitle>
+        <DialogTitle>{{ product ? t('master.editProduct') : t('master.addProduct') }}</DialogTitle>
         <DialogDescription>
-          {{ product ? 'Perbarui data produk di bawah ini.' : 'Isi form untuk menambahkan produk baru.' }}
+          {{ product ? t('master.productEditDesc') : t('master.productAddDesc') }}
         </DialogDescription>
       </DialogHeader>
 
@@ -299,13 +301,13 @@ async function handleSubmit() {
         <div class="flex-1 overflow-y-auto px-6 py-4">
           <FieldGroup>
           <Field>
-            <FieldLabel for="product-category">Kategori</FieldLabel>
+            <FieldLabel for="product-category">{{ t('home.category') }}</FieldLabel>
             <Select v-model="form.category_id">
               <SelectTrigger id="product-category" class="w-full">
-                <SelectValue placeholder="Pilih kategori (opsional)" />
+                <SelectValue :placeholder="t('master.categorySelectPh')" />
               </SelectTrigger>
               <SelectContent class="z-[100]">
-                <SelectItem :value="NO_CATEGORY">Tanpa kategori</SelectItem>
+                <SelectItem :value="NO_CATEGORY">{{ t('master.noCategoryFilter') }}</SelectItem>
                 <SelectItem
                   v-for="category in categoryOptions"
                   :key="category.id"
@@ -317,30 +319,30 @@ async function handleSubmit() {
             </Select>
             <p v-if="errors.category_id" class="text-sm text-destructive">{{ errors.category_id }}</p>
             <p v-if="!categoryOptions.length" class="text-xs text-muted-foreground">
-              Belum ada kategori aktif. Tambahkan di Master Kategori.
+              {{ t('master.noActiveCategory') }}
             </p>
           </Field>
 
           <Field>
-            <FieldLabel for="product-name">Nama</FieldLabel>
-            <Input id="product-name" v-model="form.name" placeholder="Nama produk" required />
+            <FieldLabel for="product-name">{{ t('master.name') }}</FieldLabel>
+            <Input id="product-name" v-model="form.name" :placeholder="t('master.productNamePh')" required />
             <p v-if="errors.name" class="text-sm text-destructive">{{ errors.name }}</p>
           </Field>
 
           <Field>
-            <FieldLabel for="product-description">Deskripsi</FieldLabel>
-            <Textarea id="product-description" v-model="form.description" placeholder="Deskripsi produk" rows="3" />
+            <FieldLabel for="product-description">{{ t('master.description') }}</FieldLabel>
+            <Textarea id="product-description" v-model="form.description" :placeholder="t('master.productDescPh')" rows="3" />
           </Field>
 
           <div class="grid gap-4 sm:grid-cols-2">
             <Field>
-              <FieldLabel for="product-price">Harga jual</FieldLabel>
+              <FieldLabel for="product-price">{{ t('master.salePrice') }}</FieldLabel>
               <Input id="product-price" v-model.number="form.price" type="number" min="0" step="0.01" required />
               <p v-if="errors.price" class="text-sm text-destructive">{{ errors.price }}</p>
             </Field>
 
             <Field>
-              <FieldLabel for="product-purchase-price">Harga beli (default)</FieldLabel>
+              <FieldLabel for="product-purchase-price">{{ t('master.purchasePriceDefault') }}</FieldLabel>
               <Input
                 id="product-purchase-price"
                 v-model.number="form.purchase_price"
@@ -350,7 +352,7 @@ async function handleSubmit() {
                 required
               />
               <p class="text-xs text-muted-foreground">
-                Dipakai sebagai default saat restock. Batch lama tidak berubah.
+                {{ t('master.purchasePriceHint') }}
               </p>
               <p v-if="errors.purchase_price" class="text-sm text-destructive">{{ errors.purchase_price }}</p>
             </Field>
@@ -358,7 +360,7 @@ async function handleSubmit() {
 
           <div class="grid gap-4 sm:grid-cols-2">
             <Field>
-              <FieldLabel for="product-stock">{{ product ? 'Stok saat ini' : 'Stok awal' }}</FieldLabel>
+              <FieldLabel for="product-stock">{{ product ? t('master.stockCurrent') : t('master.stockInitial') }}</FieldLabel>
               <Input
                 v-if="!product"
                 id="product-stock"
@@ -375,7 +377,7 @@ async function handleSubmit() {
                   disabled
                 />
                 <p class="text-xs text-muted-foreground">
-                  Gunakan menu Restock untuk menambah stok.
+                  {{ t('master.stockRestockHint') }}
                 </p>
               </div>
               <p v-if="errors.stock_quantity" class="text-sm text-destructive">{{ errors.stock_quantity }}</p>
@@ -383,31 +385,31 @@ async function handleSubmit() {
           </div>
 
           <Field>
-            <FieldLabel for="product-sku">SKU</FieldLabel>
-            <Input id="product-sku" v-model="form.sku" placeholder="SKU-001" />
+            <FieldLabel for="product-sku">{{ t('common.sku') }}</FieldLabel>
+            <Input id="product-sku" v-model="form.sku" :placeholder="t('master.skuPh')" />
           </Field>
 
           <Field>
-            <FieldLabel>Gambar Produk</FieldLabel>
+            <FieldLabel>{{ t('master.productImage') }}</FieldLabel>
             <div
               class="flex min-h-[160px] items-center justify-center rounded-xl border border-dashed bg-muted/30 p-4"
             >
               <img
                 v-if="form.image_url"
                 :src="form.image_url"
-                :alt="form.name || 'Gambar produk'"
+                :alt="form.name || t('master.productImage')"
                 class="max-h-40 max-w-full rounded-lg object-contain"
               >
               <div v-else class="text-center text-sm text-muted-foreground">
                 <ImageIcon class="mx-auto mb-2 size-8 opacity-50" />
-                Belum ada gambar
+                {{ t('master.noProductImage') }}
               </div>
             </div>
             <div class="mt-3 flex flex-wrap gap-2">
               <Button as-child :disabled="isUploadingImage || isSubmitting">
                 <label class="cursor-pointer">
                   <Upload class="size-4" />
-                  {{ isUploadingImage ? 'Mengunggah...' : 'Unggah WEBP' }}
+                  {{ isUploadingImage ? t('config.uploading') : t('master.uploadWebp') }}
                   <input
                     type="file"
                     accept="image/webp,.webp"
@@ -425,11 +427,11 @@ async function handleSubmit() {
                 @click="handleRemoveImage"
               >
                 <Trash2 class="size-4" />
-                Hapus
+                {{ t('common.delete') }}
               </Button>
             </div>
             <p class="text-xs text-muted-foreground">
-              Format wajib WEBP. Maksimal 5 MB.
+              {{ t('master.webpFormat') }}
             </p>
             <p v-if="errors.image_url" class="text-sm text-destructive">{{ errors.image_url }}</p>
           </Field>
@@ -442,9 +444,9 @@ async function handleSubmit() {
               class="mt-0.5 size-4 rounded border"
             >
             <div class="space-y-0.5">
-              <Label for="product-is-addons">Produk addon</Label>
+              <Label for="product-is-addons">{{ t('master.productAddonLabel') }}</Label>
               <p class="text-xs text-muted-foreground">
-                Jika dicentang, produk ini hanya bisa ditambahkan sebagai addon pada menu saat transaksi atau pesanan.
+                {{ t('master.productAddonHint') }}
               </p>
             </div>
           </div>
@@ -454,15 +456,15 @@ async function handleSubmit() {
             class="space-y-3 rounded-lg border p-4"
           >
             <div>
-              <p class="text-sm font-medium">Addon tersedia</p>
+              <p class="text-sm font-medium">{{ t('master.availableAddons') }}</p>
               <p class="text-xs text-muted-foreground">
-                Pilih addon yang bisa ditambahkan saat transaksi untuk menu ini.
+                {{ t('master.availableAddonsHint') }}
               </p>
             </div>
 
-            <p v-if="isLoadingAddons" class="text-sm text-muted-foreground">Memuat addon...</p>
+            <p v-if="isLoadingAddons" class="text-sm text-muted-foreground">{{ t('master.loadingAddons') }}</p>
             <p v-else-if="!addonOptions.length" class="text-sm text-muted-foreground">
-              Belum ada produk addon. Centang "Produk addon" pada produk lain terlebih dahulu.
+              {{ t('master.noAddonProducts') }}
             </p>
 
             <div v-else class="space-y-2">
@@ -477,18 +479,18 @@ async function handleSubmit() {
                   :checked="selectedAddonIds.includes(addon.id)"
                   @change="toggleAddon(addon.id, ($event.target as HTMLInputElement).checked)"
                 >
-                <span>{{ addon.name }} · {{ new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(addon.price) }}</span>
+                <span>{{ addon.name }} · {{ new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(addon.price) }}</span>
               </label>
             </div>
           </div>
 
           <div class="flex items-center justify-between rounded-lg border p-4">
             <div class="space-y-0.5">
-              <Label for="product-active">Aktif</Label>
+              <Label for="product-active">{{ t('common.active') }}</Label>
               <p class="text-xs text-muted-foreground">
                 {{ form.is_active
-                  ? (form.is_addons ? 'Addon dapat dipilih pada menu' : 'Produk dapat dipilih di transaksi')
-                  : 'Produk disembunyikan dari transaksi' }}
+                  ? (form.is_addons ? t('master.addonActiveHint') : t('master.productActiveHint'))
+                  : t('master.productInactiveHint') }}
               </p>
             </div>
             <Switch id="product-active" v-model="form.is_active" />
@@ -498,10 +500,10 @@ async function handleSubmit() {
 
         <DialogFooter class="shrink-0 border-t bg-background px-6 py-4">
           <DialogClose as-child>
-            <Button type="button" variant="outline">Batal</Button>
+            <Button type="button" variant="outline">{{ t('common.cancel') }}</Button>
           </DialogClose>
           <Button type="submit" :disabled="isSubmitting || isUploadingImage">
-            {{ isSubmitting ? 'Menyimpan...' : 'Simpan' }}
+            {{ isSubmitting ? t('common.saving') : t('common.save') }}
           </Button>
         </DialogFooter>
       </form>

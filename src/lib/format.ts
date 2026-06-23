@@ -1,5 +1,12 @@
+import { useLocaleStore } from '@/stores/useLocaleStore'
+
+function intlLocale() {
+  const locale = useLocaleStore().locale
+  return locale === 'en' ? 'en-US' : 'id-ID'
+}
+
 export function formatPrice(price: number) {
-  return new Intl.NumberFormat('id-ID', {
+  return new Intl.NumberFormat(intlLocale(), {
     style: 'currency',
     currency: 'IDR',
     minimumFractionDigits: 0,

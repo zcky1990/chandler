@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useI18n } from '@/composables/useI18n'
 import type { CartAddonSelection } from '@/lib/addon'
 import { formatPrice } from '@/lib/format'
 import type { Product } from '@/types/database'
@@ -24,6 +25,8 @@ const props = withDefaults(defineProps<{
   bundleIndex: 1,
   bundleTotal: 1,
 })
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
@@ -43,10 +46,10 @@ watch(
 
 const confirmLabel = computed(() => {
   if (props.bundleTotal > 1 && props.bundleIndex < props.bundleTotal) {
-    return `Lanjut (${props.bundleIndex}/${props.bundleTotal})`
+    return t('addon.continue', { index: props.bundleIndex, total: props.bundleTotal })
   }
 
-  return 'Tambah ke Keranjang'
+  return t('addon.addToCart')
 })
 
 const selectedAddons = computed(() =>
@@ -83,14 +86,14 @@ function handleConfirm() {
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent class="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[480px]">
       <DialogHeader class="shrink-0 border-b px-6 pt-6 pb-4">
-        <DialogTitle>Pilih Addon</DialogTitle>
+        <DialogTitle>{{ t('addon.title') }}</DialogTitle>
         <DialogDescription v-if="product">
           {{ product.name }}
           <template v-if="bundleTotal > 1">
-            — pilih addon untuk item {{ bundleIndex }} dari {{ bundleTotal }}
+            — {{ t('addon.forItem', { index: bundleIndex, total: bundleTotal }) }}
           </template>
           <template v-else>
-            — addon opsional
+            — {{ t('addon.optional') }}
           </template>
         </DialogDescription>
       </DialogHeader>
@@ -116,14 +119,14 @@ function handleConfirm() {
         </div>
 
         <div class="flex items-center justify-between text-sm">
-          <span class="text-muted-foreground">Tambahan addon</span>
+          <span class="text-muted-foreground">{{ t('addon.extra') }}</span>
           <span class="font-medium">{{ formatPrice(addonTotal) }}</span>
         </div>
       </div>
 
       <DialogFooter class="shrink-0 border-t bg-background px-6 py-4">
         <DialogClose as-child>
-          <Button type="button" variant="outline">Batal</Button>
+          <Button type="button" variant="outline">{{ t('common.cancel') }}</Button>
         </DialogClose>
         <Button type="button" @click="handleConfirm">
           {{ confirmLabel }}

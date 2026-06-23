@@ -7,6 +7,7 @@ import { createQueueEntry } from '@/lib/queue'
 import { isWalkInCustomer } from '@/lib/customer'
 import { createTransaction, getCustomersForTransaction, getPendingTransactionForCustomer } from '@/lib/transaction'
 import { useAlertStore } from '@/stores/useAlertStore'
+import { useI18n } from '@/composables/useI18n'
 import type { Customer, PaymentMethod, Product, Transaction } from '@/types/database'
 import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
 
@@ -19,6 +20,7 @@ export type CartItem = {
 
 export function useTransactionCart() {
   const alertStore = useAlertStore()
+  const { t } = useI18n()
   const customers = ref<Customer[]>([])
   const products = ref<Product[]>([])
   const productAddonsMap = ref<Record<string, Product[]>>({})
@@ -101,7 +103,7 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
     isLoading.value = false
 
     if (customerResult.error) {
-      alertStore.showAlert('Error', customerResult.error.message, 'error')
+      alertStore.showAlert(t('alert.error'), customerResult.error.message, 'error')
     } else {
       customers.value = customerResult.customers
       const walkIn = customerResult.customers.find((customer) => customer.name === WALK_IN_CUSTOMER_NAME)
@@ -109,7 +111,7 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
     }
 
     if (productResult.error) {
-      alertStore.showAlert('Error', productResult.error.message, 'error')
+      alertStore.showAlert(t('alert.error'), productResult.error.message, 'error')
       return
     }
 
@@ -143,7 +145,7 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
     if (hasBundleAddons(addons)) {
       for (let i = 0; i < quantity; i++) {
         if (!hasEnoughStock(product, addons, 1)) {
-          alertStore.showAlert('Stok tidak cukup', 'Stok menu atau addon tidak mencukupi', 'error')
+          alertStore.showAlert(t('transaction.stockInsufficient'), t('transaction.stockMenuAddon'), 'error')
           return
         }
 
@@ -163,7 +165,7 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
     if (existing) {
       const nextQuantity = existing.quantity + quantity
       if (!hasEnoughStock(product, addons, nextQuantity)) {
-        alertStore.showAlert('Stok tidak cukup', 'Stok menu atau addon tidak mencukupi', 'error')
+        alertStore.showAlert(t('transaction.stockInsufficient'), t('transaction.stockMenuAddon'), 'error')
         return
       }
 
@@ -172,7 +174,7 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
     }
 
     if (!hasEnoughStock(product, addons, quantity)) {
-      alertStore.showAlert('Stok habis', `${product.name} atau addon tidak tersedia`, 'error')
+      alertStore.showAlert(t('transaction.stockOut'), t('transaction.stockOutProduct', { name: product.name }), 'error')
       return
     }
 
@@ -206,12 +208,12 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
 
   function handleAddSelectedProduct() {
     if (!selectedProduct.value) {
-      alertStore.showAlert('Error', 'Pilih produk terlebih dahulu', 'error')
+      alertStore.showAlert(t('alert.error'), t('transaction.selectProductFirst'), 'error')
       return
     }
 
     if (addQuantity.value < 1) {
-      alertStore.showAlert('Error', 'Jumlah minimal 1', 'error')
+      alertStore.showAlert(t('alert.error'), t('transaction.minQty'), 'error')
       return
     }
 
@@ -265,7 +267,7 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
     }
 
     if (!hasEnoughStock(item.product, item.addons, quantity)) {
-      alertStore.showAlert('Stok tidak cukup', 'Stok menu atau addon tidak mencukupi', 'error')
+      alertStore.showAlert(t('transaction.stockInsufficient'), t('transaction.stockMenuAddon'), 'error')
       return
     }
 
@@ -287,12 +289,12 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
 
   function validateCart() {
     if (!selectedCustomerId.value) {
-      alertStore.showAlert('Error', 'Pilih pembeli terlebih dahulu', 'error')
+      alertStore.showAlert(t('alert.error'), t('transaction.selectBuyerFirst'), 'error')
       return false
     }
 
     if (!cart.value.length) {
-      alertStore.showAlert('Error', 'Tambahkan minimal 1 produk', 'error')
+      alertStore.showAlert(t('alert.error'), t('transaction.addMinOneProduct'), 'error')
       return false
     }
 
@@ -323,14 +325,14 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
       return Object.values(error).flat().join(', ')
     }
 
-    return 'Gagal menyimpan transaksi'
+    return t('transaction.saveFailed')
   }
 
   async function createQueueForTransaction(transactionId: string, tableNumber: string | null = null) {
     const { queue, error } = await createQueueEntry(transactionId, { tableNumber })
 
     if (error) {
-      alertStore.showAlert('Error', `Transaksi tersimpan, tetapi antrian gagal: ${error.message}`, 'error')
+      alertStore.showAlert(t('alert.error'), t('transaction.queueFailed', { message: error.message }), 'error')
       return null
     }
 
@@ -338,7 +340,7 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
   }
 
   function queueSuccessMessage(queueNumber: number, tableNumber: string | null, prefix: string) {
-    const tableLabel = tableNumber ? ` · Meja ${tableNumber}` : ''
+    const tableLabel = tableNumber ? ` · ${t('common.table')} ${tableNumber}` : ''
     return `${prefix} ${formatQueueNumber(queueNumber)}${tableLabel}`
   }
 
@@ -346,7 +348,7 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
     if (!validateCart()) return
 
     if (requiresImmediatePayment.value) {
-      alertStore.showAlert('Perhatian', 'Pembeli walk-in harus bayar langsung, tidak bisa berhutang', 'error')
+      alertStore.showAlert(t('alert.warning'), t('transaction.walkInMustPay'), 'error')
       return
     }
 
@@ -356,7 +358,7 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
 
     if (error) {
       isSubmitting.value = false
-      alertStore.showAlert('Error', getErrorMessage(error), 'error')
+      alertStore.showAlert(t('alert.error'), getErrorMessage(error), 'error')
       return
     }
 
@@ -371,19 +373,19 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
       }
 
       alertStore.showAlert(
-        'Berhasil',
+        t('alert.success'),
         merged
-          ? queueSuccessMessage(queue.queue_number, tableNumber, 'Hutang diperbarui & antrian')
-          : queueSuccessMessage(queue.queue_number, tableNumber, 'Transaksi hutang & antrian'),
+          ? queueSuccessMessage(queue.queue_number, tableNumber, t('transaction.successDebtQueueUpdated'))
+          : queueSuccessMessage(queue.queue_number, tableNumber, t('transaction.successDebtQueueNew')),
         'success',
       )
     } else {
       isSubmitting.value = false
       alertStore.showAlert(
-        'Berhasil',
+        t('alert.success'),
         merged
-          ? 'Pembelian ditambahkan ke transaksi belum dibayar hari ini'
-          : 'Transaksi baru berhasil dibuat',
+          ? t('transaction.successDebtUpdated')
+          : t('transaction.successNew'),
         'success',
       )
     }
@@ -396,7 +398,7 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
     if (!validateCart()) return
 
     if (action === 'debt' && requiresImmediatePayment.value) {
-      alertStore.showAlert('Perhatian', 'Pembeli walk-in harus bayar langsung, tidak bisa berhutang', 'error')
+      alertStore.showAlert(t('alert.warning'), t('transaction.walkInMustPay'), 'error')
       return
     }
 
@@ -456,7 +458,7 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
       paymentDialogOpen.value = false
       paymentWithQueue.value = false
       pendingTableNumber.value = null
-      alertStore.showAlert('Error', getErrorMessage(error), 'error')
+      alertStore.showAlert(t('alert.error'), getErrorMessage(error), 'error')
       return
     }
 

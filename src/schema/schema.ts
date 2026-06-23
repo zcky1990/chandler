@@ -1,131 +1,162 @@
 import { z } from 'zod'
+import type { MessageKey } from '@/lib/i18n/messages'
+import { useLocaleStore } from '@/stores/useLocaleStore'
 
-export const loginSchema = z.object({
-    email: z.email().min(1, { message: 'Email harus diisi' }),
-    password: z.string().min(1, { message: 'Password harus diisi' }),
-})
+function t(key: MessageKey) {
+  return useLocaleStore().translate(key)
+}
 
-export const signUpSchema = z.object({
-    name: z.string().min(1, { message: 'Nama harus diisi' }),
-    email: z.email().min(1, { message: 'Email harus diisi' }),
-    password: z.string().min(1, { message: 'Password harus diisi' }),
-    confirmPassword: z.string().min(1, { message: 'Konfirmasi password harus diisi' }),
-}).refine((data) => data.password === data.confirmPassword, {
-    message: 'Password dan konfirmasi password harus sama',
+export function loginSchema() {
+  return z.object({
+    email: z.email().min(1, { message: t('validation.emailRequired') }),
+    password: z.string().min(1, { message: t('validation.passwordRequired') }),
+  })
+}
+
+export function signUpSchema() {
+  return z.object({
+    name: z.string().min(1, { message: t('validation.nameRequired') }),
+    email: z.email().min(1, { message: t('validation.emailRequired') }),
+    password: z.string().min(1, { message: t('validation.passwordRequired') }),
+    confirmPassword: z.string().min(1, { message: t('validation.confirmPasswordRequired') }),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: t('validation.passwordMismatch'),
     path: ['confirmPassword'],
-})
+  })
+}
 
-export type LoginSchema = z.infer<typeof loginSchema>
-export type SignUpSchema = z.infer<typeof signUpSchema>
+export type LoginSchema = z.infer<ReturnType<typeof loginSchema>>
+export type SignUpSchema = z.infer<ReturnType<typeof signUpSchema>>
 
-export const productSchema = z.object({
-  name: z.string().min(1, { message: 'Nama produk harus diisi' }),
-  description: z.string().nullable().optional(),
-  price: z.coerce.number().min(0, { message: 'Harga tidak boleh negatif' }),
-  purchase_price: z.coerce.number().min(0, { message: 'Harga beli tidak boleh negatif' }).default(0),
-  stock_quantity: z.coerce.number().int().min(0, { message: 'Stok tidak boleh negatif' }),
-  sku: z.string().nullable().optional(),
-  image_url: z.union([
-    z.string().url({ message: 'URL gambar tidak valid' }),
-    z.literal(''),
-  ]).nullable().optional(),
-  is_active: z.boolean().default(true),
-  is_addons: z.boolean().default(false),
-  category_id: z.string().uuid({ message: 'Kategori tidak valid' }).nullable().optional(),
-})
+export function productSchema() {
+  return z.object({
+    name: z.string().min(1, { message: t('validation.productNameRequired') }),
+    description: z.string().nullable().optional(),
+    price: z.coerce.number().min(0, { message: t('validation.priceNonNegative') }),
+    purchase_price: z.coerce.number().min(0, { message: t('validation.purchasePriceNonNegative') }).default(0),
+    stock_quantity: z.coerce.number().int().min(0, { message: t('validation.stockNonNegative') }),
+    sku: z.string().nullable().optional(),
+    image_url: z.union([
+      z.string().url({ message: t('validation.imageUrlInvalid') }),
+      z.literal(''),
+    ]).nullable().optional(),
+    is_active: z.boolean().default(true),
+    is_addons: z.boolean().default(false),
+    category_id: z.string().uuid({ message: t('validation.categoryInvalid') }).nullable().optional(),
+  })
+}
 
-export const customerSchema = z.object({
-  name: z.string().min(1, { message: 'Nama harus diisi' }),
-  email: z.union([
-    z.string().email({ message: 'Email tidak valid' }),
-    z.literal(''),
-  ]).nullable().optional(),
-  phone: z.string().nullable().optional(),
-  address: z.string().nullable().optional(),
-  notes: z.string().nullable().optional(),
-  is_active: z.boolean().default(true),
-})
+export function customerSchema() {
+  return z.object({
+    name: z.string().min(1, { message: t('validation.nameRequired') }),
+    email: z.union([
+      z.string().email({ message: t('validation.emailInvalid') }),
+      z.literal(''),
+    ]).nullable().optional(),
+    phone: z.string().nullable().optional(),
+    address: z.string().nullable().optional(),
+    notes: z.string().nullable().optional(),
+    is_active: z.boolean().default(true),
+  })
+}
 
-export const categorySchema = z.object({
-  name: z.string().min(1, { message: 'Nama kategori harus diisi' }),
-  description: z.string().nullable().optional(),
-  is_active: z.boolean().default(true),
-})
+export function categorySchema() {
+  return z.object({
+    name: z.string().min(1, { message: t('validation.categoryNameRequired') }),
+    description: z.string().nullable().optional(),
+    is_active: z.boolean().default(true),
+  })
+}
 
-export type CategorySchema = z.infer<typeof categorySchema>
+export type CategorySchema = z.infer<ReturnType<typeof categorySchema>>
+export type ProductSchema = z.infer<ReturnType<typeof productSchema>>
+export type CustomerSchema = z.infer<ReturnType<typeof customerSchema>>
 
-export type ProductSchema = z.infer<typeof productSchema>
-export type CustomerSchema = z.infer<typeof customerSchema>
+function transactionItemAddonSchema() {
+  return z.object({
+    addon_product_id: z.string().uuid({ message: t('validation.addonInvalid') }),
+    quantity: z.coerce.number().int().min(1, { message: t('validation.addonQtyMin') }),
+    unit_price: z.coerce.number().min(0, { message: t('validation.addonPriceInvalid') }),
+  })
+}
 
-export const transactionItemAddonSchema = z.object({
-  addon_product_id: z.string().uuid({ message: 'Addon tidak valid' }),
-  quantity: z.coerce.number().int().min(1, { message: 'Jumlah addon minimal 1' }),
-  unit_price: z.coerce.number().min(0, { message: 'Harga addon tidak valid' }),
-})
+function transactionItemSchema() {
+  return z.object({
+    product_id: z.string().uuid({ message: t('validation.productInvalid') }),
+    quantity: z.coerce.number().int().min(1, { message: t('validation.qtyMin') }),
+    unit_price: z.coerce.number().min(0, { message: t('validation.priceInvalid') }),
+    addons: z.array(transactionItemAddonSchema()).optional(),
+  })
+}
 
-export const transactionItemSchema = z.object({
-  product_id: z.string().uuid({ message: 'Produk tidak valid' }),
-  quantity: z.coerce.number().int().min(1, { message: 'Jumlah minimal 1' }),
-  unit_price: z.coerce.number().min(0, { message: 'Harga tidak valid' }),
-  addons: z.array(transactionItemAddonSchema).optional(),
-})
+export function transactionSchema() {
+  return z.object({
+    customer_id: z.string().uuid({ message: t('validation.buyerRequired') }),
+    notes: z.string().nullable().optional(),
+    items: z.array(transactionItemSchema()).min(1, { message: t('validation.minOneProduct') }),
+  })
+}
 
-export const transactionSchema = z.object({
-  customer_id: z.string().uuid({ message: 'Pembeli harus dipilih' }),
-  notes: z.string().nullable().optional(),
-  items: z.array(transactionItemSchema).min(1, { message: 'Minimal 1 produk' }),
-})
+export type TransactionSchema = z.infer<ReturnType<typeof transactionSchema>>
 
-export type TransactionSchema = z.infer<typeof transactionSchema>
+function transactionItemUpdateSchema() {
+  return z.object({
+    id: z.string().uuid({ message: t('validation.itemInvalid') }).optional(),
+    product_id: z.string().uuid({ message: t('validation.productInvalid') }),
+    quantity: z.coerce.number().int().min(1, { message: t('validation.qtyMin') }),
+    unit_price: z.coerce.number().min(0, { message: t('validation.priceInvalid') }).optional(),
+    addons: z.array(transactionItemAddonSchema()).optional(),
+  }).superRefine((data, ctx) => {
+    if (!data.id && data.unit_price === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message: t('validation.unitPriceRequiredNewItem'),
+        path: ['unit_price'],
+      })
+    }
+  })
+}
 
-export const transactionItemUpdateSchema = z.object({
-  id: z.string().uuid({ message: 'Item tidak valid' }).optional(),
-  product_id: z.string().uuid({ message: 'Produk tidak valid' }),
-  quantity: z.coerce.number().int().min(1, { message: 'Jumlah minimal 1' }),
-  unit_price: z.coerce.number().min(0, { message: 'Harga tidak valid' }).optional(),
-  addons: z.array(transactionItemAddonSchema).optional(),
-}).superRefine((data, ctx) => {
-  if (!data.id && data.unit_price === undefined) {
-    ctx.addIssue({
-      code: 'custom',
-      message: 'Harga produk wajib untuk item baru',
-      path: ['unit_price'],
-    })
-  }
-})
+export function transactionItemsUpdateSchema() {
+  return z.object({
+    notes: z.string().nullable().optional(),
+    items: z.array(transactionItemUpdateSchema()).min(1, { message: t('validation.minOneItem') }),
+  })
+}
 
-export const transactionItemsUpdateSchema = z.object({
-  notes: z.string().nullable().optional(),
-  items: z.array(transactionItemUpdateSchema).min(1, { message: 'Minimal 1 item' }),
-})
+export type TransactionItemsUpdateSchema = z.infer<ReturnType<typeof transactionItemsUpdateSchema>>
 
-export type TransactionItemsUpdateSchema = z.infer<typeof transactionItemsUpdateSchema>
+export function shopConfigSchema() {
+  return z.object({
+    shop_name: z.string().nullable().optional(),
+    shop_address: z.string().nullable().optional(),
+    transfer_bank_name: z.string().nullable().optional(),
+    transfer_account_number: z.string().nullable().optional(),
+    transfer_account_holder: z.string().nullable().optional(),
+  })
+}
 
-export const shopConfigSchema = z.object({
-  shop_name: z.string().nullable().optional(),
-  shop_address: z.string().nullable().optional(),
-  transfer_bank_name: z.string().nullable().optional(),
-  transfer_account_number: z.string().nullable().optional(),
-  transfer_account_holder: z.string().nullable().optional(),
-})
+export type ShopConfigSchema = z.infer<ReturnType<typeof shopConfigSchema>>
 
-export type ShopConfigSchema = z.infer<typeof shopConfigSchema>
+export function restockSchema() {
+  return z.object({
+    product_id: z.string().uuid({ message: t('validation.productInvalid') }),
+    quantity: z.coerce.number().int().min(1, { message: t('validation.restockQtyMin') }),
+    unit_cost: z.coerce.number().min(0, { message: t('validation.unitCostNonNegative') }),
+    notes: z.string().nullable().optional(),
+  })
+}
 
-export const restockSchema = z.object({
-  product_id: z.string().uuid({ message: 'Produk tidak valid' }),
-  quantity: z.coerce.number().int().min(1, { message: 'Jumlah minimal 1' }),
-  unit_cost: z.coerce.number().min(0, { message: 'Harga beli tidak boleh negatif' }),
-  notes: z.string().nullable().optional(),
-})
+export type RestockSchema = z.infer<ReturnType<typeof restockSchema>>
 
-export type RestockSchema = z.infer<typeof restockSchema>
+export function preOrderSubmitSchema() {
+  return z.object({
+    customer_name: z.string().nullable().optional(),
+    table_number: z.string().nullable().optional(),
+    notes: z.string().nullable().optional(),
+    payment_choice: z.enum(['pay_later', 'pay_now']),
+    items: z.array(transactionItemSchema()).min(1, { message: t('validation.minOneProduct') }),
+  })
+}
 
-export const preOrderSubmitSchema = z.object({
-  customer_name: z.string().nullable().optional(),
-  table_number: z.string().nullable().optional(),
-  notes: z.string().nullable().optional(),
-  payment_choice: z.enum(['pay_later', 'pay_now']),
-  items: z.array(transactionItemSchema).min(1, { message: 'Minimal 1 produk' }),
-})
-
-export type PreOrderSubmitSchema = z.infer<typeof preOrderSubmitSchema>
+export type PreOrderSubmitSchema = z.infer<ReturnType<typeof preOrderSubmitSchema>>

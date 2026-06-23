@@ -17,15 +17,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useI18n } from '@/composables/useI18n'
 import { getTransactions, markTransactionAsPaid } from '@/lib/transaction'
 import { buildInvoiceFromTransaction, type InvoiceData } from '@/lib/invoice'
 import { formatPrice } from '@/lib/format'
 import { useAlertStore } from '@/stores/useAlertStore'
+import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
 import type { CustomerTransactionSummary, PaymentMethod, TransactionWithDetails } from '@/types/database'
 
 type ViewMode = 'transaction' | 'customer'
 type PaymentFilter = 'all' | 'unpaid' | 'paid'
 
+const { t, locale } = useI18n()
 const alertStore = useAlertStore()
 const transactions = ref<TransactionWithDetails[]>([])
 const viewMode = ref<ViewMode>('transaction')
@@ -41,8 +44,16 @@ const isPaying = ref(false)
 const selectedCustomer = ref<CustomerTransactionSummary | null>(null)
 const selectedTransaction = ref<TransactionWithDetails | null>(null)
 
+const dateLocale = computed(() => (locale.value === 'en' ? 'en-US' : 'id-ID'))
+
+function displayCustomerName(name: string | undefined | null) {
+  if (!name) return '-'
+  if (name === WALK_IN_CUSTOMER_NAME) return t('common.walkIn')
+  return name
+}
+
 function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat('id-ID', {
+  return new Intl.DateTimeFormat(dateLocale.value, {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value))
@@ -65,7 +76,10 @@ const customerSummaries = computed<CustomerTransactionSummary[]>(() => {
 
   for (const transaction of filteredTransactions.value) {
     const customerId = transaction.customer_id
-    const customerName = transaction.customers?.name ?? 'Pembeli tidak diketahui'
+    const rawName = transaction.customers?.name
+    const customerName = rawName === WALK_IN_CUSTOMER_NAME
+      ? t('common.walkIn')
+      : (rawName ?? t('common.unknownBuyer'))
     const existing = map.get(customerId)
 
     if (existing) {
@@ -90,7 +104,7 @@ const customerSummaries = computed<CustomerTransactionSummary[]>(() => {
   }
 
   return Array.from(map.values()).sort((a, b) =>
-    a.customerName.localeCompare(b.customerName, 'id'),
+    a.customerName.localeCompare(b.customerName, dateLocale.value),
   )
 })
 
@@ -100,7 +114,7 @@ async function loadTransactions() {
   isLoading.value = false
 
   if (error) {
-    alertStore.showAlert('Error', error.message, 'error')
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
     return
   }
 
@@ -137,7 +151,7 @@ async function handlePayment(method: PaymentMethod) {
   paymentDialogOpen.value = false
 
   if (error) {
-    alertStore.showAlert('Error', error.message, 'error')
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
     return
   }
 
@@ -200,13 +214,13 @@ onMounted(loadTransactions)
     <div class="flex flex-col gap-6 p-6">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 class="text-2xl font-bold tracking-tight">Daftar Transaksi</h1>
+          <h1 class="text-2xl font-bold tracking-tight">{{ t('transaction.listTitle') }}</h1>
           <p class="text-sm text-muted-foreground">
-            Lihat transaksi per item atau dikelompokkan per pembeli.
+            {{ t('transaction.listSubtitle') }}
           </p>
         </div>
         <Button as-child>
-          <RouterLink to="/transactions">Buat Transaksi</RouterLink>
+          <RouterLink to="/transactions">{{ t('dashboard.actionNewTx') }}</RouterLink>
         </Button>
       </div>
 
@@ -217,14 +231,14 @@ onMounted(loadTransactions)
             @click="viewMode = 'transaction'"
           >
             <List class="size-4" />
-            Per Transaksi
+            {{ t('transaction.perTransaction') }}
           </Button>
           <Button
             :variant="viewMode === 'customer' ? 'default' : 'outline'"
             @click="viewMode = 'customer'"
           >
             <Users class="size-4" />
-            Per Pembeli
+            {{ t('transaction.perBuyer') }}
           </Button>
         </div>
 
@@ -234,21 +248,21 @@ onMounted(loadTransactions)
             size="sm"
             @click="paymentFilter = 'all'"
           >
-            Semua
+            {{ t('common.all') }}
           </Button>
           <Button
             :variant="paymentFilter === 'unpaid' ? 'default' : 'outline'"
             size="sm"
             @click="paymentFilter = 'unpaid'"
           >
-            Belum dibayar
+            {{ t('transaction.unpaidFilter') }}
           </Button>
           <Button
             :variant="paymentFilter === 'paid' ? 'default' : 'outline'"
             size="sm"
             @click="paymentFilter = 'paid'"
           >
-            Sudah dibayar
+            {{ t('transaction.paidFilter') }}
           </Button>
         </div>
       </div>
@@ -257,44 +271,44 @@ onMounted(loadTransactions)
         <Table>
           <TableHeader v-if="viewMode === 'transaction'">
             <TableRow>
-              <TableHead>Tanggal</TableHead>
-              <TableHead>Pembeli</TableHead>
-              <TableHead>Produk</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead class="text-right">Total</TableHead>
-              <TableHead class="text-right">Aksi</TableHead>
+              <TableHead>{{ t('common.date') }}</TableHead>
+              <TableHead>{{ t('common.buyer') }}</TableHead>
+              <TableHead>{{ t('common.product') }}</TableHead>
+              <TableHead>{{ t('common.status') }}</TableHead>
+              <TableHead class="text-right">{{ t('common.total') }}</TableHead>
+              <TableHead class="text-right">{{ t('common.actions') }}</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableHeader v-else>
             <TableRow>
-              <TableHead>Pembeli</TableHead>
-              <TableHead>Jumlah Transaksi</TableHead>
-              <TableHead>Belum Bayar</TableHead>
-              <TableHead class="text-right">Total Hutang</TableHead>
-              <TableHead class="text-right">Aksi</TableHead>
+              <TableHead>{{ t('common.buyer') }}</TableHead>
+              <TableHead>{{ t('transaction.txCount') }}</TableHead>
+              <TableHead>{{ t('transaction.unpaidCount') }}</TableHead>
+              <TableHead class="text-right">{{ t('transaction.totalDebt') }}</TableHead>
+              <TableHead class="text-right">{{ t('common.actions') }}</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
             <TableRow v-if="isLoading">
               <TableCell :colspan="6" class="text-center text-muted-foreground">
-                Memuat data...
+                {{ t('common.loading') }}
               </TableCell>
             </TableRow>
 
             <template v-else-if="viewMode === 'transaction'">
               <TableRow v-if="!filteredTransactions.length">
                 <TableCell :colspan="6" class="text-center text-muted-foreground">
-                  {{ transactions.length ? 'Tidak ada transaksi untuk filter ini.' : 'Belum ada transaksi.' }}
+                  {{ transactions.length ? t('transaction.noFilterMatch') : t('transaction.noTransactions') }}
                 </TableCell>
               </TableRow>
               <TableRow v-for="transaction in filteredTransactions" :key="transaction.id">
                 <TableCell>{{ formatDateTime(transaction.created_at) }}</TableCell>
                 <TableCell class="font-medium">
-                  {{ transaction.customers?.name ?? '-' }}
+                  {{ displayCustomerName(transaction.customers?.name) }}
                 </TableCell>
-                <TableCell>{{ transaction.transaction_items.length }} item</TableCell>
+                <TableCell>{{ transaction.transaction_items.length }} {{ t('common.items') }}</TableCell>
                 <TableCell>
                   <span
                     class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
@@ -302,7 +316,7 @@ onMounted(loadTransactions)
                       ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
                       : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'"
                   >
-                    {{ transaction.is_paid ? 'Lunas' : 'Belum bayar' }}
+                    {{ transaction.is_paid ? t('status.paid') : t('status.unpaid') }}
                   </span>
                 </TableCell>
                 <TableCell class="text-right font-medium">
@@ -317,7 +331,7 @@ onMounted(loadTransactions)
                       @click="openPaymentDialog(transaction)"
                     >
                       <Banknote class="size-4" />
-                      Bayar
+                      {{ t('common.pay') }}
                     </Button>
                     <Button
                       v-if="!transaction.is_paid"
@@ -342,7 +356,7 @@ onMounted(loadTransactions)
             <template v-else>
               <TableRow v-if="!customerSummaries.length">
                 <TableCell :colspan="5" class="text-center text-muted-foreground">
-                  {{ transactions.length ? 'Tidak ada transaksi untuk filter ini.' : 'Belum ada transaksi.' }}
+                  {{ transactions.length ? t('transaction.noFilterMatch') : t('transaction.noTransactions') }}
                 </TableCell>
               </TableRow>
               <TableRow
@@ -363,7 +377,7 @@ onMounted(loadTransactions)
                     variant="outline"
                     @click.stop="openCustomerDialog(summary)"
                   >
-                    Lihat
+                    {{ t('common.view') }}
                   </Button>
                 </TableCell>
               </TableRow>

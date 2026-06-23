@@ -5,11 +5,13 @@ import { Check, ChefHat, ClipboardList, Monitor, Radio } from '@lucide/vue'
 import QueueCard from '@/components/queue/QueueCard.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { queueStatusLabels, useActiveQueues, useQueueFilter } from '@/composables/useActiveQueues'
+import { getQueueStatusLabel, useActiveQueues, useQueueFilter } from '@/composables/useActiveQueues'
+import { useI18n } from '@/composables/useI18n'
 import { completeQueue, markQueueReady, pickupQueue } from '@/lib/queue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import { useAlertStore } from '@/stores/useAlertStore'
 
+const { t } = useI18n()
 const alertStore = useAlertStore()
 const isUpdating = ref(false)
 
@@ -29,11 +31,11 @@ async function handlePickup(queueId: string) {
   isUpdating.value = false
 
   if (error) {
-    alertStore.showAlert('Error', error.message, 'error')
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
     return
   }
 
-  alertStore.showAlert('Berhasil', 'Antrian mulai disiapkan', 'success')
+  alertStore.showAlert(t('alert.success'), t('queue.started'), 'success')
 }
 
 async function handleMarkReady(queueId: string) {
@@ -42,11 +44,11 @@ async function handleMarkReady(queueId: string) {
   isUpdating.value = false
 
   if (error) {
-    alertStore.showAlert('Error', error.message, 'error')
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
     return
   }
 
-  alertStore.showAlert('Berhasil', 'Pesanan siap diambil', 'success')
+  alertStore.showAlert(t('alert.success'), t('queue.ready'), 'success')
 }
 
 async function handleComplete(queueId: string) {
@@ -55,11 +57,11 @@ async function handleComplete(queueId: string) {
   isUpdating.value = false
 
   if (error) {
-    alertStore.showAlert('Error', error.message, 'error')
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
     return
   }
 
-  alertStore.showAlert('Berhasil', 'Antrian selesai', 'success')
+  alertStore.showAlert(t('alert.success'), t('queue.done'), 'success')
 }
 </script>
 
@@ -70,27 +72,27 @@ async function handleComplete(queueId: string) {
         <div>
           <h1 class="flex items-center gap-2 text-2xl font-bold tracking-tight">
             <ClipboardList class="size-6" />
-            Antrian
+            {{ t('queue.title') }}
           </h1>
           <p class="text-sm text-muted-foreground">
-            Kelola pesanan yang perlu disiapkan.
+            {{ t('queue.subtitle') }}
             <span
               v-if="isRealtimeConnected"
               class="ml-2 inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-300"
             >
               <Radio class="size-3" />
-              Live
+              {{ t('common.live') }}
             </span>
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
           <Button variant="outline" :disabled="isLoading" @click="loadQueues">
-            Refresh
+            {{ t('common.refresh') }}
           </Button>
           <Button variant="outline" as-child>
             <RouterLink :to="{ name: 'queue-display' }" target="_blank" rel="noopener noreferrer">
               <Monitor class="size-4" />
-              Layar Antrian
+              {{ t('queue.display') }}
             </RouterLink>
           </Button>
         </div>
@@ -99,19 +101,19 @@ async function handleComplete(queueId: string) {
       <div class="grid gap-3 sm:grid-cols-3">
         <Card>
           <CardContent class="p-4">
-            <p class="text-sm text-muted-foreground">Menunggu</p>
+            <p class="text-sm text-muted-foreground">{{ t('status.waiting') }}</p>
             <p class="text-2xl font-bold">{{ waitingCount }}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent class="p-4">
-            <p class="text-sm text-muted-foreground">Disiapkan</p>
+            <p class="text-sm text-muted-foreground">{{ t('status.preparing') }}</p>
             <p class="text-2xl font-bold">{{ preparingCount }}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent class="p-4">
-            <p class="text-sm text-muted-foreground">Siap</p>
+            <p class="text-sm text-muted-foreground">{{ t('status.ready') }}</p>
             <p class="text-2xl font-bold">{{ readyCount }}</p>
           </CardContent>
         </Card>
@@ -130,14 +132,14 @@ async function handleComplete(queueId: string) {
       </div>
 
       <div v-if="isLoading" class="text-sm text-muted-foreground">
-        Memuat antrian...
+        {{ t('queue.loading') }}
       </div>
 
       <div
         v-else-if="!filteredQueues.length"
         class="rounded-xl border border-dashed px-4 py-12 text-center text-sm text-muted-foreground"
       >
-        Tidak ada antrian aktif.
+        {{ t('queue.noActive') }}
       </div>
 
       <div v-else class="grid gap-3 lg:grid-cols-2">
@@ -145,7 +147,7 @@ async function handleComplete(queueId: string) {
           v-for="queue in filteredQueues"
           :key="queue.id"
           :queue="queue"
-          :status-label="queueStatusLabels[queue.status]"
+          :status-label="getQueueStatusLabel(queue.status)"
           :is-updating="isUpdating"
           @pickup="handlePickup"
           @mark-ready="handleMarkReady"

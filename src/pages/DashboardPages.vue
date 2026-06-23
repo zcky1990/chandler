@@ -18,6 +18,7 @@ import {
 } from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import ProfitTrendChart from '@/components/analytics/ProfitTrendChart.vue'
+import { useI18n } from '@/composables/useI18n'
 import { getDateRangePreset, getFullAnalyticsReport } from '@/lib/analytics'
 import { getCookie } from '@/lib/cookies'
 import { getActiveQueues } from '@/lib/queue'
@@ -43,6 +44,7 @@ import type {
 
 const LOW_STOCK_THRESHOLD = 5
 
+const { t, locale } = useI18n()
 const alertStore = useAlertStore()
 const isLoading = ref(true)
 const todaySummary = ref<AnalyticsSummary | null>(null)
@@ -55,16 +57,18 @@ const queueReady = ref(0)
 
 const userEmail = getCookie('_user_email')
 
+const dateLocale = computed(() => (locale.value === 'en' ? 'en-US' : 'id-ID'))
+
 const greeting = computed(() => {
   const hour = new Date().getHours()
-  if (hour < 11) return 'Selamat pagi'
-  if (hour < 15) return 'Selamat siang'
-  if (hour < 18) return 'Selamat sore'
-  return 'Selamat malam'
+  if (hour < 11) return t('dashboard.greetingMorning')
+  if (hour < 15) return t('dashboard.greetingAfternoon')
+  if (hour < 18) return t('dashboard.greetingEvening')
+  return t('dashboard.greetingNight')
 })
 
 const todayLabel = computed(() =>
-  new Intl.DateTimeFormat('id-ID', {
+  new Intl.DateTimeFormat(dateLocale.value, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -74,14 +78,14 @@ const todayLabel = computed(() =>
 
 const activeQueueCount = computed(() => queueWaiting.value + queuePreparing.value + queueReady.value)
 
-const quickActions = [
-  { to: '/transactions', label: 'Buat Transaksi', icon: Receipt, description: 'Catat penjualan baru' },
-  { to: '/orders/inbox', label: 'Pesanan Masuk', icon: Inbox, description: 'Proses pesanan online' },
-  { to: '/queue', label: 'Antrian', icon: ClipboardList, description: 'Kelola pesanan dapur' },
-  { to: '/transactions/list', label: 'Daftar Transaksi', icon: List, description: 'Riwayat & pembayaran' },
-  { to: '/stock/restock', label: 'Restock', icon: PackagePlus, description: 'Tambah stok produk' },
-  { to: '/analytics', label: 'Analisis', icon: BarChart3, description: 'Laporan keuntungan' },
-]
+const quickActions = computed(() => [
+  { to: '/transactions', label: t('dashboard.actionNewTx'), icon: Receipt, description: t('dashboard.actionNewTxDesc') },
+  { to: '/orders/inbox', label: t('dashboard.actionOrders'), icon: Inbox, description: t('dashboard.actionOrdersDesc') },
+  { to: '/queue', label: t('dashboard.actionQueue'), icon: ClipboardList, description: t('dashboard.actionQueueDesc') },
+  { to: '/transactions/list', label: t('dashboard.actionTxList'), icon: List, description: t('dashboard.actionTxListDesc') },
+  { to: '/stock/restock', label: t('dashboard.actionRestock'), icon: PackagePlus, description: t('dashboard.actionRestockDesc') },
+  { to: '/analytics', label: t('dashboard.actionAnalytics'), icon: BarChart3, description: t('dashboard.actionAnalyticsDesc') },
+])
 
 async function loadDashboard() {
   isLoading.value = true
@@ -99,22 +103,22 @@ async function loadDashboard() {
   isLoading.value = false
 
   if (todayResult.error) {
-    alertStore.showAlert('Error', todayResult.error.message, 'error')
+    alertStore.showAlert(t('alert.error'), todayResult.error.message, 'error')
     return
   }
 
   if (weekResult.error) {
-    alertStore.showAlert('Error', weekResult.error.message, 'error')
+    alertStore.showAlert(t('alert.error'), weekResult.error.message, 'error')
     return
   }
 
   if (queueResult.error) {
-    alertStore.showAlert('Error', queueResult.error.message, 'error')
+    alertStore.showAlert(t('alert.error'), queueResult.error.message, 'error')
     return
   }
 
   if (lowStockResult.error) {
-    alertStore.showAlert('Error', lowStockResult.error.message, 'error')
+    alertStore.showAlert(t('alert.error'), lowStockResult.error.message, 'error')
     return
   }
 
@@ -139,7 +143,7 @@ onMounted(loadDashboard)
         <div>
           <h1 class="flex items-center gap-2 text-2xl font-bold tracking-tight">
             <LayoutDashboard class="size-6" />
-            Dashboard
+            {{ t('dashboard.title') }}
           </h1>
           <p class="text-sm text-muted-foreground">
             {{ greeting }}{{ userEmail ? `, ${userEmail}` : '' }} · {{ todayLabel }}
@@ -147,62 +151,62 @@ onMounted(loadDashboard)
         </div>
         <Button variant="outline" :disabled="isLoading" @click="loadDashboard">
           <RefreshCw class="size-4" :class="{ 'animate-spin': isLoading }" />
-          Refresh
+          {{ t('common.refresh') }}
         </Button>
       </div>
 
       <div v-if="isLoading" class="py-16 text-center text-sm text-muted-foreground">
-        Memuat ringkasan...
+        {{ t('dashboard.loading') }}
       </div>
 
       <template v-else-if="todaySummary">
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Card class="border-l-4 border-l-[var(--chart-1)]">
             <CardHeader class="pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">Pendapatan Hari Ini</CardTitle>
+              <CardTitle class="text-sm font-medium text-muted-foreground">{{ t('dashboard.revenueToday') }}</CardTitle>
             </CardHeader>
             <CardContent>
               <p class="text-2xl font-bold">{{ formatPrice(todaySummary.revenue) }}</p>
               <p class="mt-1 text-xs text-muted-foreground">
-                {{ todaySummary.transactionCount }} transaksi
+                {{ todaySummary.transactionCount }} {{ t('dashboard.transactions') }}
               </p>
             </CardContent>
           </Card>
 
           <Card class="border-l-4 border-l-[var(--chart-3)]">
             <CardHeader class="pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">Laba Kotor Hari Ini</CardTitle>
+              <CardTitle class="text-sm font-medium text-muted-foreground">{{ t('dashboard.grossProfitToday') }}</CardTitle>
             </CardHeader>
             <CardContent>
               <p class="text-2xl font-bold">{{ formatPrice(todaySummary.grossProfit) }}</p>
               <p class="mt-1 text-xs text-muted-foreground">
-                Margin {{ formatPercent(todaySummary.marginPercent) }}
+                {{ t('dashboard.margin') }} {{ formatPercent(todaySummary.marginPercent) }}
               </p>
             </CardContent>
           </Card>
 
           <Card class="border-l-4 border-l-[var(--chart-4)]">
             <CardHeader class="pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">Pembayaran Hari Ini</CardTitle>
+              <CardTitle class="text-sm font-medium text-muted-foreground">{{ t('dashboard.paymentsToday') }}</CardTitle>
             </CardHeader>
             <CardContent>
               <p class="text-2xl font-bold">{{ formatPrice(todaySummary.paidAmount) }}</p>
               <p class="mt-1 text-xs text-muted-foreground">
-                {{ todaySummary.paidCount }} lunas · {{ todaySummary.unpaidCount }} belum dibayar
+                {{ todaySummary.paidCount }} {{ t('dashboard.paid') }} · {{ todaySummary.unpaidCount }} {{ t('dashboard.unpaid') }}
               </p>
             </CardContent>
           </Card>
 
           <Card class="border-l-4 border-l-amber-500">
             <CardHeader class="pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">Hutang & Antrian</CardTitle>
+              <CardTitle class="text-sm font-medium text-muted-foreground">{{ t('dashboard.debtQueue') }}</CardTitle>
             </CardHeader>
             <CardContent>
               <p class="text-2xl font-bold">{{ formatPrice(todaySummary.outstandingDebt) }}</p>
               <p class="mt-1 text-xs text-muted-foreground">
-                {{ activeQueueCount }} antrian aktif
+                {{ activeQueueCount }} {{ t('dashboard.activeQueue') }}
                 <span v-if="activeQueueCount">
-                  ({{ queueWaiting }} tunggu · {{ queuePreparing }} siapkan · {{ queueReady }} siap)
+                  ({{ queueWaiting }} {{ t('status.waiting').toLowerCase() }} · {{ queuePreparing }} {{ t('status.preparing').toLowerCase() }} · {{ queueReady }} {{ t('status.ready').toLowerCase() }})
                 </span>
               </p>
             </CardContent>
@@ -211,7 +215,7 @@ onMounted(loadDashboard)
 
         <div>
           <h2 class="mb-3 text-sm font-semibold tracking-wide text-muted-foreground uppercase">
-            Aksi Cepat
+            {{ t('dashboard.quickActions') }}
           </h2>
           <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <RouterLink
@@ -231,8 +235,8 @@ onMounted(loadDashboard)
               class="group rounded-xl border bg-background p-4 transition-colors hover:bg-muted/50"
             >
               <Monitor class="mb-2 size-5 text-primary" />
-              <p class="font-medium">Layar Antrian</p>
-              <p class="mt-1 text-xs text-muted-foreground">Buka tampilan TV</p>
+              <p class="font-medium">{{ t('dashboard.queueDisplay') }}</p>
+              <p class="mt-1 text-xs text-muted-foreground">{{ t('dashboard.openTv') }}</p>
             </RouterLink>
           </div>
         </div>
@@ -242,30 +246,30 @@ onMounted(loadDashboard)
             <CardHeader>
               <CardTitle class="flex items-center gap-2 text-base">
                 <ClipboardList class="size-4" />
-                Status Antrian
+                {{ t('dashboard.queueStatus') }}
               </CardTitle>
-              <CardDescription>Pesanan aktif saat ini</CardDescription>
+              <CardDescription>{{ t('dashboard.activeOrders') }}</CardDescription>
             </CardHeader>
             <CardContent>
               <div v-if="!activeQueueCount" class="text-sm text-muted-foreground">
-                Tidak ada antrian aktif.
+                {{ t('dashboard.noActiveQueue') }}
               </div>
               <div v-else class="grid grid-cols-3 gap-3">
                 <div class="rounded-lg border bg-amber-500/10 px-3 py-4 text-center">
                   <p class="text-2xl font-bold">{{ queueWaiting }}</p>
-                  <p class="text-xs text-muted-foreground">Menunggu</p>
+                  <p class="text-xs text-muted-foreground">{{ t('status.waiting') }}</p>
                 </div>
                 <div class="rounded-lg border bg-blue-500/10 px-3 py-4 text-center">
                   <p class="text-2xl font-bold">{{ queuePreparing }}</p>
-                  <p class="text-xs text-muted-foreground">Disiapkan</p>
+                  <p class="text-xs text-muted-foreground">{{ t('status.preparing') }}</p>
                 </div>
                 <div class="rounded-lg border bg-green-500/10 px-3 py-4 text-center">
                   <p class="text-2xl font-bold">{{ queueReady }}</p>
-                  <p class="text-xs text-muted-foreground">Siap</p>
+                  <p class="text-xs text-muted-foreground">{{ t('status.ready') }}</p>
                 </div>
               </div>
               <Button class="mt-4 w-full" variant="outline" as-child>
-                <RouterLink to="/queue">Kelola Antrian</RouterLink>
+                <RouterLink to="/queue">{{ t('dashboard.manageQueue') }}</RouterLink>
               </Button>
             </CardContent>
           </Card>
@@ -274,13 +278,13 @@ onMounted(loadDashboard)
             <CardHeader>
               <CardTitle class="flex items-center gap-2 text-base">
                 <AlertTriangle class="size-4 text-amber-500" />
-                Stok Menipis
+                {{ t('dashboard.lowStock') }}
               </CardTitle>
-              <CardDescription>Produk dengan stok ≤ {{ LOW_STOCK_THRESHOLD }}</CardDescription>
+              <CardDescription>{{ t('dashboard.lowStockDesc', { threshold: LOW_STOCK_THRESHOLD }) }}</CardDescription>
             </CardHeader>
             <CardContent>
               <div v-if="!lowStockProducts.length" class="text-sm text-muted-foreground">
-                Semua stok dalam kondisi aman.
+                {{ t('dashboard.stockSafe') }}
               </div>
               <ul v-else class="space-y-2">
                 <li
@@ -289,11 +293,11 @@ onMounted(loadDashboard)
                   class="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
                 >
                   <span class="font-medium">{{ product.name }}</span>
-                  <span class="text-muted-foreground">Stok {{ product.stock_quantity }}</span>
+                  <span class="text-muted-foreground">{{ t('dashboard.stockLabel', { quantity: product.stock_quantity }) }}</span>
                 </li>
               </ul>
               <Button class="mt-4 w-full" variant="outline" as-child>
-                <RouterLink to="/stock/restock">Restock Sekarang</RouterLink>
+                <RouterLink to="/stock/restock">{{ t('dashboard.restockNow') }}</RouterLink>
               </Button>
             </CardContent>
           </Card>
@@ -304,20 +308,20 @@ onMounted(loadDashboard)
             <CardHeader>
               <CardTitle class="flex items-center gap-2 text-base">
                 <ShoppingCart class="size-4" />
-                Produk Terlaris Hari Ini
+                {{ t('dashboard.topProducts') }}
               </CardTitle>
-              <CardDescription>Berdasarkan jumlah terjual</CardDescription>
+              <CardDescription>{{ t('dashboard.topProductsDesc') }}</CardDescription>
             </CardHeader>
             <CardContent>
               <div v-if="!topProductsToday.length" class="text-sm text-muted-foreground">
-                Belum ada penjualan hari ini.
+                {{ t('dashboard.noSalesToday') }}
               </div>
               <Table v-else>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Produk</TableHead>
-                    <TableHead class="text-right">Qty</TableHead>
-                    <TableHead class="text-right">Laba</TableHead>
+                    <TableHead>{{ t('common.product') }}</TableHead>
+                    <TableHead class="text-right">{{ t('dashboard.qty') }}</TableHead>
+                    <TableHead class="text-right">{{ t('dashboard.profit') }}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -335,13 +339,13 @@ onMounted(loadDashboard)
             <CardHeader>
               <CardTitle class="flex items-center gap-2 text-base">
                 <TrendingUp class="size-4" />
-                Tren 7 Hari Terakhir
+                {{ t('dashboard.trend7d') }}
               </CardTitle>
-              <CardDescription>Pendapatan, HPP, dan laba kotor</CardDescription>
+              <CardDescription>{{ t('dashboard.trendDesc') }}</CardDescription>
             </CardHeader>
             <CardContent>
               <div v-if="!weekTrend.length" class="text-sm text-muted-foreground">
-                Belum ada data untuk ditampilkan.
+                {{ t('dashboard.noChartData') }}
               </div>
               <ProfitTrendChart v-else :data="weekTrend" />
             </CardContent>
@@ -352,30 +356,30 @@ onMounted(loadDashboard)
           <CardHeader>
             <CardTitle class="flex items-center gap-2 text-base">
               <Banknote class="size-4" />
-              Ringkasan Keuangan
+              {{ t('dashboard.financeSummary') }}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <p class="text-xs text-muted-foreground">Nilai inventori</p>
+                <p class="text-xs text-muted-foreground">{{ t('dashboard.inventoryValue') }}</p>
                 <p class="text-lg font-semibold">{{ formatPrice(todaySummary.inventoryValue) }}</p>
               </div>
               <div>
-                <p class="text-xs text-muted-foreground">Hutang belum lunas</p>
+                <p class="text-xs text-muted-foreground">{{ t('dashboard.outstandingDebt') }}</p>
                 <p class="text-lg font-semibold">{{ formatPrice(todaySummary.outstandingDebt) }}</p>
               </div>
               <div>
-                <p class="text-xs text-muted-foreground">HPP hari ini</p>
+                <p class="text-xs text-muted-foreground">{{ t('dashboard.cogsToday') }}</p>
                 <p class="text-lg font-semibold">{{ formatPrice(todaySummary.cogs) }}</p>
               </div>
               <div>
-                <p class="text-xs text-muted-foreground">Belum dibayar hari ini</p>
+                <p class="text-xs text-muted-foreground">{{ t('dashboard.unpaidToday') }}</p>
                 <p class="text-lg font-semibold">{{ formatPrice(todaySummary.unpaidAmount) }}</p>
               </div>
             </div>
             <Button class="mt-4" variant="outline" as-child>
-              <RouterLink to="/analytics">Lihat Analisis Lengkap</RouterLink>
+              <RouterLink to="/analytics">{{ t('dashboard.viewAnalytics') }}</RouterLink>
             </Button>
           </CardContent>
         </Card>

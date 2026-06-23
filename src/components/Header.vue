@@ -2,6 +2,7 @@
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
 import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 </script>
 
 <template>
@@ -11,6 +12,7 @@ import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
             <Separator orientation="vertical" class="mr-2 data-[orientation=vertical]:h-4" />
         </div>
         <div class="flex items-center gap-2">
+            <LanguageSwitcher />
             <ThemeSwitcher />
         </div>
     </header>

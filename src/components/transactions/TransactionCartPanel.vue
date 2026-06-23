@@ -2,6 +2,7 @@
 import { Banknote, ClipboardList, Minus, Plus, ShoppingCart, Trash2 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useI18n } from '@/composables/useI18n'
 import { formatPrice } from '@/lib/format'
 import { hasBundleAddons } from '@/lib/addon'
 import type { CartItem } from '@/composables/useTransactionCart'
@@ -13,6 +14,8 @@ defineProps<{
   requiresImmediatePayment?: boolean
   getCartLineSubtotal: (item: CartItem) => number
 }>()
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   updateQuantity: [lineKey: string, quantity: number]
@@ -29,11 +32,11 @@ const emit = defineEmits<{
     <div class="rounded-xl border bg-background p-4">
       <div class="mb-4 flex items-center gap-2">
         <ShoppingCart class="size-5" />
-        <h2 class="font-semibold">Keranjang</h2>
+        <h2 class="font-semibold">{{ t('transaction.cart') }}</h2>
       </div>
 
       <div v-if="!cart.length" class="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-        Belum ada produk di keranjang.
+        {{ t('transaction.cartEmpty') }}
       </div>
 
       <div v-else class="space-y-2">
@@ -52,7 +55,7 @@ const emit = defineEmits<{
                 </p>
                 <p class="text-sm text-muted-foreground">
                   {{ formatPrice(item.product.price) }}
-                  <span v-if="!hasBundleAddons(item.addons)"> / item</span>
+                  <span v-if="!hasBundleAddons(item.addons)"> {{ t('transaction.perItem') }}</span>
                 </p>
                 <ul
                   v-if="item.addons.length"
@@ -117,7 +120,7 @@ const emit = defineEmits<{
       </div>
 
       <div class="mt-4 flex items-center justify-between border-t pt-4">
-        <span class="text-sm text-muted-foreground">Total</span>
+        <span class="text-sm text-muted-foreground">{{ t('common.total') }}</span>
         <span class="text-lg font-bold">{{ formatPrice(totalAmount) }}</span>
       </div>
 
@@ -128,7 +131,7 @@ const emit = defineEmits<{
           :disabled="isSubmitting || !cart.length"
           @click="emit('submitDebt')"
         >
-          {{ isSubmitting ? 'Menyimpan...' : 'Simpan Hutang' }}
+          {{ isSubmitting ? t('common.saving') : t('transaction.saveDebt') }}
         </Button>
         <Button
           v-if="!requiresImmediatePayment"
@@ -137,14 +140,14 @@ const emit = defineEmits<{
           @click="emit('submitDebtQueue')"
         >
           <ClipboardList class="size-4" />
-          {{ isSubmitting ? 'Memproses...' : 'Simpan Hutang & Antrian' }}
+          {{ isSubmitting ? t('common.processing') : t('transaction.saveDebtQueue') }}
         </Button>
         <Button
           :disabled="isSubmitting || !cart.length"
           @click="emit('pay')"
         >
           <Banknote class="size-4" />
-          {{ isSubmitting ? 'Memproses...' : 'Bayar' }}
+          {{ isSubmitting ? t('common.processing') : t('transaction.pay') }}
         </Button>
         <Button
           :disabled="isSubmitting || !cart.length"
@@ -152,7 +155,7 @@ const emit = defineEmits<{
         >
           <Banknote class="size-4" />
           <ClipboardList class="size-4" />
-          {{ isSubmitting ? 'Memproses...' : 'Bayar & Antrian' }}
+          {{ isSubmitting ? t('common.processing') : t('transaction.payQueue') }}
         </Button>
       </div>
     </div>

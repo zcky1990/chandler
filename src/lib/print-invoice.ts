@@ -4,6 +4,7 @@ import {
   type InvoiceData,
 } from '@/lib/invoice'
 import { formatPrice, formatQueueNumber } from '@/lib/format'
+import { useLocaleStore } from '@/stores/useLocaleStore'
 
 function escapeHtml(value: string) {
   return value
@@ -13,8 +14,8 @@ function escapeHtml(value: string) {
     .replace(/"/g, '&quot;')
 }
 
-function formatPricePlain(price: number) {
-  return new Intl.NumberFormat('id-ID', {
+function formatPricePlain(price: number, locale: string) {
+  return new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'id-ID', {
     style: 'currency',
     currency: 'IDR',
     minimumFractionDigits: 0,
@@ -22,10 +23,14 @@ function formatPricePlain(price: number) {
 }
 
 function buildInvoiceHtml(data: InvoiceData) {
+  const localeStore = useLocaleStore()
+  const t = localeStore.translate.bind(localeStore)
+  const locale = localeStore.locale
+
   const itemRows = data.items.map((item) => `
     <tr>
       <td class="item-name">${escapeHtml(item.label)}</td>
-      <td class="item-price">${formatPricePlain(item.subtotal)}</td>
+      <td class="item-price">${formatPricePlain(item.subtotal, locale)}</td>
     </tr>
   `).join('')
 
@@ -34,15 +39,15 @@ function buildInvoiceHtml(data: InvoiceData) {
     : ''
 
   const notesBlock = data.notes
-    ? `<p class="notes">Catatan: ${escapeHtml(data.notes)}</p>`
+    ? `<p class="notes">${escapeHtml(t('receipt.notes'))} ${escapeHtml(data.notes)}</p>`
     : ''
 
   const queueBlock = data.queueNumber != null
-    ? `<p>Antrian: ${escapeHtml(formatQueueNumber(data.queueNumber))}</p>`
+    ? `<p>${escapeHtml(t('receipt.queue'))} ${escapeHtml(formatQueueNumber(data.queueNumber))}</p>`
     : ''
 
   return `<!DOCTYPE html>
-<html lang="id">
+<html lang="${locale}">
 <head>
   <meta charset="utf-8">
   <title>${escapeHtml(data.invoiceNumber)}</title>
@@ -81,9 +86,9 @@ function buildInvoiceHtml(data: InvoiceData) {
   </div>
   <div class="divider"></div>
   <div class="meta">
-    <p>No: ${escapeHtml(data.invoiceNumber)}</p>
-    <p>Tgl: ${escapeHtml(formatInvoiceDateTime(data.paidAt))}</p>
-    <p>Pelanggan: ${escapeHtml(data.customerName)}</p>
+    <p>${escapeHtml(t('receipt.number'))} ${escapeHtml(data.invoiceNumber)}</p>
+    <p>${escapeHtml(t('receipt.date'))} ${escapeHtml(formatInvoiceDateTime(data.paidAt, locale))}</p>
+    <p>${escapeHtml(t('receipt.customer'))} ${escapeHtml(data.customerName)}</p>
   </div>
   <div class="divider"></div>
   <table>
@@ -92,17 +97,17 @@ function buildInvoiceHtml(data: InvoiceData) {
     </tbody>
     <tfoot>
       <tr class="total-row">
-        <td>TOTAL</td>
-        <td class="item-price">${formatPricePlain(data.totalAmount)}</td>
+        <td>${escapeHtml(t('common.total').toUpperCase())}</td>
+        <td class="item-price">${formatPricePlain(data.totalAmount, locale)}</td>
       </tr>
     </tfoot>
   </table>
   <div class="divider"></div>
   <div class="footer">
-    <p>Bayar: ${escapeHtml(getPaymentMethodLabel(data.paymentMethod))}</p>
+    <p>${escapeHtml(t('receipt.pay'))} ${escapeHtml(getPaymentMethodLabel(data.paymentMethod))}</p>
     ${queueBlock}
     ${notesBlock}
-    <p class="center thanks">Terima kasih</p>
+    <p class="center thanks">${escapeHtml(t('receipt.thanks'))}</p>
   </div>
 </body>
 </html>`

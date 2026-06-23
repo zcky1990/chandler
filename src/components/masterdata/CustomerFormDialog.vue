@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { createCustomer, updateCustomer } from '@/lib/customer'
+import { useI18n } from '@/composables/useI18n'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { Customer } from '@/types/database'
 
@@ -38,6 +39,7 @@ const emit = defineEmits<{
   saved: []
 }>()
 
+const { t } = useI18n()
 const alertStore = useAlertStore()
 const isSubmitting = ref(false)
 const errors = ref<Record<string, string>>({})
@@ -105,13 +107,13 @@ async function handleSubmit() {
   }
 
   if (result.error) {
-    alertStore.showAlert('Error', 'Gagal menyimpan pembeli', 'error')
+    alertStore.showAlert(t('alert.error'), t('master.customerSaveFailed'), 'error')
     return
   }
 
   alertStore.showAlert(
-    'Berhasil',
-    props.customer ? 'Pembeli berhasil diperbarui' : 'Pembeli berhasil ditambahkan',
+    t('alert.success'),
+    props.customer ? t('master.customerUpdated') : t('master.customerCreated'),
     'success',
   )
   emit('update:open', false)
@@ -123,48 +125,48 @@ async function handleSubmit() {
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent class="sm:max-w-[520px]">
       <DialogHeader>
-        <DialogTitle>{{ customer ? 'Edit Pembeli' : 'Tambah Pembeli' }}</DialogTitle>
+        <DialogTitle>{{ customer ? t('master.editCustomer') : t('master.addCustomer') }}</DialogTitle>
         <DialogDescription>
-          {{ customer ? 'Perbarui data pembeli di bawah ini.' : 'Isi form untuk menambahkan pembeli baru.' }}
+          {{ customer ? t('master.customerEditDesc') : t('master.customerAddDesc') }}
         </DialogDescription>
       </DialogHeader>
 
       <form class="grid gap-4" @submit.prevent="handleSubmit">
         <FieldGroup>
           <Field>
-            <FieldLabel for="customer-name">Nama</FieldLabel>
-            <Input id="customer-name" v-model="form.name" placeholder="Nama pembeli" required />
+            <FieldLabel for="customer-name">{{ t('master.name') }}</FieldLabel>
+            <Input id="customer-name" v-model="form.name" :placeholder="t('master.customerNamePh')" required />
             <p v-if="errors.name" class="text-sm text-destructive">{{ errors.name }}</p>
           </Field>
 
           <div class="grid gap-4 sm:grid-cols-2">
             <Field>
-              <FieldLabel for="customer-email">Email</FieldLabel>
-              <Input id="customer-email" v-model="form.email" type="email" placeholder="email@example.com" />
+              <FieldLabel for="customer-email">{{ t('master.email') }}</FieldLabel>
+              <Input id="customer-email" v-model="form.email" type="email" :placeholder="t('master.emailPh')" />
               <p v-if="errors.email" class="text-sm text-destructive">{{ errors.email }}</p>
             </Field>
 
             <Field>
-              <FieldLabel for="customer-phone">Telepon</FieldLabel>
-              <Input id="customer-phone" v-model="form.phone" placeholder="08xxxxxxxxxx" />
+              <FieldLabel for="customer-phone">{{ t('master.phone') }}</FieldLabel>
+              <Input id="customer-phone" v-model="form.phone" :placeholder="t('master.phonePh')" />
             </Field>
           </div>
 
           <Field>
-            <FieldLabel for="customer-address">Alamat</FieldLabel>
-            <Textarea id="customer-address" v-model="form.address" placeholder="Alamat pembeli" rows="2" />
+            <FieldLabel for="customer-address">{{ t('master.address') }}</FieldLabel>
+            <Textarea id="customer-address" v-model="form.address" :placeholder="t('master.customerAddressPh')" rows="2" />
           </Field>
 
           <Field>
-            <FieldLabel for="customer-notes">Catatan</FieldLabel>
-            <Textarea id="customer-notes" v-model="form.notes" placeholder="Catatan tambahan" rows="2" />
+            <FieldLabel for="customer-notes">{{ t('common.notes') }}</FieldLabel>
+            <Textarea id="customer-notes" v-model="form.notes" :placeholder="t('master.customerNotesPh')" rows="2" />
           </Field>
 
           <div class="flex items-center justify-between rounded-lg border p-4">
             <div class="space-y-0.5">
-              <Label for="customer-active">Aktif</Label>
+              <Label for="customer-active">{{ t('common.active') }}</Label>
               <p class="text-xs text-muted-foreground">
-                {{ form.is_active ? 'Pembeli dapat dipilih di transaksi' : 'Pembeli disembunyikan dari transaksi' }}
+                {{ form.is_active ? t('master.customerActiveHint') : t('master.customerInactiveHint') }}
               </p>
             </div>
             <Switch id="customer-active" v-model="form.is_active" />
@@ -173,10 +175,10 @@ async function handleSubmit() {
 
         <DialogFooter>
           <DialogClose as-child>
-            <Button type="button" variant="outline">Batal</Button>
+            <Button type="button" variant="outline">{{ t('common.cancel') }}</Button>
           </DialogClose>
           <Button type="submit" :disabled="isSubmitting">
-            {{ isSubmitting ? 'Menyimpan...' : 'Simpan' }}
+            {{ isSubmitting ? t('common.saving') : t('common.save') }}
           </Button>
         </DialogFooter>
       </form>

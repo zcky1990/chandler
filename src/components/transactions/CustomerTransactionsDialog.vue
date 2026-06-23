@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { useI18n } from '@/composables/useI18n'
 import { formatItemWithAddons } from '@/lib/addon'
 import { formatPrice } from '@/lib/format'
 import PaymentMethodDialog from '@/components/transactions/PaymentMethodDialog.vue'
@@ -17,12 +18,15 @@ import TransactionEditDialog from '@/components/transactions/TransactionEditDial
 import { buildInvoiceFromTransaction, type InvoiceData } from '@/lib/invoice'
 import { markTransactionAsPaid } from '@/lib/transaction'
 import { useAlertStore } from '@/stores/useAlertStore'
+import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
 import type { CustomerTransactionSummary, PaymentMethod, TransactionWithDetails } from '@/types/database'
 
 const props = defineProps<{
   open: boolean
   customer: CustomerTransactionSummary | null
 }>()
+
+const { t, locale } = useI18n()
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
@@ -37,6 +41,8 @@ const editDialogOpen = ref(false)
 const selectedTransaction = ref<TransactionWithDetails | null>(null)
 const isPaying = ref(false)
 
+const dateLocale = computed(() => (locale.value === 'en' ? 'en-US' : 'id-ID'))
+
 const unpaidTransactions = computed(() =>
   (props.customer?.transactions ?? [])
     .filter((transaction) => !transaction.is_paid)
@@ -47,8 +53,14 @@ const totalOutstanding = computed(() =>
   unpaidTransactions.value.reduce((sum, transaction) => sum + Number(transaction.total_amount), 0),
 )
 
+function displayCustomerName(name: string | undefined | null) {
+  if (!name) return ''
+  if (name === WALK_IN_CUSTOMER_NAME) return t('common.walkIn')
+  return name
+}
+
 function formatShortDate(value: string) {
-  return new Intl.DateTimeFormat('id-ID', {
+  return new Intl.DateTimeFormat(dateLocale.value, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -81,7 +93,7 @@ async function handlePayment(method: PaymentMethod) {
   paymentDialogOpen.value = false
 
   if (error) {
-    alertStore.showAlert('Error', error.message, 'error')
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
     return
   }
 
@@ -110,10 +122,10 @@ function handleSaved() {
     <DialogContent class="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[520px]">
       <DialogHeader class="border-b px-6 pt-6 pb-4">
         <DialogTitle class="text-xl">
-          Hutang — {{ customer?.customerName }}
+          {{ t('transaction.debtTitle', { name: displayCustomerName(customer?.customerName) }) }}
         </DialogTitle>
         <DialogDescription>
-          Transaksi belum dibayar untuk pembeli ini.
+          {{ t('transaction.debtDesc') }}
         </DialogDescription>
       </DialogHeader>
 
@@ -122,7 +134,7 @@ function handleSaved() {
           v-if="!unpaidTransactions.length"
           class="rounded-lg border border-dashed px-4 py-10 text-center text-sm text-muted-foreground"
         >
-          Tidak ada hutang aktif untuk pembeli ini.
+          {{ t('transaction.noDebt') }}
         </div>
 
         <div v-else class="space-y-3">
@@ -136,7 +148,7 @@ function handleSaved() {
                 <div class="flex flex-wrap items-center gap-2">
                   <p class="font-semibold">{{ formatShortDate(transaction.created_at) }}</p>
                   <span class="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
-                    Belum bayar
+                    {{ t('status.unpaid') }}
                   </span>
                 </div>
                 <p class="mt-1.5 text-sm text-muted-foreground">
@@ -156,7 +168,7 @@ function handleSaved() {
                 @click="openEditDialog(transaction)"
               >
                 <Pencil class="size-3.5" />
-                Perbaiki
+                {{ t('transaction.fix') }}
               </Button>
               <Button
                 size="sm"
@@ -165,7 +177,7 @@ function handleSaved() {
                 @click="openPaymentDialog(transaction)"
               >
                 <Banknote class="size-3.5" />
-                Bayar
+                {{ t('common.pay') }}
               </Button>
             </div>
           </article>
@@ -175,10 +187,10 @@ function handleSaved() {
       <div v-if="unpaidTransactions.length" class="border-t bg-muted/30 px-6 py-4">
         <div class="flex items-center justify-between text-sm">
           <span class="text-muted-foreground">
-            {{ unpaidTransactions.length }} transaksi belum lunas
+            {{ t('transaction.unpaidTxCount', { count: unpaidTransactions.length }) }}
           </span>
           <div class="text-right">
-            <p class="text-xs text-muted-foreground">Total hutang</p>
+            <p class="text-xs text-muted-foreground">{{ t('transaction.totalOutstanding') }}</p>
             <p class="text-xl font-bold">{{ formatPrice(totalOutstanding) }}</p>
           </div>
         </div>

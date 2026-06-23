@@ -8,7 +8,7 @@ export function isWalkInCustomer(customer: { name: string } | null | undefined) 
   return customer?.name === WALK_IN_CUSTOMER_NAME
 }
 
-function normalizeCustomerInput(input: z.infer<typeof customerSchema>): CustomerInput {
+function normalizeCustomerInput(input: z.infer<ReturnType<typeof customerSchema>>): CustomerInput {
   return {
     name: input.name,
     email: input.email ?? null,
@@ -32,7 +32,7 @@ export const getCustomerByName = async (name: string) => {
 }
 
 export const createCustomer = async (customer: CustomerInput) => {
-  const validatedCustomer = customerSchema.safeParse(customer)
+  const validatedCustomer = customerSchema().safeParse(customer)
   if (!validatedCustomer.success) {
     return { customer: null, error: validatedCustomer.error.flatten().fieldErrors }
   }
@@ -48,7 +48,7 @@ export const createCustomer = async (customer: CustomerInput) => {
 }
 
 export const updateCustomer = async (id: string, customer: CustomerInput) => {
-  const validatedCustomer = customerSchema.safeParse(customer)
+  const validatedCustomer = customerSchema().safeParse(customer)
   if (!validatedCustomer.success) {
     return { customer: null, error: validatedCustomer.error.flatten().fieldErrors }
   }

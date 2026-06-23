@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { useI18n } from '@/composables/useI18n'
 import { formatPrice } from '@/lib/format'
 import type { Customer, Product } from '@/types/database'
 import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
@@ -23,6 +24,8 @@ defineProps<{
   selectedProduct: Product | null
 }>()
 
+const { t } = useI18n()
+
 const selectedCustomerId = defineModel<string>('selectedCustomerId', { required: true })
 const notes = defineModel<string>('notes', { required: true })
 const selectedProductId = defineModel<string>('selectedProductId', { required: true })
@@ -31,6 +34,11 @@ const addQuantity = defineModel<number>('addQuantity', { required: true })
 const emit = defineEmits<{
   addProduct: []
 }>()
+
+function displayCustomerName(name: string) {
+  if (name === WALK_IN_CUSTOMER_NAME) return `${t('common.walkIn')}${t('common.defaultSuffix')}`
+  return name
+}
 </script>
 
 <template>
@@ -38,7 +46,7 @@ const emit = defineEmits<{
     <div class="rounded-xl border bg-background p-4">
       <FieldGroup>
         <Field>
-          <FieldLabel for="customer">Pembeli</FieldLabel>
+          <FieldLabel for="customer">{{ t('transaction.buyerLabel') }}</FieldLabel>
           <select
             id="customer"
             v-model="selectedCustomerId"
@@ -49,26 +57,26 @@ const emit = defineEmits<{
               :key="customer.id"
               :value="customer.id"
             >
-              {{ customer.name }}{{ customer.name === WALK_IN_CUSTOMER_NAME ? ' (default)' : '' }}
+              {{ displayCustomerName(customer.name) }}
             </option>
           </select>
           <p v-if="selectedCustomer" class="text-sm text-muted-foreground">
-            {{ selectedCustomer.phone || selectedCustomer.email || selectedCustomer.address || 'Tanpa detail kontak' }}
+            {{ selectedCustomer.phone || selectedCustomer.email || selectedCustomer.address || t('common.noContact') }}
           </p>
           <p
             v-if="requiresImmediatePayment"
             class="text-sm text-amber-600 dark:text-amber-400"
           >
-            Pembeli default wajib bayar langsung, tidak bisa berhutang.
+            {{ t('transaction.walkInMustPay') }}
           </p>
         </Field>
 
         <Field>
-          <FieldLabel for="notes">Catatan</FieldLabel>
+          <FieldLabel for="notes">{{ t('common.notes') }}</FieldLabel>
           <Textarea
             id="notes"
             v-model="notes"
-            placeholder="Catatan transaksi (opsional)"
+            :placeholder="t('transaction.notesPlaceholder')"
             rows="2"
           />
         </Field>
@@ -78,10 +86,10 @@ const emit = defineEmits<{
     <div class="rounded-xl border bg-background p-4">
       <FieldGroup>
         <Field>
-          <FieldLabel>Produk</FieldLabel>
+          <FieldLabel>{{ t('common.product') }}</FieldLabel>
           <Select v-model="selectedProductId">
             <SelectTrigger class="w-full">
-              <SelectValue placeholder="Pilih produk" />
+              <SelectValue :placeholder="t('transaction.selectProduct')" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem
@@ -89,21 +97,21 @@ const emit = defineEmits<{
                 :key="product.id"
                 :value="product.id"
               >
-                {{ product.name }} · {{ formatPrice(product.price) }} · Stok {{ product.stock_quantity }}
+                {{ product.name }} · {{ formatPrice(product.price) }} · {{ t('common.stockLabel', { quantity: product.stock_quantity }) }}
               </SelectItem>
             </SelectContent>
           </Select>
           <p v-if="selectedProduct" class="text-sm text-muted-foreground">
-            {{ formatPrice(selectedProduct.price) }} · Stok tersedia {{ selectedProduct.stock_quantity }}
+            {{ formatPrice(selectedProduct.price) }} · {{ t('common.stockAvailable', { quantity: selectedProduct.stock_quantity }) }}
           </p>
           <p v-else-if="!availableProducts.length" class="text-sm text-muted-foreground">
-            Tidak ada produk tersedia.
+            {{ t('transaction.noProducts') }}
           </p>
         </Field>
 
         <div class="flex items-end gap-3">
           <Field class="flex-1">
-            <FieldLabel for="add-quantity">Jumlah</FieldLabel>
+            <FieldLabel for="add-quantity">{{ t('common.quantity') }}</FieldLabel>
             <Input
               id="add-quantity"
               v-model.number="addQuantity"
@@ -118,7 +126,7 @@ const emit = defineEmits<{
             @click="emit('addProduct')"
           >
             <Plus class="size-4" />
-            Tambah
+            {{ t('common.add') }}
           </Button>
         </div>
       </FieldGroup>

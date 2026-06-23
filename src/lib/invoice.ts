@@ -4,6 +4,8 @@ import {
   getLineSubtotal,
   type CartAddonSelection,
 } from '@/lib/addon'
+import type { MessageKey } from '@/lib/i18n/messages'
+import { useLocaleStore } from '@/stores/useLocaleStore'
 import type {
   Customer,
   PaymentMethod,
@@ -39,14 +41,9 @@ export type InvoiceData = {
   queueNumber: number | null
 }
 
-const PAYMENT_LABELS: Record<PaymentMethod, string> = {
-  qris: 'QRIS',
-  cash: 'Cash',
-  transfer: 'Transfer',
-}
-
 export function getPaymentMethodLabel(method: PaymentMethod) {
-  return PAYMENT_LABELS[method]
+  const key = `payment.${method}` as MessageKey
+  return useLocaleStore().translate(key)
 }
 
 export function formatInvoiceNumber(transactionId: string, paidAt: string) {
@@ -59,8 +56,9 @@ export function formatInvoiceNumber(transactionId: string, paidAt: string) {
   return `INV-${y}${m}${d}-${shortId}`
 }
 
-export function formatInvoiceDateTime(value: string) {
-  return new Intl.DateTimeFormat('id-ID', {
+export function formatInvoiceDateTime(value: string, localeCode?: string) {
+  const locale = localeCode ?? useLocaleStore().locale
+  return new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'id-ID', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -81,7 +79,7 @@ export function buildInvoiceFromTransaction(
     invoiceNumber: formatInvoiceNumber(transaction.id, paidAt),
     shopName: '',
     shopAddress: null,
-    customerName: transaction.customers?.name ?? 'Pelanggan',
+    customerName: transaction.customers?.name ?? useLocaleStore().translate('common.customer'),
     items: transaction.transaction_items.map((item) => ({
       label: formatItemWithAddons(item),
       quantity: item.quantity,
@@ -118,7 +116,7 @@ export function buildInvoiceFromCart(
     invoiceNumber: formatInvoiceNumber(transaction.id, paidAt),
     shopName: '',
     shopAddress: null,
-    customerName: customer?.name ?? 'Pelanggan',
+    customerName: customer?.name ?? useLocaleStore().translate('common.customer'),
     items: cart.map((item) => ({
       label: item.addons.length
         ? `${item.product.name} (+ ${item.addons.map((a) => a.product.name).join(', ')})`

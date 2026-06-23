@@ -10,6 +10,7 @@ import {
   ChartTooltipContent,
   componentToString,
 } from '@/components/ui/chart'
+import { useI18n } from '@/composables/useI18n'
 import type { ProductAnalyticsRow } from '@/types/database'
 
 const props = defineProps<{
@@ -17,12 +18,16 @@ const props = defineProps<{
   limit?: number
 }>()
 
-const chartConfig = {
+const { t, locale } = useI18n()
+
+const dateLocale = computed(() => (locale.value === 'en' ? 'en-US' : 'id-ID'))
+
+const chartConfig = computed(() => ({
   grossProfit: {
-    label: 'Laba kotor',
+    label: t('analytics.grossProfit'),
     color: 'var(--chart-1)',
   },
-} satisfies ChartConfig
+}) satisfies ChartConfig)
 
 type Data = {
   name: string
@@ -43,7 +48,7 @@ const chartData = computed<Data[]>(() => {
 })
 
 function formatCurrency(value: number) {
-  return new Intl.NumberFormat('id-ID', {
+  return new Intl.NumberFormat(dateLocale.value, {
     style: 'currency',
     currency: 'IDR',
     minimumFractionDigits: 0,
@@ -88,7 +93,7 @@ function formatCurrency(value: number) {
       v-else
       class="flex min-h-[280px] items-center justify-center text-sm text-muted-foreground"
     >
-      Belum ada data produk.
+      {{ t('analytics.noProductData') }}
     </div>
   </ChartContainer>
 </template>

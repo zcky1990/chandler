@@ -12,6 +12,7 @@ import { formatPrice } from '@/lib/format'
 import { createPreOrder, formatPreOrderNumber } from '@/lib/pre-order'
 import { getProducts, getProductAddonsMap } from '@/lib/product'
 import { useAlertStore } from '@/stores/useAlertStore'
+import { useI18n } from '@/composables/useI18n'
 import type { PreOrder, Product } from '@/types/database'
 
 export type PreOrderCartItem = {
@@ -23,6 +24,7 @@ export type PreOrderCartItem = {
 
 export function usePreOrderCart() {
   const alertStore = useAlertStore()
+  const { t } = useI18n()
   const products = ref<Product[]>([])
   const productAddonsMap = ref<Record<string, Product[]>>({})
   const cart = ref<PreOrderCartItem[]>([])
@@ -122,7 +124,7 @@ export function usePreOrderCart() {
     isLoading.value = false
 
     if (productResult.error) {
-      alertStore.showAlert('Error', productResult.error.message, 'error')
+      alertStore.showAlert(t('alert.error'), productResult.error.message, 'error')
       return
     }
 
@@ -138,7 +140,7 @@ export function usePreOrderCart() {
     if (hasBundleAddons(addons)) {
       for (let i = 0; i < quantity; i++) {
         if (!hasEnoughStock(product, addons, 1)) {
-          alertStore.showAlert('Stok tidak cukup', 'Stok menu atau addon tidak mencukupi', 'error')
+          alertStore.showAlert(t('transaction.stockInsufficient'), t('transaction.stockMenuAddon'), 'error')
           return
         }
 
@@ -158,7 +160,7 @@ export function usePreOrderCart() {
     if (existing) {
       const nextQuantity = existing.quantity + quantity
       if (!hasEnoughStock(product, addons, nextQuantity)) {
-        alertStore.showAlert('Stok tidak cukup', 'Stok menu atau addon tidak mencukupi', 'error')
+        alertStore.showAlert(t('transaction.stockInsufficient'), t('transaction.stockMenuAddon'), 'error')
         return
       }
 
@@ -167,7 +169,7 @@ export function usePreOrderCart() {
     }
 
     if (!hasEnoughStock(product, addons, quantity)) {
-      alertStore.showAlert('Stok habis', `${product.name} atau addon tidak tersedia`, 'error')
+      alertStore.showAlert(t('transaction.stockOut'), t('transaction.stockOutProduct', { name: product.name }), 'error')
       return
     }
 
@@ -239,7 +241,7 @@ export function usePreOrderCart() {
     }
 
     if (!hasEnoughStock(item.product, item.addons, quantity)) {
-      alertStore.showAlert('Stok tidak cukup', 'Stok menu atau addon tidak mencukupi', 'error')
+      alertStore.showAlert(t('transaction.stockInsufficient'), t('transaction.stockMenuAddon'), 'error')
       return
     }
 
@@ -282,7 +284,7 @@ export function usePreOrderCart() {
 
   function validateCart() {
     if (!cart.value.length) {
-      alertStore.showAlert('Error', 'Tambahkan minimal 1 produk', 'error')
+      alertStore.showAlert(t('alert.error'), t('transaction.addMinOneProduct'), 'error')
       return false
     }
 
@@ -298,7 +300,7 @@ export function usePreOrderCart() {
       return Object.values(error).flat().join(', ')
     }
 
-    return 'Gagal mengirim pesanan'
+    return t('order.submitFailed')
   }
 
   async function submitOrder() {
@@ -322,7 +324,7 @@ export function usePreOrderCart() {
     isSubmitting.value = false
 
     if (error) {
-      alertStore.showAlert('Error', getErrorMessage(error), 'error')
+      alertStore.showAlert(t('alert.error'), getErrorMessage(error), 'error')
       return
     }
 

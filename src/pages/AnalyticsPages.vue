@@ -14,6 +14,7 @@ import PaymentMethodDonut from '@/components/analytics/PaymentMethodDonut.vue'
 import ProfitTrendChart from '@/components/analytics/ProfitTrendChart.vue'
 import RevenueBreakdownDonut from '@/components/analytics/RevenueBreakdownDonut.vue'
 import TopProductsProfitChart from '@/components/analytics/TopProductsProfitChart.vue'
+import { useI18n } from '@/composables/useI18n'
 import { getDateRangePreset, getFullAnalyticsReport } from '@/lib/analytics'
 import { getLowStockProducts } from '@/lib/stock'
 import { formatPercent, formatPrice } from '@/lib/format'
@@ -40,6 +41,7 @@ import type {
 
 const LOW_STOCK_THRESHOLD = 5
 
+const { t } = useI18n()
 const alertStore = useAlertStore()
 const isLoading = ref(true)
 const activePreset = ref<DateRangePreset>('month')
@@ -53,12 +55,12 @@ const payments = ref<PaymentBreakdownRow[]>([])
 const dailyTrend = ref<DailyAnalyticsRow[]>([])
 const lowStockProducts = ref<Product[]>([])
 
-const presetOptions: { value: DateRangePreset, label: string }[] = [
-  { value: 'today', label: 'Hari ini' },
-  { value: '7d', label: '7 hari' },
-  { value: 'month', label: 'Bulan ini' },
-  { value: '30d', label: '30 hari' },
-]
+const presetOptions = computed(() => [
+  { value: 'today' as const, label: t('analytics.today') },
+  { value: '7d' as const, label: t('analytics.7days') },
+  { value: 'month' as const, label: t('analytics.thisMonth') },
+  { value: '30d' as const, label: t('analytics.30days') },
+])
 
 const displayedProducts = computed(() => {
   if (showAllProducts.value) return products.value
@@ -96,12 +98,12 @@ async function loadAnalytics() {
   isLoading.value = false
 
   if (reportResult.error) {
-    alertStore.showAlert('Error', reportResult.error.message, 'error')
+    alertStore.showAlert(t('alert.error'), reportResult.error.message, 'error')
     return
   }
 
   if (lowStockResult.error) {
-    alertStore.showAlert('Error', lowStockResult.error.message, 'error')
+    alertStore.showAlert(t('alert.error'), lowStockResult.error.message, 'error')
     return
   }
 
@@ -139,14 +141,14 @@ onMounted(() => {
     <div class="flex flex-col gap-6 p-6">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 class="text-2xl font-bold tracking-tight">Analisis Keuntungan</h1>
+          <h1 class="text-2xl font-bold tracking-tight">{{ t('analytics.title') }}</h1>
           <p class="text-sm text-muted-foreground">
-            Visualisasi laba kotor, tren penjualan, dan performa produk.
+            {{ t('analytics.subtitle') }}
           </p>
         </div>
         <Button variant="outline" :disabled="isLoading" @click="loadAnalytics">
           <RefreshCw class="mr-2 size-4" :class="{ 'animate-spin': isLoading }" />
-          Refresh
+          {{ t('common.refresh') }}
         </Button>
       </div>
 
@@ -166,12 +168,12 @@ onMounted(() => {
             :variant="activePreset === 'custom' ? 'default' : 'outline'"
             @click="activePreset = 'custom'"
           >
-            Custom
+            {{ t('analytics.custom') }}
           </Button>
         </div>
         <div v-if="activePreset === 'custom'" class="flex flex-wrap items-center gap-2">
           <Input v-model="customStart" type="date" class="w-auto" />
-          <span class="text-sm text-muted-foreground">s/d</span>
+          <span class="text-sm text-muted-foreground">{{ t('analytics.to') }}</span>
           <Input v-model="customEnd" type="date" class="w-auto" />
         </div>
       </div>
@@ -182,47 +184,45 @@ onMounted(() => {
       >
         <AlertTriangle class="mt-0.5 size-4 shrink-0" />
         <span>
-          {{ summary.salesWithoutCogsCount }} transaksi belum memiliki data HPP
-          (kemungkinan data lama sebelum costing FIFO).
+          {{ t('analytics.cogsWarning', { count: summary.salesWithoutCogsCount }) }}
         </span>
       </div>
 
       <div v-if="isLoading" class="py-12 text-center text-muted-foreground">
-        Memuat analisis...
+        {{ t('analytics.loading') }}
       </div>
 
       <template v-else-if="summary">
-        <!-- Ringkasan utama -->
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <Card class="border-l-4 border-l-[var(--chart-1)]">
             <CardHeader class="flex flex-row items-center justify-between pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">Pendapatan</CardTitle>
+              <CardTitle class="text-sm font-medium text-muted-foreground">{{ t('analytics.revenue') }}</CardTitle>
               <ArrowUpCircle class="size-4 text-[var(--chart-1)]" />
             </CardHeader>
             <CardContent>
               <p class="text-2xl font-bold">{{ formatPrice(summary.revenue) }}</p>
               <p class="mt-1 text-xs text-muted-foreground">
-                {{ summary.transactionCount }} transaksi dalam periode
+                {{ summary.transactionCount }} {{ t('analytics.inPeriod') }}
               </p>
             </CardContent>
           </Card>
 
           <Card class="border-l-4 border-l-[var(--chart-2)]">
             <CardHeader class="flex flex-row items-center justify-between pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">HPP (FIFO)</CardTitle>
+              <CardTitle class="text-sm font-medium text-muted-foreground">{{ t('analytics.cogs') }}</CardTitle>
               <ArrowDownCircle class="size-4 text-[var(--chart-2)]" />
             </CardHeader>
             <CardContent>
               <p class="text-2xl font-bold">{{ formatPrice(summary.cogs) }}</p>
               <p class="mt-1 text-xs text-muted-foreground">
-                Restock keluar: {{ formatPrice(summary.restockSpend) }}
+                {{ t('analytics.restockOut') }} {{ formatPrice(summary.restockSpend) }}
               </p>
             </CardContent>
           </Card>
 
           <Card class="border-l-4 border-l-[var(--chart-3)]">
             <CardHeader class="flex flex-row items-center justify-between pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">Laba kotor</CardTitle>
+              <CardTitle class="text-sm font-medium text-muted-foreground">{{ t('analytics.grossProfit') }}</CardTitle>
               <TrendingUp class="size-4 text-[var(--chart-3)]" />
             </CardHeader>
             <CardContent>
@@ -234,7 +234,7 @@ onMounted(() => {
               </p>
               <div class="mt-2 space-y-1">
                 <div class="flex justify-between text-xs text-muted-foreground">
-                  <span>Margin</span>
+                  <span>{{ t('analytics.margin') }}</span>
                   <span>{{ formatPercent(summary.marginPercent) }}</span>
                 </div>
                 <div class="h-2 overflow-hidden rounded-full bg-muted">
@@ -249,27 +249,26 @@ onMounted(() => {
 
           <Card class="border-l-4 border-l-amber-500">
             <CardHeader class="flex flex-row items-center justify-between pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">Kas & Piutang</CardTitle>
+              <CardTitle class="text-sm font-medium text-muted-foreground">{{ t('analytics.cashReceivable') }}</CardTitle>
               <Wallet class="size-4 text-amber-500" />
             </CardHeader>
             <CardContent>
               <p class="text-lg font-bold text-green-600">{{ formatPrice(summary.paidAmount) }}</p>
-              <p class="text-xs text-muted-foreground">Sudah lunas ({{ summary.paidCount }} trx)</p>
+              <p class="text-xs text-muted-foreground">{{ t('analytics.paidTrx', { count: summary.paidCount }) }}</p>
               <p class="mt-2 text-lg font-bold text-amber-600">{{ formatPrice(summary.unpaidAmount) }}</p>
               <p class="text-xs text-muted-foreground">
-                Hutang periode ({{ summary.unpaidCount }} trx) · Piutang total {{ formatPrice(summary.outstandingDebt) }}
+                {{ t('analytics.periodDebtDetail', { count: summary.unpaidCount, amount: formatPrice(summary.outstandingDebt) }) }}
               </p>
             </CardContent>
           </Card>
         </div>
 
-        <!-- Charts row 1 -->
         <div class="grid gap-4 lg:grid-cols-3">
           <Card class="lg:col-span-2">
             <CardHeader>
-              <CardTitle>Tren harian</CardTitle>
+              <CardTitle>{{ t('analytics.dailyTrend') }}</CardTitle>
               <CardDescription>
-                Perbandingan pendapatan, HPP, dan laba per hari dalam periode terpilih.
+                {{ t('analytics.dailyTrendDesc') }}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -279,9 +278,9 @@ onMounted(() => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Komposisi pendapatan</CardTitle>
+              <CardTitle>{{ t('analytics.revenueComposition') }}</CardTitle>
               <CardDescription>
-                Berapa bagian pendapatan yang menjadi HPP vs laba kotor.
+                {{ t('analytics.revenueCompositionDesc') }}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -290,12 +289,11 @@ onMounted(() => {
           </Card>
         </div>
 
-        <!-- Charts row 2 -->
         <div class="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Top produk paling untung</CardTitle>
-              <CardDescription>5 produk dengan laba kotor tertinggi.</CardDescription>
+              <CardTitle>{{ t('analytics.topProfitable') }}</CardTitle>
+              <CardDescription>{{ t('analytics.topProfitableDesc') }}</CardDescription>
             </CardHeader>
             <CardContent>
               <TopProductsProfitChart :products="products" :limit="5" />
@@ -304,8 +302,8 @@ onMounted(() => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Metode pembayaran</CardTitle>
-              <CardDescription>Distribusi pembayaran lunas dalam periode.</CardDescription>
+              <CardTitle>{{ t('analytics.paymentMethods') }}</CardTitle>
+              <CardDescription>{{ t('analytics.paymentMethodsDesc') }}</CardDescription>
             </CardHeader>
             <CardContent>
               <PaymentMethodDonut :payments="payments" />
@@ -313,60 +311,58 @@ onMounted(() => {
           </Card>
         </div>
 
-        <!-- Metrik operasional -->
         <div class="grid gap-4 sm:grid-cols-2">
           <Card>
             <CardHeader class="pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">Nilai inventaris</CardTitle>
+              <CardTitle class="text-sm font-medium text-muted-foreground">{{ t('analytics.inventoryValue') }}</CardTitle>
             </CardHeader>
             <CardContent class="flex items-center gap-3">
               <Package class="size-8 text-muted-foreground" />
               <div>
                 <p class="text-xl font-bold">{{ formatPrice(summary.inventoryValue) }}</p>
-                <p class="text-xs text-muted-foreground">Stok tersisa (FIFO) saat ini</p>
+                <p class="text-xs text-muted-foreground">{{ t('analytics.inventoryDesc') }}</p>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader class="pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">Stok menipis</CardTitle>
+              <CardTitle class="text-sm font-medium text-muted-foreground">{{ t('analytics.lowStockProducts') }}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p class="text-xl font-bold">{{ lowStockProducts.length }} produk</p>
-              <p class="text-xs text-muted-foreground">Stok &le; {{ LOW_STOCK_THRESHOLD }} unit</p>
+              <p class="text-xl font-bold">{{ lowStockProducts.length }} {{ t('analytics.productsUnit') }}</p>
+              <p class="text-xs text-muted-foreground">{{ t('analytics.lowStockUnit', { threshold: LOW_STOCK_THRESHOLD }) }}</p>
             </CardContent>
           </Card>
         </div>
 
-        <!-- Tabel detail -->
         <div class="space-y-3">
           <div class="flex items-center justify-between">
-            <h2 class="text-lg font-semibold">Detail per produk</h2>
+            <h2 class="text-lg font-semibold">{{ t('analytics.productDetail') }}</h2>
             <Button
               v-if="products.length > 10"
               variant="ghost"
               size="sm"
               @click="showAllProducts = !showAllProducts"
             >
-              {{ showAllProducts ? 'Tampilkan top 10' : `Tampilkan semua (${products.length})` }}
+              {{ showAllProducts ? t('analytics.showTop10') : t('analytics.showAll', { count: products.length }) }}
             </Button>
           </div>
           <div class="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Produk</TableHead>
-                  <TableHead class="text-right">Qty</TableHead>
-                  <TableHead class="text-right">Pendapatan</TableHead>
-                  <TableHead class="text-right">HPP</TableHead>
-                  <TableHead class="text-right">Laba</TableHead>
-                  <TableHead class="text-right">Margin</TableHead>
+                  <TableHead>{{ t('common.product') }}</TableHead>
+                  <TableHead class="text-right">{{ t('common.qty') }}</TableHead>
+                  <TableHead class="text-right">{{ t('analytics.revenueLabel') }}</TableHead>
+                  <TableHead class="text-right">{{ t('analytics.chartCogsShort') }}</TableHead>
+                  <TableHead class="text-right">{{ t('analytics.chartProfit') }}</TableHead>
+                  <TableHead class="text-right">{{ t('analytics.margin') }}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 <TableRow v-if="!displayedProducts.length">
                   <TableCell colspan="6" class="text-center text-muted-foreground">
-                    Belum ada penjualan dalam periode ini.
+                    {{ t('analytics.noSales') }}
                   </TableCell>
                 </TableRow>
                 <TableRow v-for="row in displayedProducts" :key="row.productId">
@@ -388,14 +384,14 @@ onMounted(() => {
         </div>
 
         <div v-if="lowStockProducts.length" class="space-y-3">
-          <h2 class="text-lg font-semibold">Produk stok menipis</h2>
+          <h2 class="text-lg font-semibold">{{ t('analytics.lowStockTitle') }}</h2>
           <div class="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Produk</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead class="text-right">Stok</TableHead>
+                  <TableHead>{{ t('common.product') }}</TableHead>
+                  <TableHead>{{ t('common.sku') }}</TableHead>
+                  <TableHead class="text-right">{{ t('common.stock') }}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

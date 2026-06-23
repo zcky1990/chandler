@@ -14,6 +14,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { useI18n } from '@/composables/useI18n'
 import { RouterLink } from 'vue-router'
 import { ref } from 'vue'
 
@@ -24,6 +25,8 @@ interface SignupFormProps {
 const props = withDefaults(defineProps<SignupFormProps>(), {
   onSubmit: () => { },
 })
+
+const { t } = useI18n()
 
 const name = ref('')
 const email = ref('')
@@ -38,9 +41,9 @@ const handleSubmit = () => {
 <template>
   <Card>
     <CardHeader>
-      <CardTitle>Create an account</CardTitle>
+      <CardTitle>{{ t('auth.signupTitle') }}</CardTitle>
       <CardDescription>
-        Enter your information below to create your account
+        {{ t('auth.signupDesc') }}
       </CardDescription>
     </CardHeader>
     <CardContent>
@@ -48,41 +51,41 @@ const handleSubmit = () => {
         <FieldGroup>
           <Field>
             <FieldLabel for="name">
-              Full Name
+              {{ t('auth.fullName') }}
             </FieldLabel>
             <Input id="name" type="text" v-model="name" placeholder="John Doe" required />
           </Field>
           <Field>
             <FieldLabel for="email">
-              Email
+              {{ t('auth.email') }}
             </FieldLabel>
             <Input id="email" type="email" v-model="email" placeholder="m@example.com" required />
             <FieldDescription>
-              We'll use this to contact you. We will not share your email with
-              anyone else.
+              {{ t('auth.emailHint') }}
             </FieldDescription>
           </Field>
           <Field>
             <FieldLabel for="password">
-              Password
+              {{ t('auth.password') }}
             </FieldLabel>
             <Input id="password" type="password" v-model="password" required />
-            <FieldDescription>Must be at least 8 characters long.</FieldDescription>
+            <FieldDescription>{{ t('auth.passwordMinHint') }}</FieldDescription>
           </Field>
           <Field>
             <FieldLabel for="confirm-password">
-              Confirm Password
+              {{ t('auth.confirmPassword') }}
             </FieldLabel>
             <Input id="confirm-password" type="password" v-model="confirmPassword" required />
-            <FieldDescription>Please confirm your password.</FieldDescription>
+            <FieldDescription>{{ t('auth.confirmPasswordHint') }}</FieldDescription>
           </Field>
           <FieldGroup>
             <Field>
               <Button type="submit" @click="handleSubmit">
-                Create Account
+                {{ t('auth.createAccount') }}
               </Button>
               <FieldDescription class="px-6 text-center">
-                Already have an account? <RouterLink to="/login">Sign in</RouterLink>
+                {{ t('auth.alreadyHaveAccount') }}
+                <RouterLink to="/login">{{ t('auth.signInLink') }}</RouterLink>
               </FieldDescription>
             </Field>
           </FieldGroup>

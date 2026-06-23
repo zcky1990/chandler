@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { useLocaleStore } from '@/stores/useLocaleStore'
 import {
   getLineSubtotal,
   expandItemsForSubmit,
@@ -59,24 +60,26 @@ async function getProductsStockMap(productIds: string[]) {
 }
 
 function validateStock(
-  items: z.infer<typeof preOrderSubmitSchema>['items'],
+  items: z.infer<ReturnType<typeof preOrderSubmitSchema>>['items'],
   stockById: Map<string, Product>,
 ) {
+  const translate = useLocaleStore().translate
+
   for (const item of items) {
     const product = stockById.get(item.product_id)
     if (!product || !product.is_active) {
-      return { ok: false, message: 'Produk tidak tersedia' }
+      return { ok: false, message: translate('error.productUnavailable') }
     }
 
     if (item.quantity > product.stock_quantity) {
-      return { ok: false, message: `Stok ${product.name} tidak mencukupi` }
+      return { ok: false, message: translate('error.stockInsufficientProduct', { name: product.name }) }
     }
 
     for (const addon of item.addons ?? []) {
       const addonProduct = stockById.get(addon.addon_product_id)
       const required = addon.quantity * item.quantity
       if (!addonProduct || !addonProduct.is_active || required > addonProduct.stock_quantity) {
-        return { ok: false, message: 'Stok addon tidak mencukupi' }
+        return { ok: false, message: translate('error.addonStockInsufficient') }
       }
     }
   }
@@ -89,12 +92,13 @@ function buildPaymentStatus(paymentChoice: PreOrderInput['payment_choice']): Pre
 }
 
 function buildOrderNotes(preOrder: PreOrder) {
+  const translate = useLocaleStore().translate
   const parts: string[] = []
   if (preOrder.customer_name) {
-    parts.push(`Pelanggan: ${preOrder.customer_name}`)
+    parts.push(`${translate('order.preOrderNoteCustomer')} ${preOrder.customer_name}`)
   }
   if (preOrder.table_number) {
-    parts.push(`Meja: ${preOrder.table_number}`)
+    parts.push(`${translate('order.preOrderNoteTable')} ${preOrder.table_number}`)
   }
   if (preOrder.notes) {
     parts.push(preOrder.notes)
@@ -104,7 +108,7 @@ function buildOrderNotes(preOrder: PreOrder) {
 }
 
 export const createPreOrder = async (input: PreOrderInput) => {
-  const validated = preOrderSubmitSchema.safeParse(input)
+  const validated = preOrderSubmitSchema().safeParse(input)
   if (!validated.success) {
     return { preOrder: null, error: validated.error.flatten().fieldErrors }
   }
@@ -244,11 +248,11 @@ export const processPreOrder = async (preOrderId: string, options: ProcessPreOrd
     .single()
 
   if (fetchError || !preOrder) {
-    return { preOrder: null, transaction: null, queueNumber: null, error: fetchError ?? { message: 'Pesanan tidak ditemukan' } }
+    return { preOrder: null, transaction: null, queueNumber: null, error: fetchError ?? { message: useLocaleStore().translate('order.orderNotFound') } }
   }
 
   if (preOrder.status !== 'pending') {
-    return { preOrder: null, transaction: null, queueNumber: null, error: { message: 'Pesanan sudah diproses atau dibatalkan' } }
+    return { preOrder: null, transaction: null, queueNumber: null, error: { message: useLocaleStore().translate('order.alreadyProcessed') } }
   }
 
   const { error: lockError } = await supabaseClient
@@ -292,7 +296,7 @@ export const processPreOrder = async (preOrderId: string, options: ProcessPreOrd
   const walkInCustomer = await getWalkInCustomer()
   if (!walkInCustomer) {
     await supabaseClient.from('pre_orders').update({ status: 'pending' }).eq('id', preOrderId)
-    return { preOrder: null, transaction: null, queueNumber: null, error: { message: 'Pelanggan walk-in tidak ditemukan' } }
+    return { preOrder: null, transaction: null, queueNumber: null, error: { message: useLocaleStore().translate('error.walkInNotFound') } }
   }
 
   const { transaction, error: transactionError } = await createTransaction(
@@ -320,7 +324,7 @@ export const processPreOrder = async (preOrderId: string, options: ProcessPreOrd
         preOrder: null,
         transaction: null,
         queueNumber: null,
-        error: { message: `Transaksi dibuat, tetapi antrian gagal: ${queueError.message}` },
+        error: { message: useLocaleStore().translate('transaction.queueFailed', { message: queueError.message }) },
       }
     }
 
@@ -411,15 +415,17 @@ export function formatPreOrderNumber(number: number) {
 }
 
 export function getPreOrderPaymentLabel(preOrder: PreOrder) {
+  const t = useLocaleStore().translate
+
   if (preOrder.payment_choice === 'pay_later') {
-    return 'Bayar di kasir'
+    return t('payment.payAtCashier')
   }
 
   if (preOrder.payment_status === 'awaiting_confirmation') {
-    return 'Menunggu konfirmasi bayar'
+    return t('payment.awaitingConfirmation')
   }
 
-  return 'Bayar sekarang'
+  return t('payment.payNow')
 }
 
 export type { PaymentMethod }

@@ -1,16 +1,21 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { getActiveQueues, subscribeActiveQueues } from '@/lib/queue'
 import { useAlertStore } from '@/stores/useAlertStore'
+import { useLocaleStore } from '@/stores/useLocaleStore'
 import type { OrderQueueWithDetails, QueueStatus } from '@/types/database'
 
 export type QueueFilterStatus = QueueStatus | 'all'
 
-export const queueStatusLabels: Record<QueueStatus, string> = {
-  waiting: 'Menunggu',
-  preparing: 'Disiapkan',
-  ready: 'Siap',
-  completed: 'Selesai',
-  cancelled: 'Dibatalkan',
+export function getQueueStatusLabel(status: QueueStatus) {
+  const localeStore = useLocaleStore()
+  const keys: Record<QueueStatus, Parameters<typeof localeStore.translate>[0]> = {
+    waiting: 'status.waiting',
+    preparing: 'status.preparing',
+    ready: 'status.ready',
+    completed: 'status.completed',
+    cancelled: 'status.cancelled',
+  }
+  return localeStore.translate(keys[status])
 }
 
 export function useActiveQueues(options?: { silentErrors?: boolean }) {
@@ -31,7 +36,7 @@ export function useActiveQueues(options?: { silentErrors?: boolean }) {
 
     if (error) {
       if (!loadOptions?.silent && !options?.silentErrors) {
-        alertStore.showAlert('Error', error.message, 'error')
+        alertStore.showAlert(useLocaleStore().translate('alert.error'), error.message, 'error')
       }
       return
     }
@@ -64,14 +69,15 @@ export function useActiveQueues(options?: { silentErrors?: boolean }) {
 }
 
 export function useQueueFilter(queues: () => OrderQueueWithDetails[]) {
+  const localeStore = useLocaleStore()
   const activeFilter = ref<QueueFilterStatus>('all')
 
-  const filterOptions: { value: QueueFilterStatus, label: string }[] = [
-    { value: 'all', label: 'Semua Aktif' },
-    { value: 'waiting', label: 'Menunggu' },
-    { value: 'preparing', label: 'Disiapkan' },
-    { value: 'ready', label: 'Siap' },
-  ]
+  const filterOptions = computed(() => [
+    { value: 'all' as const, label: localeStore.translate('status.allActive') },
+    { value: 'waiting' as const, label: localeStore.translate('status.waiting') },
+    { value: 'preparing' as const, label: localeStore.translate('status.preparing') },
+    { value: 'ready' as const, label: localeStore.translate('status.ready') },
+  ])
 
   const filteredQueues = computed(() => {
     if (activeFilter.value === 'all') {

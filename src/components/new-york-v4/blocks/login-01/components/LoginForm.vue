@@ -11,24 +11,21 @@ import {
 } from '@/components/ui/card'
 import {
   Field,
-  FieldDescription,
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { useI18n } from '@/composables/useI18n'
 import { ref } from 'vue'
 
 interface LoginProps {
   class?: HTMLAttributes["class"],
-  title?: string,
-  description?: string,
   onSubmit: (email: string, password: string) => void,
 }
 
-const props = withDefaults(defineProps<LoginProps>(), {
-  title: 'Login to your account',
-  description: 'Enter your email below to login to your account',
-})
+const props = defineProps<LoginProps>()
+
+const { t } = useI18n()
 
 const handleSubmit = () => {
   props.onSubmit(email.value, password.value)
@@ -43,9 +40,9 @@ const password = ref('')
   <div :class="cn('flex flex-col gap-6', props.class)">
     <Card>
       <CardHeader>
-        <CardTitle>{{ props.title }}</CardTitle>
+        <CardTitle>{{ t('auth.loginTitle') }}</CardTitle>
         <CardDescription>
-          {{ props.description }}
+          {{ t('auth.loginDesc') }}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -53,7 +50,7 @@ const password = ref('')
           <FieldGroup>
             <Field>
               <FieldLabel for="email">
-                Email
+                {{ t('auth.email') }}
               </FieldLabel>
               <Input
                 id="email"
@@ -66,20 +63,20 @@ const password = ref('')
             <Field>
               <div class="flex items-center">
                 <FieldLabel for="password">
-                  Password
+                  {{ t('auth.password') }}
                 </FieldLabel>
                 <a
                   href="#"
                   class="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                 >
-                  Forgot your password?
+                  {{ t('auth.forgotPassword') }}
                 </a>
               </div>
               <Input id="password" type="password" v-model="password" required />
             </Field>
             <Field>
               <Button type="submit">
-                Login
+                {{ t('auth.loginButton') }}
               </Button>
             </Field>
           </FieldGroup>

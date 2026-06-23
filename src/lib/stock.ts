@@ -1,4 +1,5 @@
 import { restockSchema } from '@/schema/schema'
+import { useLocaleStore } from '@/stores/useLocaleStore'
 import { supabase } from './supabase'
 import type {
   Product,
@@ -69,7 +70,7 @@ async function consumeFifoLots(
 
   if (remaining > 0) {
     return {
-      error: { message: 'Stok batch tidak mencukupi untuk penjualan' },
+      error: { message: useLocaleStore().translate('error.stockBatchInsufficient') },
       allocations: [],
       totalCost: 0,
     }
@@ -141,7 +142,7 @@ async function reverseFifoFromTransaction(
         .single()
 
       if (lotError || !lot) {
-        return { error: lotError ?? { message: 'Batch stok tidak ditemukan' } }
+        return { error: lotError ?? { message: useLocaleStore().translate('error.stockBatchNotFound') } }
       }
 
       const { error: lotUpdateError } = await supabaseClient
@@ -185,7 +186,7 @@ async function reverseFifoFromTransaction(
       .single()
 
     if (productError || !product) {
-      return { error: productError ?? { message: 'Produk tidak ditemukan' } }
+      return { error: productError ?? { message: useLocaleStore().translate('error.productNotFound') } }
     }
 
     const unitCost = Number(product.purchase_price ?? 0)
@@ -240,7 +241,7 @@ async function createRestockBatch(
       .single()
 
     if (productError || !product) {
-      return { movement: null, error: productError ?? { message: 'Produk tidak ditemukan' } }
+      return { movement: null, error: productError ?? { message: useLocaleStore().translate('error.productNotFound') } }
     }
 
     stockBefore = product.stock_quantity
@@ -288,7 +289,7 @@ export async function applyStockMovement(
   options?: ApplyStockMovementOptions,
 ) {
   if (quantity <= 0) {
-    return { movement: null, error: { message: 'Jumlah stok harus lebih dari 0' } }
+    return { movement: null, error: { message: useLocaleStore().translate('error.stockQtyMustBePositive') } }
   }
 
   const supabaseClient = supabase()
@@ -310,7 +311,7 @@ export async function applyStockMovement(
     .single()
 
   if (productError || !product) {
-    return { movement: null, error: productError ?? { message: 'Produk tidak ditemukan' } }
+    return { movement: null, error: productError ?? { message: useLocaleStore().translate('error.productNotFound') } }
   }
 
   const stockBefore = product.stock_quantity
@@ -320,7 +321,7 @@ export async function applyStockMovement(
 
   if (movementType === 'sale') {
     if (stockBefore < quantity) {
-      return { movement: null, error: { message: 'Stok produk tidak mencukupi' } }
+      return { movement: null, error: { message: useLocaleStore().translate('error.productStockInsufficient') } }
     }
 
     const fifo = await consumeFifoLots(supabaseClient, productId, quantity)
@@ -383,8 +384,9 @@ export async function recordInitialStockMovement(
   productId: string,
   quantity: number,
   unitCost = 0,
-  notes = 'Stok awal',
+  notes?: string,
 ) {
+  const movementNotes = notes ?? useLocaleStore().translate('error.initialStockNotes')
   if (quantity <= 0) {
     return { movement: null, error: null }
   }
@@ -403,7 +405,7 @@ export async function recordInitialStockMovement(
       unit_cost: unitCost,
       total_cost: totalCost,
       remaining_quantity: quantity,
-      notes,
+      notes: movementNotes,
     })
     .select()
     .single()
@@ -412,7 +414,7 @@ export async function recordInitialStockMovement(
 }
 
 export const restockProduct = async (input: RestockInput) => {
-  const validated = restockSchema.safeParse(input)
+  const validated = restockSchema().safeParse(input)
   if (!validated.success) {
     return { movement: null, error: validated.error.flatten().fieldErrors }
   }
@@ -442,7 +444,7 @@ export const recordStockReturn = async (
     .single()
 
   if (productError || !product) {
-    return { movement: null, error: productError ?? { message: 'Produk tidak ditemukan' } }
+    return { movement: null, error: productError ?? { message: useLocaleStore().translate('error.productNotFound') } }
   }
 
   const stockBefore = product.stock_quantity

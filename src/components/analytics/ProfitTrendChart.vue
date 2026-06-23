@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { ChartConfig } from '@/components/ui/chart'
 import { VisAxis, VisGroupedBar, VisXYContainer } from '@unovis/vue'
 import {
@@ -9,31 +10,36 @@ import {
   ChartTooltipContent,
   componentToString,
 } from '@/components/ui/chart'
+import { useI18n } from '@/composables/useI18n'
 import type { DailyAnalyticsRow } from '@/types/database'
 
 defineProps<{
   data: DailyAnalyticsRow[]
 }>()
 
-const chartConfig = {
+const { t, locale } = useI18n()
+
+const dateLocale = computed(() => (locale.value === 'en' ? 'en-US' : 'id-ID'))
+
+const chartConfig = computed(() => ({
   revenue: {
-    label: 'Pendapatan',
+    label: t('analytics.revenueLabel'),
     color: 'var(--chart-1)',
   },
   cogs: {
-    label: 'HPP',
+    label: t('analytics.chartCogsShort'),
     color: 'var(--chart-2)',
   },
   grossProfit: {
-    label: 'Laba',
+    label: t('analytics.chartProfit'),
     color: 'var(--chart-3)',
   },
-} satisfies ChartConfig
+}) satisfies ChartConfig)
 
 type Data = DailyAnalyticsRow
 
 function formatCurrency(value: number) {
-  return new Intl.NumberFormat('id-ID', {
+  return new Intl.NumberFormat(dateLocale.value, {
     style: 'currency',
     currency: 'IDR',
     minimumFractionDigits: 0,
@@ -93,7 +99,7 @@ function formatCurrency(value: number) {
       v-else
       class="flex min-h-[300px] items-center justify-center text-sm text-muted-foreground"
     >
-      Belum ada penjualan dalam periode ini.
+      {{ t('analytics.noSales') }}
     </div>
     <ChartLegendContent v-if="data.length" />
   </ChartContainer>

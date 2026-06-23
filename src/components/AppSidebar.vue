@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { SidebarProps } from '@/components/ui/sidebar'
 import UserNav from '@/components/UserNav.vue'
 import {
@@ -16,22 +17,24 @@ import {
 
 import { getCookie, clearAuthCookies } from '@/lib/cookies'
 import { useRouter, RouterLink } from 'vue-router'
+import { useI18n } from '@/composables/useI18n'
 import { BarChart3, ClipboardList, Inbox, LayoutDashboard, List, LogOut, Package, PackagePlus, Receipt, Settings, Tags, User, Users } from '@lucide/vue'
-
 
 const userEmail = getCookie('_user_email')
 const router = useRouter()
+const { t, locale } = useI18n()
 const props = defineProps<SidebarProps>()
 
-// This is sample data.
-const data = {
+const data = computed(() => {
+  locale.value
+  return {
   email: userEmail,
   menu: [
     {
-      group: 'Account',
+      group: t('nav.account'),
       items: [
         {
-          title: 'Dashboard',
+          title: t('nav.dashboard'),
           url: '/dashboard',
           icon: LayoutDashboard,
           onClick: () => {
@@ -39,7 +42,7 @@ const data = {
           },
         },
         {
-          title: 'Profile',
+          title: t('nav.profile'),
           url: '/profile',
           icon: User,
           onClick: () => {
@@ -49,10 +52,10 @@ const data = {
       ],
     },
     {
-      group: 'Session',
+      group: t('nav.session'),
       items: [
         {
-          title: 'Logout',
+          title: t('nav.logout'),
           url: '/logout',
           icon: LogOut,
           onClick: () => {
@@ -63,7 +66,8 @@ const data = {
       ],
     },
   ],
-}
+  }
+})
 </script>
 
 <template>
@@ -73,18 +77,17 @@ const data = {
         :email="data.email"
         :menu="data.menu"
       />
-
     </SidebarHeader>
     <SidebarContent>
       <SidebarGroup>
-        <SidebarGroupLabel>Beranda</SidebarGroupLabel>
+        <SidebarGroupLabel>{{ t('nav.home') }}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton as-child>
                 <RouterLink to="/dashboard">
                   <LayoutDashboard />
-                  <span>Dashboard</span>
+                  <span>{{ t('nav.dashboard') }}</span>
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -93,14 +96,14 @@ const data = {
       </SidebarGroup>
 
       <SidebarGroup>
-        <SidebarGroupLabel>Operasional</SidebarGroupLabel>
+        <SidebarGroupLabel>{{ t('nav.operations') }}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton as-child>
                 <RouterLink to="/transactions">
                   <Receipt />
-                  <span>Buat Transaksi</span>
+                  <span>{{ t('nav.createTransaction') }}</span>
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -108,7 +111,7 @@ const data = {
               <SidebarMenuButton as-child>
                 <RouterLink to="/transactions/list">
                   <List />
-                  <span>Daftar Transaksi</span>
+                  <span>{{ t('nav.transactionList') }}</span>
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -116,7 +119,7 @@ const data = {
               <SidebarMenuButton as-child>
                 <RouterLink to="/orders/inbox">
                   <Inbox />
-                  <span>Pesanan Masuk</span>
+                  <span>{{ t('nav.orderInbox') }}</span>
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -124,7 +127,7 @@ const data = {
               <SidebarMenuButton as-child>
                 <RouterLink to="/queue">
                   <ClipboardList />
-                  <span>Antrian</span>
+                  <span>{{ t('nav.queue') }}</span>
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -132,7 +135,7 @@ const data = {
               <SidebarMenuButton as-child>
                 <RouterLink to="/stock/restock">
                   <PackagePlus />
-                  <span>Restock</span>
+                  <span>{{ t('nav.restock') }}</span>
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -141,14 +144,14 @@ const data = {
       </SidebarGroup>
 
       <SidebarGroup>
-        <SidebarGroupLabel>Laporan</SidebarGroupLabel>
+        <SidebarGroupLabel>{{ t('nav.reports') }}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton as-child>
                 <RouterLink to="/analytics">
                   <BarChart3 />
-                  <span>Analisis</span>
+                  <span>{{ t('nav.analytics') }}</span>
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -157,14 +160,14 @@ const data = {
       </SidebarGroup>
 
       <SidebarGroup>
-        <SidebarGroupLabel>Master Data</SidebarGroupLabel>
+        <SidebarGroupLabel>{{ t('nav.masterData') }}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton as-child>
                 <RouterLink to="/master/products">
                   <Package />
-                  <span>Produk</span>
+                  <span>{{ t('nav.products') }}</span>
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -172,7 +175,7 @@ const data = {
               <SidebarMenuButton as-child>
                 <RouterLink to="/master/categories">
                   <Tags />
-                  <span>Kategori</span>
+                  <span>{{ t('nav.categories') }}</span>
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -180,7 +183,7 @@ const data = {
               <SidebarMenuButton as-child>
                 <RouterLink to="/master/customers">
                   <Users />
-                  <span>Pembeli</span>
+                  <span>{{ t('nav.customers') }}</span>
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -188,14 +191,14 @@ const data = {
         </SidebarGroupContent>
       </SidebarGroup>
       <SidebarGroup>
-        <SidebarGroupLabel>Pengaturan</SidebarGroupLabel>
+        <SidebarGroupLabel>{{ t('nav.settings') }}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton as-child>
                 <RouterLink to="/config">
                   <Settings />
-                  <span>Konfigurasi</span>
+                  <span>{{ t('nav.config') }}</span>
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>

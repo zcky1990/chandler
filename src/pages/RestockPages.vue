@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useI18n } from '@/composables/useI18n'
 import { getProducts } from '@/lib/product'
 import { getStockMovements } from '@/lib/stock'
 import { formatPrice } from '@/lib/format'
@@ -23,6 +24,7 @@ import type { Product, StockMovementWithProduct } from '@/types/database'
 const LOW_STOCK_THRESHOLD = 5
 const HISTORY_LIMIT = 20
 
+const { t, locale } = useI18n()
 const alertStore = useAlertStore()
 const products = ref<Product[]>([])
 const recentMovements = ref<StockMovementWithProduct[]>([])
@@ -31,6 +33,8 @@ const searchQuery = ref('')
 const lowStockOnly = ref(false)
 const dialogOpen = ref(false)
 const selectedProduct = ref<Product | null>(null)
+
+const dateLocale = computed(() => (locale.value === 'en' ? 'en-US' : 'id-ID'))
 
 const filteredProducts = computed(() => {
   let result = products.value.filter((product) => product.is_active)
@@ -52,7 +56,7 @@ const filteredProducts = computed(() => {
 })
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat('id-ID', {
+  return new Intl.DateTimeFormat(dateLocale.value, {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value))
@@ -73,12 +77,12 @@ async function loadData() {
   isLoading.value = false
 
   if (productsResult.error) {
-    alertStore.showAlert('Error', productsResult.error.message, 'error')
+    alertStore.showAlert(t('alert.error'), productsResult.error.message, 'error')
     return
   }
 
   if (movementsResult.error) {
-    alertStore.showAlert('Error', movementsResult.error.message, 'error')
+    alertStore.showAlert(t('alert.error'), movementsResult.error.message, 'error')
     return
   }
 
@@ -103,26 +107,26 @@ onMounted(loadData)
     <div class="flex flex-col gap-6 p-6">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 class="text-2xl font-bold tracking-tight">Restock</h1>
+          <h1 class="text-2xl font-bold tracking-tight">{{ t('restock.title') }}</h1>
           <p class="text-sm text-muted-foreground">
-            Tambah stok produk dan lihat riwayat restock terbaru.
+            {{ t('restock.subtitle') }}
           </p>
         </div>
         <Button variant="outline" :disabled="isLoading" @click="loadData">
           <RefreshCw class="mr-2 size-4" :class="{ 'animate-spin': isLoading }" />
-          Refresh
+          {{ t('common.refresh') }}
         </Button>
       </div>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Input
           v-model="searchQuery"
-          placeholder="Cari nama atau SKU..."
+          :placeholder="t('restock.search')"
           class="max-w-sm"
         />
         <label class="flex items-center gap-2 text-sm">
           <Switch v-model="lowStockOnly" />
-          <span>Stok menipis (&le; {{ LOW_STOCK_THRESHOLD }})</span>
+          <span>{{ t('restock.lowStock', { threshold: LOW_STOCK_THRESHOLD }) }}</span>
         </label>
       </div>
 
@@ -130,21 +134,21 @@ onMounted(loadData)
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Produk</TableHead>
-              <TableHead>SKU</TableHead>
-              <TableHead class="text-right">Stok</TableHead>
-              <TableHead class="text-right">Aksi</TableHead>
+              <TableHead>{{ t('common.product') }}</TableHead>
+              <TableHead>{{ t('common.sku') }}</TableHead>
+              <TableHead class="text-right">{{ t('common.stock') }}</TableHead>
+              <TableHead class="text-right">{{ t('common.actions') }}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow v-if="isLoading">
               <TableCell colspan="4" class="text-center text-muted-foreground">
-                Memuat data...
+                {{ t('common.loading') }}
               </TableCell>
             </TableRow>
             <TableRow v-else-if="!filteredProducts.length">
               <TableCell colspan="4" class="text-center text-muted-foreground">
-                Tidak ada produk ditemukan.
+                {{ t('restock.noProduct') }}
               </TableCell>
             </TableRow>
             <TableRow v-for="product in filteredProducts" :key="product.id">
@@ -158,7 +162,7 @@ onMounted(loadData)
               <TableCell class="text-right">
                 <Button size="sm" @click="openRestockDialog(product)">
                   <PackagePlus class="mr-1 size-4" />
-                  Restock
+                  {{ t('restock.title') }}
                 </Button>
               </TableCell>
             </TableRow>
@@ -167,29 +171,29 @@ onMounted(loadData)
       </div>
 
       <div class="space-y-3">
-        <h2 class="text-lg font-semibold">Riwayat Restock Terbaru</h2>
+        <h2 class="text-lg font-semibold">{{ t('restock.history') }}</h2>
         <div class="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Waktu</TableHead>
-                <TableHead>Produk</TableHead>
-                <TableHead class="text-right">Jumlah</TableHead>
-                <TableHead class="text-right">Harga beli</TableHead>
-                <TableHead class="text-right">Total biaya</TableHead>
-                <TableHead class="text-right">Stok</TableHead>
-                <TableHead>Catatan</TableHead>
+                <TableHead>{{ t('restock.time') }}</TableHead>
+                <TableHead>{{ t('common.product') }}</TableHead>
+                <TableHead class="text-right">{{ t('restock.qtyIn') }}</TableHead>
+                <TableHead class="text-right">{{ t('restock.unitCost') }}</TableHead>
+                <TableHead class="text-right">{{ t('restock.totalCost') }}</TableHead>
+                <TableHead class="text-right">{{ t('common.stock') }}</TableHead>
+                <TableHead>{{ t('common.notes') }}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow v-if="isLoading">
                 <TableCell colspan="7" class="text-center text-muted-foreground">
-                  Memuat riwayat...
+                  {{ t('restock.loadingHistory') }}
                 </TableCell>
               </TableRow>
               <TableRow v-else-if="!recentMovements.length">
                 <TableCell colspan="7" class="text-center text-muted-foreground">
-                  Belum ada riwayat restock.
+                  {{ t('restock.noHistory') }}
                 </TableCell>
               </TableRow>
               <TableRow v-for="movement in recentMovements" :key="movement.id">

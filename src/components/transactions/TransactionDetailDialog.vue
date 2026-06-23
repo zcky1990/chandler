@@ -10,8 +10,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useI18n } from '@/composables/useI18n'
+import { getPaymentMethodLabel } from '@/lib/invoice'
 import { formatPrice } from '@/lib/format'
-
+import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
 import type { TransactionWithDetails } from '@/types/database'
 
 const props = defineProps<{
@@ -19,16 +21,26 @@ const props = defineProps<{
   transaction: TransactionWithDetails | null
 }>()
 
+const { t, locale } = useI18n()
+
 const emit = defineEmits<{
   'update:open': [value: boolean]
   edit: []
 }>()
 
+const dateLocale = computed(() => (locale.value === 'en' ? 'en-US' : 'id-ID'))
+
 function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat('id-ID', {
+  return new Intl.DateTimeFormat(dateLocale.value, {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value))
+}
+
+function displayCustomerName(name: string | undefined | null) {
+  if (!name) return t('common.unknownBuyer')
+  if (name === WALK_IN_CUSTOMER_NAME) return t('common.walkIn')
+  return name
 }
 
 const itemCount = computed(() =>
@@ -36,40 +48,48 @@ const itemCount = computed(() =>
 )
 
 const canEdit = computed(() => props.transaction && !props.transaction.is_paid)
+
+function paidStatusLabel(transaction: TransactionWithDetails) {
+  if (!transaction.is_paid) return t('common.unpaidStatus')
+  const method = transaction.payment_method
+  return method
+    ? t('transaction.paidWithMethod', { method: getPaymentMethodLabel(method) })
+    : t('status.paid')
+}
 </script>
 
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent class="sm:max-w-[520px]">
       <DialogHeader>
-        <DialogTitle>Detail Transaksi</DialogTitle>
+        <DialogTitle>{{ t('transaction.detail') }}</DialogTitle>
         <DialogDescription v-if="transaction">
-          {{ transaction.customers?.name ?? 'Pembeli tidak diketahui' }} · {{ formatDateTime(transaction.created_at) }}
+          {{ displayCustomerName(transaction.customers?.name) }} · {{ formatDateTime(transaction.created_at) }}
         </DialogDescription>
       </DialogHeader>
 
       <div v-if="transaction" class="space-y-4">
         <div class="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <p class="text-muted-foreground">Status</p>
+            <p class="text-muted-foreground">{{ t('common.status') }}</p>
             <p class="font-medium">
-              {{ transaction.is_paid ? `Lunas (${transaction.payment_method?.toUpperCase() ?? '-'})` : 'Belum dibayar' }}
+              {{ paidStatusLabel(transaction) }}
             </p>
           </div>
           <div>
-            <p class="text-muted-foreground">Total item</p>
+            <p class="text-muted-foreground">{{ t('transaction.totalItems') }}</p>
             <p class="font-medium">{{ itemCount }}</p>
           </div>
         </div>
 
         <div class="space-y-2">
-          <p class="text-sm font-medium">Produk</p>
+          <p class="text-sm font-medium">{{ t('common.product') }}</p>
           <div
             v-for="item in transaction.transaction_items"
             :key="item.id"
             class="rounded-xl border px-4 py-3"
           >
-            <p class="font-medium">{{ item.products?.name ?? 'Produk' }}</p>
+            <p class="font-medium">{{ item.products?.name ?? t('common.unknownProduct') }}</p>
             <p class="text-sm text-muted-foreground">
               {{ item.quantity }} x {{ formatPrice(item.unit_price) }} = {{ formatPrice(item.subtotal) }}
             </p>
@@ -78,7 +98,7 @@ const canEdit = computed(() => props.transaction && !props.transaction.is_paid)
               :key="addon.id"
               class="text-sm text-muted-foreground"
             >
-              + {{ addon.products?.name ?? 'Addon' }}
+              + {{ addon.products?.name ?? t('common.addon') }}
               ({{ item.quantity }} x {{ addon.quantity }} x {{ formatPrice(addon.unit_price) }})
               = {{ formatPrice(addon.subtotal) }}
             </p>
@@ -86,12 +106,12 @@ const canEdit = computed(() => props.transaction && !props.transaction.is_paid)
         </div>
 
         <div v-if="transaction.notes" class="rounded-xl border px-4 py-3 text-sm">
-          <p class="text-muted-foreground">Catatan</p>
+          <p class="text-muted-foreground">{{ t('common.notes') }}</p>
           <p>{{ transaction.notes }}</p>
         </div>
 
         <div class="flex items-center justify-between border-t pt-4">
-          <span class="text-sm text-muted-foreground">Total</span>
+          <span class="text-sm text-muted-foreground">{{ t('common.total') }}</span>
           <span class="text-lg font-bold">{{ formatPrice(transaction.total_amount) }}</span>
         </div>
       </div>
@@ -99,7 +119,7 @@ const canEdit = computed(() => props.transaction && !props.transaction.is_paid)
       <DialogFooter v-if="canEdit">
         <Button variant="outline" @click="emit('edit')">
           <Pencil class="size-4" />
-          Ubah Jumlah Item
+          {{ t('transaction.editItems') }}
         </Button>
       </DialogFooter>
     </DialogContent>

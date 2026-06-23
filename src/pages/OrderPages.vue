@@ -7,7 +7,10 @@ import OrderMenuPanel from '@/components/order/OrderMenuPanel.vue'
 import OrderSuccessDialog from '@/components/order/OrderSuccessDialog.vue'
 import { Button } from '@/components/ui/button'
 import { usePreOrderCart } from '@/composables/usePreOrderCart'
+import { useI18n } from '@/composables/useI18n'
 import ApplicationLayout from '@/layouts/ApplicationLayout.vue'
+
+const { t } = useI18n()
 
 const {
   cart,
@@ -46,15 +49,15 @@ const {
     <div class="w-full max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
       <div class="mb-6 flex items-center justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-bold tracking-tight">Pesan Sekarang</h1>
+          <h1 class="text-2xl font-bold tracking-tight">{{ t('order.title') }}</h1>
           <p class="text-sm text-muted-foreground">
-            Pilih menu, buat pesanan, lalu menuju kasir untuk pembayaran.
+            {{ t('order.subtitle') }}
           </p>
         </div>
         <Button variant="outline" size="sm" as-child>
           <RouterLink to="/">
             <ArrowLeft class="size-4" />
-            Beranda
+            {{ t('order.home') }}
           </RouterLink>
         </Button>
       </div>

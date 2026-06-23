@@ -15,6 +15,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
+import { useI18n } from '@/composables/useI18n'
 
 interface MenuItem {
   title: string
@@ -34,6 +35,7 @@ interface MenuProps {
 }
 
 const props = defineProps<MenuProps>()
+const { t } = useI18n()
 </script>
 
 <template>
@@ -50,7 +52,7 @@ const props = defineProps<MenuProps>()
               <AvatarFallback>{{ props.email.charAt(0) }}</AvatarFallback>
             </Avatar>
             <div class="flex flex-col gap-0.5 leading-none">
-              <span class="font-bold">Welcome</span>
+              <span class="font-bold">{{ t('userNav.welcome') }}</span>
               <span class="font-medium">{{ props.email }}</span>
             </div>
             <ChevronsUpDown class="ml-auto" />

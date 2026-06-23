@@ -3,11 +3,16 @@ import { computed } from 'vue'
 import type { ChartConfig } from '@/components/ui/chart'
 import { VisDonut, VisSingleContainer } from '@unovis/vue'
 import { ChartContainer } from '@/components/ui/chart'
+import { useI18n } from '@/composables/useI18n'
 import type { PaymentBreakdownRow } from '@/types/database'
 
 const props = defineProps<{
   payments: PaymentBreakdownRow[]
 }>()
+
+const { t, locale } = useI18n()
+
+const dateLocale = computed(() => (locale.value === 'en' ? 'en-US' : 'id-ID'))
 
 const COLORS = [
   'var(--chart-1)',
@@ -38,7 +43,7 @@ const chartData = computed<Slice[]>(() =>
 
 const centralLabel = computed(() => {
   const total = props.payments.reduce((sum, row) => sum + row.amount, 0)
-  return new Intl.NumberFormat('id-ID', {
+  return new Intl.NumberFormat(dateLocale.value, {
     style: 'currency',
     currency: 'IDR',
     minimumFractionDigits: 0,
@@ -55,14 +60,14 @@ const centralLabel = computed(() => {
         :color="(d: Slice) => d.fill"
         :arc-width="36"
         :central-label="centralLabel"
-        central-sub-label="Lunas"
+        :central-sub-label="t('status.paid')"
       />
     </VisSingleContainer>
     <div
       v-else
       class="flex min-h-[280px] items-center justify-center text-sm text-muted-foreground"
     >
-      Belum ada pembayaran lunas.
+      {{ t('analytics.noPaidPayments') }}
     </div>
 
     <ul v-if="chartData.length" class="mt-4 space-y-2">
@@ -75,7 +80,7 @@ const centralLabel = computed(() => {
           <span class="size-2.5 rounded-full" :style="{ background: row.fill }" />
           {{ row.label }}
         </span>
-        <span class="text-muted-foreground">{{ row.transactionCount }} trx</span>
+        <span class="text-muted-foreground">{{ row.transactionCount }} {{ t('common.trx') }}</span>
       </li>
     </ul>
   </ChartContainer>

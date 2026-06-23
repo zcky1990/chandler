@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { transactionItemsUpdateSchema, transactionSchema } from '@/schema/schema'
+import { useLocaleStore } from '@/stores/useLocaleStore'
 import {
   expandItemsForSubmit,
   getAddonSignature,
@@ -473,7 +474,7 @@ export const updateTransactionItems = async (
     }[]
   },
 ) => {
-  const validated = transactionItemsUpdateSchema.safeParse(input)
+  const validated = transactionItemsUpdateSchema().safeParse(input)
   if (!validated.success) {
     return { transaction: null, error: validated.error.flatten().fieldErrors }
   }
@@ -486,11 +487,11 @@ export const updateTransactionItems = async (
     .single()
 
   if (transactionError || !transactionRow) {
-    return { transaction: null, error: transactionError ?? { message: 'Transaksi tidak ditemukan' } }
+    return { transaction: null, error: transactionError ?? { message: useLocaleStore().translate('order.transactionNotFound') } }
   }
 
   if (transactionRow.is_paid) {
-    return { transaction: null, error: { message: 'Transaksi sudah lunas dan tidak bisa diubah' } }
+    return { transaction: null, error: { message: useLocaleStore().translate('error.transactionAlreadyPaid') } }
   }
 
   const { data: currentItems, error: currentItemsError } = await supabaseClient
@@ -567,7 +568,7 @@ export const updateTransactionItems = async (
   for (const item of existingUpdates) {
     const currentItem = currentById.get(item.id!)
     if (!currentItem) {
-      return { transaction: null, error: { message: 'Item transaksi tidak ditemukan' } }
+      return { transaction: null, error: { message: useLocaleStore().translate('error.transactionItemNotFound') } }
     }
 
     const quantityDelta = item.quantity - currentItem.quantity
@@ -731,7 +732,7 @@ export const updateTransactionItems = async (
   const { totalAmount, error: totalError } = await getTransactionTotalAmount(transactionId)
 
   if (totalError || totalAmount === null) {
-    return { transaction: null, error: totalError ?? { message: 'Transaksi harus memiliki minimal 1 item' } }
+    return { transaction: null, error: totalError ?? { message: useLocaleStore().translate('error.transactionMinOneItem') } }
   }
 
   const { data: transaction, error: updateError } = await supabaseClient
@@ -751,12 +752,12 @@ export const createTransaction = async (
   input: TransactionInput,
   options?: CreateTransactionOptions,
 ): Promise<CreateTransactionResult> => {
-  const validated = transactionSchema.safeParse(input)
+  const validated = transactionSchema().safeParse(input)
   if (!validated.success) {
     return { transaction: null, merged: false, error: validated.error.flatten().fieldErrors }
   }
 
-  const payload = validated.data as z.infer<typeof transactionSchema>
+  const payload = validated.data as z.infer<ReturnType<typeof transactionSchema>>
   const items = expandItemsForSubmit(payload.items)
   const payImmediately = !!options?.paymentMethod
 
@@ -766,7 +767,7 @@ export const createTransaction = async (
       return {
         transaction: null,
         merged: false,
-        error: { message: 'Pembeli walk-in harus bayar langsung, tidak bisa berhutang' },
+        error: { message: useLocaleStore().translate('transaction.walkInMustPay') },
       }
     }
 

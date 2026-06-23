@@ -9,9 +9,11 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useI18n } from '@/composables/useI18n'
 import { useThemeStore, type Theme } from '@/stores/useThemeStore'
 
 const themeStore = useThemeStore()
+const { t } = useI18n()
 
 function onThemeChange(value: string) {
   themeStore.setTheme(value as Theme)
@@ -28,26 +30,26 @@ function onThemeChange(value: string) {
         <MoonIcon
           class="absolute size-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
         />
-        <span class="sr-only">Toggle theme</span>
+        <span class="sr-only">{{ t('theme.toggle') }}</span>
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end">
-      <DropdownMenuLabel>Theme</DropdownMenuLabel>
+      <DropdownMenuLabel>{{ t('theme.label') }}</DropdownMenuLabel>
       <DropdownMenuRadioGroup
         :model-value="themeStore.themeState"
         @update:model-value="onThemeChange"
       >
         <DropdownMenuRadioItem value="light">
           <SunIcon />
-          Light
+          {{ t('theme.light') }}
         </DropdownMenuRadioItem>
         <DropdownMenuRadioItem value="dark">
           <MoonIcon />
-          Dark
+          {{ t('theme.dark') }}
         </DropdownMenuRadioItem>
         <DropdownMenuRadioItem value="system">
           <MonitorIcon />
-          System
+          {{ t('theme.system') }}
         </DropdownMenuRadioItem>
       </DropdownMenuRadioGroup>
     </DropdownMenuContent>

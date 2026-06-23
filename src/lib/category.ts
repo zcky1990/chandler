@@ -3,7 +3,7 @@ import { categorySchema } from '@/schema/schema'
 import type { ProductCategory, ProductCategoryInput } from '@/types/database'
 import type { z } from 'zod'
 
-function normalizeCategoryInput(input: z.infer<typeof categorySchema>): ProductCategoryInput {
+function normalizeCategoryInput(input: z.infer<ReturnType<typeof categorySchema>>): ProductCategoryInput {
   return {
     name: input.name,
     description: input.description ?? null,
@@ -33,7 +33,7 @@ export const getActiveCategories = async () => {
 }
 
 export const createCategory = async (category: ProductCategoryInput) => {
-  const validated = categorySchema.safeParse(category)
+  const validated = categorySchema().safeParse(category)
   if (!validated.success) {
     return { category: null, error: validated.error.flatten().fieldErrors }
   }
@@ -49,7 +49,7 @@ export const createCategory = async (category: ProductCategoryInput) => {
 }
 
 export const updateCategory = async (id: string, category: ProductCategoryInput) => {
-  const validated = categorySchema.safeParse(category)
+  const validated = categorySchema().safeParse(category)
   if (!validated.success) {
     return { category: null, error: validated.error.flatten().fieldErrors }
   }

@@ -3,11 +3,16 @@ import { computed } from 'vue'
 import type { ChartConfig } from '@/components/ui/chart'
 import { VisDonut, VisSingleContainer } from '@unovis/vue'
 import { ChartContainer } from '@/components/ui/chart'
+import { useI18n } from '@/composables/useI18n'
 import type { AnalyticsSummary } from '@/types/database'
 
 const props = defineProps<{
   summary: AnalyticsSummary
 }>()
+
+const { t, locale } = useI18n()
+
+const dateLocale = computed(() => (locale.value === 'en' ? 'en-US' : 'id-ID'))
 
 type Slice = {
   key: string
@@ -16,10 +21,10 @@ type Slice = {
   fill: string
 }
 
-const chartConfig = {
-  hpp: { label: 'HPP (biaya pokok)', color: 'var(--chart-2)' },
-  profit: { label: 'Laba kotor', color: 'var(--chart-3)' },
-} satisfies ChartConfig
+const chartConfig = computed(() => ({
+  hpp: { label: t('analytics.chartHppCost'), color: 'var(--chart-2)' },
+  profit: { label: t('analytics.grossProfit'), color: 'var(--chart-3)' },
+}) satisfies ChartConfig)
 
 const chartData = computed<Slice[]>(() => {
   const hpp = Math.max(props.summary.cogs, 0)
@@ -28,13 +33,13 @@ const chartData = computed<Slice[]>(() => {
   if (hpp === 0 && profit === 0) return []
 
   return [
-    { key: 'hpp', label: 'HPP', value: hpp, fill: chartConfig.hpp.color! },
-    { key: 'profit', label: 'Laba kotor', value: profit, fill: chartConfig.profit.color! },
+    { key: 'hpp', label: t('analytics.chartCogsShort'), value: hpp, fill: chartConfig.value.hpp.color! },
+    { key: 'profit', label: t('analytics.grossProfit'), value: profit, fill: chartConfig.value.profit.color! },
   ]
 })
 
 const centralLabel = computed(() => {
-  return new Intl.NumberFormat('id-ID', {
+  return new Intl.NumberFormat(dateLocale.value, {
     style: 'currency',
     currency: 'IDR',
     minimumFractionDigits: 0,
@@ -51,14 +56,14 @@ const centralLabel = computed(() => {
         :color="(d: Slice) => d.fill"
         :arc-width="36"
         :central-label="centralLabel"
-        :central-sub-label="'Pendapatan'"
+        :central-sub-label="t('analytics.revenueLabel')"
       />
     </VisSingleContainer>
     <div
       v-else
       class="flex min-h-[280px] items-center justify-center text-sm text-muted-foreground"
     >
-      Belum ada pendapatan.
+      {{ t('analytics.noRevenue') }}
     </div>
   </ChartContainer>
 </template>

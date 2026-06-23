@@ -13,12 +13,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useI18n } from '@/composables/useI18n'
 import { deleteCustomer, getCustomers } from '@/lib/customer'
 import { useAlertStore } from '@/stores/useAlertStore'
+import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
 import type { Customer } from '@/types/database'
 
 type StatusFilter = 'all' | 'active' | 'inactive'
 
+const { t } = useI18n()
 const alertStore = useAlertStore()
 const customers = ref<Customer[]>([])
 const isLoading = ref(true)
@@ -57,13 +60,18 @@ const filteredCustomers = computed(() => {
 
 const selectClass = 'border-input bg-background h-9 rounded-md border px-3 text-sm'
 
+function displayCustomerName(name: string) {
+  if (name === WALK_IN_CUSTOMER_NAME) return t('common.walkIn')
+  return name
+}
+
 async function loadCustomers() {
   isLoading.value = true
   const { customers: data, error } = await getCustomers()
   isLoading.value = false
 
   if (error) {
-    alertStore.showAlert('Error', error.message, 'error')
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
     return
   }
 
@@ -81,15 +89,15 @@ function openEditDialog(customer: Customer) {
 }
 
 async function handleDelete(customer: Customer) {
-  if (!confirm(`Hapus pembeli "${customer.name}"?`)) return
+  if (!confirm(t('master.deleteCustomerConfirm', { name: customer.name }))) return
 
   const { error } = await deleteCustomer(customer.id)
   if (error) {
-    alertStore.showAlert('Error', error.message, 'error')
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
     return
   }
 
-  alertStore.showAlert('Berhasil', 'Pembeli berhasil dihapus', 'success')
+  alertStore.showAlert(t('alert.success'), t('master.customerDeleted'), 'success')
   await loadCustomers()
 }
 
@@ -101,25 +109,25 @@ onMounted(loadCustomers)
     <div class="flex flex-col gap-6 p-6">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold tracking-tight">Master Pembeli</h1>
-          <p class="text-sm text-muted-foreground">Kelola data pembeli warung.</p>
+          <h1 class="text-2xl font-bold tracking-tight">{{ t('master.customerTitle') }}</h1>
+          <p class="text-sm text-muted-foreground">{{ t('master.customerSubtitle') }}</p>
         </div>
         <Button @click="openCreateDialog">
           <Plus class="size-4" />
-          Tambah Pembeli
+          {{ t('master.addCustomer') }}
         </Button>
       </div>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <Input
           v-model="searchQuery"
-          placeholder="Cari nama, email, telepon, alamat..."
+          :placeholder="t('master.searchCustomer')"
           class="max-w-sm"
         />
         <select v-model="statusFilter" :class="selectClass">
-          <option value="all">Semua status</option>
-          <option value="active">Aktif</option>
-          <option value="inactive">Nonaktif</option>
+          <option value="all">{{ t('status.allStatus') }}</option>
+          <option value="active">{{ t('common.active') }}</option>
+          <option value="inactive">{{ t('common.inactive') }}</option>
         </select>
       </div>
 
@@ -127,31 +135,31 @@ onMounted(loadCustomers)
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nama</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Telepon</TableHead>
-              <TableHead>Alamat</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead class="text-right">Aksi</TableHead>
+              <TableHead>{{ t('master.name') }}</TableHead>
+              <TableHead>{{ t('master.email') }}</TableHead>
+              <TableHead>{{ t('master.phone') }}</TableHead>
+              <TableHead>{{ t('master.address') }}</TableHead>
+              <TableHead>{{ t('common.status') }}</TableHead>
+              <TableHead class="text-right">{{ t('common.actions') }}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow v-if="isLoading">
               <TableCell colspan="6" class="text-center text-muted-foreground">
-                Memuat data...
+                {{ t('common.loading') }}
               </TableCell>
             </TableRow>
             <TableRow v-else-if="!filteredCustomers.length">
               <TableCell colspan="6" class="text-center text-muted-foreground">
-                {{ customers.length ? 'Tidak ada pembeli yang cocok dengan filter.' : 'Belum ada pembeli.' }}
+                {{ customers.length ? t('master.noCustomerFilterMatch') : t('master.noCustomer') }}
               </TableCell>
             </TableRow>
             <TableRow v-for="customer in filteredCustomers" :key="customer.id">
-              <TableCell class="font-medium">{{ customer.name }}</TableCell>
+              <TableCell class="font-medium">{{ displayCustomerName(customer.name) }}</TableCell>
               <TableCell>{{ customer.email || '-' }}</TableCell>
               <TableCell>{{ customer.phone || '-' }}</TableCell>
               <TableCell>{{ customer.address || '-' }}</TableCell>
-              <TableCell>{{ customer.is_active ? 'Aktif' : 'Nonaktif' }}</TableCell>
+              <TableCell>{{ customer.is_active ? t('common.active') : t('common.inactive') }}</TableCell>
               <TableCell class="text-right">
                 <div class="flex justify-end gap-2">
                   <Button size="icon-sm" variant="outline" @click="openEditDialog(customer)">

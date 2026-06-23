@@ -3,11 +3,14 @@ import { computed } from 'vue'
 import { formatPreOrderItemWithAddons } from '@/lib/addon'
 import { formatPrice } from '@/lib/format'
 import { formatPreOrderNumber, getPreOrderPaymentLabel } from '@/lib/pre-order'
+import { useI18n } from '@/composables/useI18n'
 import type { PreOrderWithDetails } from '@/types/database'
 
 const props = defineProps<{
   preOrder: PreOrderWithDetails
 }>()
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   process: []
@@ -31,8 +34,8 @@ const paymentLabel = computed(() => getPreOrderPaymentLabel(props.preOrder))
           {{ formatPreOrderNumber(preOrder.order_number) }}
         </h3>
         <p class="mt-1 text-sm text-muted-foreground">
-          {{ preOrder.customer_name || 'Tanpa nama' }}
-          <span v-if="preOrder.table_number"> · Meja {{ preOrder.table_number }}</span>
+          {{ preOrder.customer_name || t('order.noName') }}
+          <span v-if="preOrder.table_number"> · {{ t('order.table', { number: preOrder.table_number }) }}</span>
         </p>
       </div>
       <span
@@ -62,14 +65,14 @@ const paymentLabel = computed(() => getPreOrderPaymentLabel(props.preOrder))
           class="inline-flex h-8 items-center justify-center rounded-md border px-3 text-sm font-medium hover:bg-muted"
           @click="emit('cancel')"
         >
-          Batalkan
+          {{ t('order.cancel') }}
         </button>
         <button
           type="button"
           class="inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           @click="emit('process')"
         >
-          Proses
+          {{ t('common.process') }}
         </button>
       </div>
     </div>

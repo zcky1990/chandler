@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import CustomerList from '@/components/CustomerList.vue'
 import ProductList from '@/components/ProductList.vue'
 import SearchInput from '@/components/search/Search.vue'
@@ -8,8 +9,11 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import TextType from '@/components/ui/text-type/TextType.vue'
 import { useHomeSearch } from '@/composables/useHomeSearch'
+import { useI18n } from '@/composables/useI18n'
 import { Banknote, UtensilsCrossed } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
+
+const { t } = useI18n()
 
 const {
   searchQuery,
@@ -29,13 +33,15 @@ const {
   handleSearch,
   handleSelectCustomer,
 } = useHomeSearch()
+
+const welcomeText = computed(() => [t('home.welcome'), t('home.shopName')])
 </script>
 
 <template>
   <div class="flex min-h-svh w-full flex-col items-center px-4 py-10">
     <div class="flex w-full max-w-2xl flex-col items-center gap-8">
       <TextType
-        :text="['Selamat Datang', 'Warung Zavi']"
+        :text="welcomeText"
         :typing-speed="75"
         :pause-duration="1500"
         :show-cursor="true"
@@ -55,12 +61,12 @@ const {
         />
         <div class="flex flex-col gap-2 sm:flex-row">
           <Button class="flex-1" @click="handleSearch">
-            Cari
+            {{ t('common.search') }}
           </Button>
           <Button variant="outline" class="flex-1" as-child>
             <RouterLink to="/order">
               <UtensilsCrossed class="size-4" />
-              Pesan Sekarang
+              {{ t('home.orderNow') }}
             </RouterLink>
           </Button>
           <Button
@@ -70,7 +76,7 @@ const {
             @click="paymentInstructionsOpen = true"
           >
             <Banknote class="size-4" />
-            Cara Membayar
+            {{ t('home.howToPay') }}
           </Button>
         </div>
       </div>
@@ -84,7 +90,7 @@ const {
             {{ resultsTitle }}
           </p>
           <p class="text-sm text-muted-foreground">
-            untuk "{{ searchQuery }}"
+            {{ t('home.searchFor', { query: searchQuery }) }}
           </p>
         </div>
         <Separator />

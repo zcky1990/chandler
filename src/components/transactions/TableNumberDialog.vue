@@ -12,10 +12,13 @@ import {
 } from '@/components/ui/dialog'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { useI18n } from '@/composables/useI18n'
 
 const props = defineProps<{
   open: boolean
 }>()
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
@@ -44,28 +47,28 @@ function handleConfirm() {
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent class="sm:max-w-[400px]">
       <DialogHeader>
-        <DialogTitle>Nomor Meja</DialogTitle>
+        <DialogTitle>{{ t('table.title') }}</DialogTitle>
         <DialogDescription>
-          Isi nomor meja jika pelanggan duduk di tempat. Boleh dikosongkan untuk dibawa pulang.
+          {{ t('table.desc') }}
         </DialogDescription>
       </DialogHeader>
 
       <Field>
-        <FieldLabel for="table-number">Nomor Meja (opsional)</FieldLabel>
+        <FieldLabel for="table-number">{{ t('table.labelOptional') }}</FieldLabel>
         <Input
           id="table-number"
           v-model="tableNumber"
-          placeholder="Contoh: 5, A2, Take away"
+          :placeholder="t('table.placeholder')"
           @keyup.enter="handleConfirm"
         />
       </Field>
 
       <DialogFooter>
         <DialogClose as-child>
-          <Button type="button" variant="outline">Batal</Button>
+          <Button type="button" variant="outline">{{ t('common.cancel') }}</Button>
         </DialogClose>
         <Button type="button" @click="handleConfirm">
-          Lanjutkan
+          {{ t('common.continue') }}
         </Button>
       </DialogFooter>
     </DialogContent>

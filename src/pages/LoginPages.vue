@@ -2,17 +2,29 @@
 import LoginForm from '@/components/new-york-v4/blocks/login-01/components/LoginForm.vue'
 import ApplicationLayout from '@/layouts/ApplicationLayout.vue'
 import { persistAuthSession } from '@/lib/auth'
+import { useI18n } from '@/composables/useI18n'
 import { useAlertStore } from '@/stores/useAlertStore'
 import { login } from '@/lib/auth'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const alertStore = useAlertStore()
+const { t } = useI18n()
+
+function formatAuthError(error: unknown): string {
+  if (typeof error === 'string') return error
+  if (error && typeof error === 'object') {
+    const fields = error as Record<string, string[] | undefined>
+    const first = Object.values(fields).flat().find(Boolean)
+    if (first) return first
+  }
+  return t('alert.error')
+}
 
 const handleLogin = async (email: string, password: string) => {
   const { data, error } = await login({ email, password })
   if (error) {
-    alertStore.showAlert('Error', error as string, 'error')
+    alertStore.showAlert(t('alert.error'), formatAuthError(error), 'error')
   } else if (data?.session) {
     await persistAuthSession(data.session)
     router.push('/dashboard')

@@ -7,7 +7,10 @@ import TableNumberDialog from '@/components/transactions/TableNumberDialog.vue'
 import TransactionCartPanel from '@/components/transactions/TransactionCartPanel.vue'
 import TransactionFormPanel from '@/components/transactions/TransactionFormPanel.vue'
 import { useTransactionCart } from '@/composables/useTransactionCart'
+import { useI18n } from '@/composables/useI18n'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
+
+const { t } = useI18n()
 
 const {
   customers,
@@ -53,10 +56,10 @@ const {
       <div>
         <h1 class="flex items-center gap-2 text-2xl font-bold tracking-tight">
           <Receipt class="size-6" />
-          Transaksi
+          {{ t('transaction.title') }}
         </h1>
         <p class="text-sm text-muted-foreground">
-          Pembelian pada hari yang sama akan digabung jika transaksi sebelumnya belum dibayar.
+          {{ t('transaction.subtitle') }}
         </p>
       </div>
 
@@ -64,15 +67,15 @@ const {
         v-if="pendingTransaction && !requiresImmediatePayment"
         class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm"
       >
-        <p class="font-medium text-foreground">Transaksi belum dibayar hari ini</p>
+        <p class="font-medium text-foreground">{{ t('transaction.pendingBanner') }}</p>
         <p class="text-muted-foreground">
-          Pembelian berikutnya untuk pembeli ini akan ditambahkan ke transaksi
+          {{ t('transaction.pendingHint') }}
           <span class="font-medium text-foreground">{{ formatPrice(pendingTransaction.total_amount) }}</span>.
         </p>
       </div>
 
       <div v-if="isLoading" class="text-sm text-muted-foreground">
-        Memuat data...
+        {{ t('common.loading') }}
       </div>
 
       <div v-else class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">

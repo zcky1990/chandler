@@ -4,6 +4,7 @@ import OrderCustomerForm from '@/components/order/OrderCustomerForm.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { useI18n } from '@/composables/useI18n'
 import { formatPrice } from '@/lib/format'
 import { hasBundleAddons } from '@/lib/addon'
 import type { PreOrderCartItem } from '@/composables/usePreOrderCart'
@@ -14,6 +15,8 @@ defineProps<{
   isSubmitting: boolean
   getCartLineSubtotal: (item: PreOrderCartItem) => number
 }>()
+
+const { t } = useI18n()
 
 const customerName = defineModel<string>('customerName', { required: true })
 const tableNumber = defineModel<string>('tableNumber', { required: true })
@@ -31,7 +34,7 @@ const emit = defineEmits<{
   <aside class="lg:sticky lg:top-20 lg:self-start">
     <Card class="gap-0 py-0 shadow-sm">
       <CardHeader class="border-b px-5 py-4">
-        <CardTitle class="text-lg">Ringkasan Pesanan</CardTitle>
+        <CardTitle class="text-lg">{{ t('order.summary') }}</CardTitle>
       </CardHeader>
 
       <CardContent class="space-y-5 px-5 py-5">
@@ -44,7 +47,7 @@ const emit = defineEmits<{
         <Separator />
 
         <div class="flex items-center justify-between">
-          <p class="text-sm font-medium">Item Pesanan</p>
+          <p class="text-sm font-medium">{{ t('order.orderItems') }}</p>
           <Button
             v-if="cart.length"
             variant="ghost"
@@ -53,7 +56,7 @@ const emit = defineEmits<{
             @click="emit('clear')"
           >
             <Trash2 class="size-3.5" />
-            Kosongkan
+            {{ t('order.clear') }}
           </Button>
         </div>
 
@@ -61,7 +64,7 @@ const emit = defineEmits<{
           v-if="!cart.length"
           class="rounded-lg border border-dashed px-4 py-10 text-center text-sm text-muted-foreground"
         >
-          Belum ada item. Pilih menu untuk memulai pesanan.
+          {{ t('order.cartEmpty') }}
         </div>
 
         <div v-else class="max-h-[320px] space-y-3 overflow-y-auto pr-1">
@@ -142,11 +145,11 @@ const emit = defineEmits<{
 
         <div class="space-y-2 text-sm">
           <div class="flex items-center justify-between text-muted-foreground">
-            <span>Subtotal</span>
+            <span>{{ t('common.subtotal') }}</span>
             <span>{{ formatPrice(totalAmount) }}</span>
           </div>
           <div class="flex items-center justify-between text-base font-bold">
-            <span>Total</span>
+            <span>{{ t('common.total') }}</span>
             <span>{{ formatPrice(totalAmount) }}</span>
           </div>
         </div>
@@ -156,11 +159,11 @@ const emit = defineEmits<{
           :disabled="isSubmitting || !cart.length"
           @click="emit('submit')"
         >
-          {{ isSubmitting ? 'Membuat pesanan...' : 'Buat Pesanan' }}
+          {{ isSubmitting ? t('order.submitting') : t('order.submit') }}
         </Button>
 
         <p class="text-center text-xs text-muted-foreground">
-          Setelah pesanan dibuat, silakan menuju kasir untuk pembayaran.
+          {{ t('order.cashierNote') }}
         </p>
       </CardContent>
     </Card>

@@ -3,6 +3,7 @@ import { ImageIcon, Minus, Plus, Search } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { useI18n } from '@/composables/useI18n'
 import { formatPrice } from '@/lib/format'
 import type { Product } from '@/types/database'
 
@@ -14,6 +15,8 @@ defineProps<{
   isLoading: boolean
   getMenuQuantity: (productId: string) => number
 }>()
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string]
@@ -27,12 +30,12 @@ const emit = defineEmits<{
 <template>
   <section class="space-y-5">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <h2 class="text-xl font-semibold tracking-tight">Menu</h2>
+      <h2 class="text-xl font-semibold tracking-tight">{{ t('order.menu') }}</h2>
       <div class="relative w-full sm:max-w-xs">
         <Search class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           :model-value="searchQuery"
-          placeholder="Cari menu..."
+          :placeholder="t('order.searchMenu')"
           class="pl-9"
           @update:model-value="emit('update:searchQuery', String($event))"
         />
@@ -46,7 +49,7 @@ const emit = defineEmits<{
         class="shrink-0 rounded-full"
         @click="emit('update:categoryFilter', 'all')"
       >
-        Semua
+        {{ t('common.all') }}
       </Button>
       <Button
         v-for="category in categories"
@@ -61,14 +64,14 @@ const emit = defineEmits<{
     </div>
 
     <div v-if="isLoading" class="py-16 text-center text-sm text-muted-foreground">
-      Memuat menu...
+      {{ t('order.loadingMenu') }}
     </div>
 
     <div
       v-else-if="!products.length"
       class="rounded-xl border border-dashed px-4 py-16 text-center text-sm text-muted-foreground"
     >
-      Tidak ada menu yang cocok dengan filter.
+      {{ t('order.noMenu') }}
     </div>
 
     <div
@@ -105,7 +108,7 @@ const emit = defineEmits<{
           <p class="line-clamp-2 font-semibold leading-snug">{{ product.name }}</p>
           <p class="text-sm text-muted-foreground">
             {{ formatPrice(product.price) }}
-            <span class="text-xs">/ porsi</span>
+            <span class="text-xs">{{ t('order.perServing') }}</span>
           </p>
         </CardContent>
 
@@ -133,7 +136,7 @@ const emit = defineEmits<{
             </Button>
           </div>
           <Button size="sm" class="shrink-0" @click="emit('add', product)">
-            Tambah
+            {{ t('common.add') }}
           </Button>
         </CardFooter>
       </Card>

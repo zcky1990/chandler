@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useI18n } from '@/composables/useI18n'
 import { getCategories } from '@/lib/category'
 import { deleteProduct, getProducts } from '@/lib/product'
 import { formatPrice } from '@/lib/format'
@@ -24,6 +25,7 @@ type AddonFilter = 'all' | 'addon' | 'menu'
 
 const NO_CATEGORY = '__none__'
 
+const { t } = useI18n()
 const alertStore = useAlertStore()
 const products = ref<Product[]>([])
 const categories = ref<ProductCategory[]>([])
@@ -80,12 +82,12 @@ async function loadProducts() {
   isLoading.value = false
 
   if (productsResult.error) {
-    alertStore.showAlert('Error', productsResult.error.message, 'error')
+    alertStore.showAlert(t('alert.error'), productsResult.error.message, 'error')
     return
   }
 
   if (categoriesResult.error) {
-    alertStore.showAlert('Error', categoriesResult.error.message, 'error')
+    alertStore.showAlert(t('alert.error'), categoriesResult.error.message, 'error')
   }
 
   products.value = productsResult.products ?? []
@@ -103,15 +105,15 @@ function openEditDialog(product: Product) {
 }
 
 async function handleDelete(product: Product) {
-  if (!confirm(`Hapus produk "${product.name}"?`)) return
+  if (!confirm(t('master.deleteProductConfirm', { name: product.name }))) return
 
   const { error } = await deleteProduct(product.id)
   if (error) {
-    alertStore.showAlert('Error', error.message, 'error')
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
     return
   }
 
-  alertStore.showAlert('Berhasil', 'Produk berhasil dihapus', 'success')
+  alertStore.showAlert(t('alert.success'), t('master.productDeleted'), 'success')
   await loadProducts()
 }
 
@@ -123,24 +125,24 @@ onMounted(loadProducts)
     <div class="flex flex-col gap-6 p-6">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold tracking-tight">Master Produk</h1>
-          <p class="text-sm text-muted-foreground">Kelola data produk warung.</p>
+          <h1 class="text-2xl font-bold tracking-tight">{{ t('master.productTitle') }}</h1>
+          <p class="text-sm text-muted-foreground">{{ t('master.productSubtitle') }}</p>
         </div>
         <Button @click="openCreateDialog">
           <Plus class="size-4" />
-          Tambah Produk
+          {{ t('master.addProduct') }}
         </Button>
       </div>
 
       <div class="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
         <Input
           v-model="searchQuery"
-          placeholder="Cari nama, SKU, atau kategori..."
+          :placeholder="t('master.searchProduct')"
           class="max-w-sm"
         />
         <select v-model="categoryFilter" :class="selectClass">
-          <option value="">Semua kategori</option>
-          <option :value="NO_CATEGORY">Tanpa kategori</option>
+          <option value="">{{ t('master.allCategories') }}</option>
+          <option :value="NO_CATEGORY">{{ t('master.noCategoryFilter') }}</option>
           <option
             v-for="category in categories"
             :key="category.id"
@@ -150,14 +152,14 @@ onMounted(loadProducts)
           </option>
         </select>
         <select v-model="addonFilter" :class="selectClass">
-          <option value="all">Semua tipe</option>
-          <option value="menu">Menu utama</option>
-          <option value="addon">Addon</option>
+          <option value="all">{{ t('master.allTypes') }}</option>
+          <option value="menu">{{ t('master.mainMenu') }}</option>
+          <option value="addon">{{ t('master.addonType') }}</option>
         </select>
         <select v-model="statusFilter" :class="selectClass">
-          <option value="all">Semua status</option>
-          <option value="active">Aktif</option>
-          <option value="inactive">Nonaktif</option>
+          <option value="all">{{ t('status.allStatus') }}</option>
+          <option value="active">{{ t('common.active') }}</option>
+          <option value="inactive">{{ t('common.inactive') }}</option>
         </select>
       </div>
 
@@ -165,37 +167,37 @@ onMounted(loadProducts)
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nama</TableHead>
-              <TableHead>Addon</TableHead>
-              <TableHead>Kategori</TableHead>
-              <TableHead>Harga jual</TableHead>
-              <TableHead>Harga beli</TableHead>
-              <TableHead>Stok</TableHead>
-              <TableHead>SKU</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead class="text-right">Aksi</TableHead>
+              <TableHead>{{ t('master.name') }}</TableHead>
+              <TableHead>{{ t('master.isAddon') }}</TableHead>
+              <TableHead>{{ t('home.category') }}</TableHead>
+              <TableHead>{{ t('master.salePrice') }}</TableHead>
+              <TableHead>{{ t('master.purchasePrice') }}</TableHead>
+              <TableHead>{{ t('common.stock') }}</TableHead>
+              <TableHead>{{ t('common.sku') }}</TableHead>
+              <TableHead>{{ t('common.status') }}</TableHead>
+              <TableHead class="text-right">{{ t('common.actions') }}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow v-if="isLoading">
               <TableCell colspan="9" class="text-center text-muted-foreground">
-                Memuat data...
+                {{ t('common.loading') }}
               </TableCell>
             </TableRow>
             <TableRow v-else-if="!filteredProducts.length">
               <TableCell colspan="9" class="text-center text-muted-foreground">
-                {{ products.length ? 'Tidak ada produk yang cocok dengan filter.' : 'Belum ada produk.' }}
+                {{ products.length ? t('master.noProductFilterMatch') : t('master.noProduct') }}
               </TableCell>
             </TableRow>
             <TableRow v-for="product in filteredProducts" :key="product.id">
               <TableCell class="font-medium">{{ product.name }}</TableCell>
-              <TableCell>{{ product.is_addons ? 'Ya' : 'Tidak' }}</TableCell>
+              <TableCell>{{ product.is_addons ? t('common.yes') : t('common.no') }}</TableCell>
               <TableCell>{{ product.product_categories?.name || '-' }}</TableCell>
               <TableCell>{{ formatPrice(product.price) }}</TableCell>
               <TableCell>{{ formatPrice(product.purchase_price ?? 0) }}</TableCell>
               <TableCell>{{ product.stock_quantity }}</TableCell>
               <TableCell>{{ product.sku || '-' }}</TableCell>
-              <TableCell>{{ product.is_active ? 'Aktif' : 'Nonaktif' }}</TableCell>
+              <TableCell>{{ product.is_active ? t('common.active') : t('common.inactive') }}</TableCell>
               <TableCell class="text-right">
                 <div class="flex justify-end gap-2">
                   <Button size="icon-sm" variant="outline" @click="openEditDialog(product)">

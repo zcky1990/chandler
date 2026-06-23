@@ -5,10 +5,12 @@ import PreOrderCard from '@/components/order/PreOrderCard.vue'
 import ProcessPreOrderDialog from '@/components/order/ProcessPreOrderDialog.vue'
 import { Button } from '@/components/ui/button'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
+import { useI18n } from '@/composables/useI18n'
 import { cancelPreOrder, getPendingPreOrders, subscribePendingPreOrders } from '@/lib/pre-order'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { PreOrderWithDetails } from '@/types/database'
 
+const { t } = useI18n()
 const alertStore = useAlertStore()
 const preOrders = ref<PreOrderWithDetails[]>([])
 const isLoading = ref(true)
@@ -28,7 +30,7 @@ async function loadPreOrders(options?: { silent?: boolean }) {
 
   if (error) {
     if (!options?.silent) {
-      alertStore.showAlert('Error', error.message, 'error')
+      alertStore.showAlert(t('alert.error'), error.message, 'error')
     }
     return
   }
@@ -42,15 +44,15 @@ function openProcessDialog(preOrder: PreOrderWithDetails) {
 }
 
 async function handleCancel(preOrderId: string) {
-  if (!confirm('Batalkan pesanan ini?')) return
+  if (!confirm(t('order.cancelConfirm'))) return
 
   const { error } = await cancelPreOrder(preOrderId)
   if (error) {
-    alertStore.showAlert('Error', error.message, 'error')
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
     return
   }
 
-  alertStore.showAlert('Berhasil', 'Pesanan dibatalkan', 'success')
+  alertStore.showAlert(t('alert.success'), t('order.cancelled'), 'success')
   await loadPreOrders({ silent: true })
 }
 
@@ -78,33 +80,33 @@ onUnmounted(() => {
         <div>
           <h1 class="flex items-center gap-2 text-2xl font-bold tracking-tight">
             <Inbox class="size-6" />
-            Pesanan Masuk
+            {{ t('order.inboxTitle') }}
           </h1>
           <p class="text-sm text-muted-foreground">
-            Pesanan dari halaman publik yang menunggu diproses.
+            {{ t('order.inboxSubtitle') }}
             <span
               v-if="isRealtimeConnected"
               class="ml-2 inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-300"
             >
               <Radio class="size-3" />
-              Live
+              {{ t('common.live') }}
             </span>
           </p>
         </div>
         <Button variant="outline" :disabled="isLoading" @click="loadPreOrders">
-          Refresh
+          {{ t('common.refresh') }}
         </Button>
       </div>
 
       <div v-if="isLoading" class="text-sm text-muted-foreground">
-        Memuat pesanan...
+        {{ t('order.loadingOrders') }}
       </div>
 
       <div
         v-else-if="!preOrders.length"
         class="rounded-xl border border-dashed px-4 py-12 text-center text-sm text-muted-foreground"
       >
-        Tidak ada pesanan masuk.
+        {{ t('order.noOrders') }}
       </div>
 
       <div v-else class="grid gap-3 lg:grid-cols-2">

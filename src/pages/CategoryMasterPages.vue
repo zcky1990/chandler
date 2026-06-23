@@ -13,12 +13,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useI18n } from '@/composables/useI18n'
 import { deleteCategory, getCategories } from '@/lib/category'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { ProductCategory } from '@/types/database'
 
 type StatusFilter = 'all' | 'active' | 'inactive'
 
+const { t } = useI18n()
 const alertStore = useAlertStore()
 const categories = ref<ProductCategory[]>([])
 const isLoading = ref(true)
@@ -56,7 +58,7 @@ async function loadCategories() {
   isLoading.value = false
 
   if (error) {
-    alertStore.showAlert('Error', error.message, 'error')
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
     return
   }
 
@@ -74,15 +76,15 @@ function openEditDialog(category: ProductCategory) {
 }
 
 async function handleDelete(category: ProductCategory) {
-  if (!confirm(`Hapus kategori "${category.name}"? Produk terkait akan kehilangan kategori.`)) return
+  if (!confirm(t('master.deleteCategoryConfirm', { name: category.name }))) return
 
   const { error } = await deleteCategory(category.id)
   if (error) {
-    alertStore.showAlert('Error', error.message, 'error')
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
     return
   }
 
-  alertStore.showAlert('Berhasil', 'Kategori berhasil dihapus', 'success')
+  alertStore.showAlert(t('alert.success'), t('master.categoryDeleted'), 'success')
   await loadCategories()
 }
 
@@ -94,25 +96,25 @@ onMounted(loadCategories)
     <div class="flex flex-col gap-6 p-6">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold tracking-tight">Master Kategori</h1>
-          <p class="text-sm text-muted-foreground">Kelola kategori produk warung.</p>
+          <h1 class="text-2xl font-bold tracking-tight">{{ t('master.categoryTitle') }}</h1>
+          <p class="text-sm text-muted-foreground">{{ t('master.categorySubtitle') }}</p>
         </div>
         <Button @click="openCreateDialog">
           <Plus class="size-4" />
-          Tambah Kategori
+          {{ t('master.addCategory') }}
         </Button>
       </div>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <Input
           v-model="searchQuery"
-          placeholder="Cari nama atau deskripsi..."
+          :placeholder="t('master.searchCategory')"
           class="max-w-sm"
         />
         <select v-model="statusFilter" :class="selectClass">
-          <option value="all">Semua status</option>
-          <option value="active">Aktif</option>
-          <option value="inactive">Nonaktif</option>
+          <option value="all">{{ t('status.allStatus') }}</option>
+          <option value="active">{{ t('common.active') }}</option>
+          <option value="inactive">{{ t('common.inactive') }}</option>
         </select>
       </div>
 
@@ -120,27 +122,27 @@ onMounted(loadCategories)
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nama</TableHead>
-              <TableHead>Deskripsi</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead class="text-right">Aksi</TableHead>
+              <TableHead>{{ t('master.name') }}</TableHead>
+              <TableHead>{{ t('master.description') }}</TableHead>
+              <TableHead>{{ t('common.status') }}</TableHead>
+              <TableHead class="text-right">{{ t('common.actions') }}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow v-if="isLoading">
               <TableCell colspan="4" class="text-center text-muted-foreground">
-                Memuat data...
+                {{ t('common.loading') }}
               </TableCell>
             </TableRow>
             <TableRow v-else-if="!filteredCategories.length">
               <TableCell colspan="4" class="text-center text-muted-foreground">
-                {{ categories.length ? 'Tidak ada kategori yang cocok dengan filter.' : 'Belum ada kategori.' }}
+                {{ categories.length ? t('master.noCategoryFilterMatch') : t('master.noCategory') }}
               </TableCell>
             </TableRow>
             <TableRow v-for="category in filteredCategories" :key="category.id">
               <TableCell class="font-medium">{{ category.name }}</TableCell>
               <TableCell>{{ category.description || '-' }}</TableCell>
-              <TableCell>{{ category.is_active ? 'Aktif' : 'Nonaktif' }}</TableCell>
+              <TableCell>{{ category.is_active ? t('common.active') : t('common.inactive') }}</TableCell>
               <TableCell class="text-right">
                 <div class="flex justify-end gap-2">
                   <Button size="icon-sm" variant="outline" @click="openEditDialog(category)">
