@@ -6,6 +6,13 @@ import CustomerFormDialog from '@/components/masterdata/CustomerFormDialog.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -57,8 +64,6 @@ const filteredCustomers = computed(() => {
 
   return result
 })
-
-const selectClass = 'border-input bg-background h-9 rounded-md border px-3 text-sm'
 
 function displayCustomerName(name: string) {
   if (name === WALK_IN_CUSTOMER_NAME) return t('common.walkIn')
@@ -124,11 +129,16 @@ onMounted(loadCustomers)
           :placeholder="t('master.searchCustomer')"
           class="max-w-sm"
         />
-        <select v-model="statusFilter" :class="selectClass">
-          <option value="all">{{ t('status.allStatus') }}</option>
-          <option value="active">{{ t('common.active') }}</option>
-          <option value="inactive">{{ t('common.inactive') }}</option>
-        </select>
+        <Select v-model="statusFilter">
+          <SelectTrigger class="w-full sm:w-[180px]">
+            <SelectValue :placeholder="t('status.allStatus')" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{{ t('status.allStatus') }}</SelectItem>
+            <SelectItem value="active">{{ t('common.active') }}</SelectItem>
+            <SelectItem value="inactive">{{ t('common.inactive') }}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div class="rounded-xl border bg-background">

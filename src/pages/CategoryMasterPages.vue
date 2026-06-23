@@ -6,6 +6,13 @@ import CategoryFormDialog from '@/components/masterdata/CategoryFormDialog.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -49,8 +56,6 @@ const filteredCategories = computed(() => {
 
   return result
 })
-
-const selectClass = 'border-input bg-background h-9 rounded-md border px-3 text-sm'
 
 async function loadCategories() {
   isLoading.value = true
@@ -111,11 +116,16 @@ onMounted(loadCategories)
           :placeholder="t('master.searchCategory')"
           class="max-w-sm"
         />
-        <select v-model="statusFilter" :class="selectClass">
-          <option value="all">{{ t('status.allStatus') }}</option>
-          <option value="active">{{ t('common.active') }}</option>
-          <option value="inactive">{{ t('common.inactive') }}</option>
-        </select>
+        <Select v-model="statusFilter">
+          <SelectTrigger class="w-full sm:w-[180px]">
+            <SelectValue :placeholder="t('status.allStatus')" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{{ t('status.allStatus') }}</SelectItem>
+            <SelectItem value="active">{{ t('common.active') }}</SelectItem>
+            <SelectItem value="inactive">{{ t('common.inactive') }}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div class="rounded-xl border bg-background">

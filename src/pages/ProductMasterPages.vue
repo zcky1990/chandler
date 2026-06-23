@@ -6,6 +6,13 @@ import ProductFormDialog from '@/components/masterdata/ProductFormDialog.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -24,6 +31,7 @@ type StatusFilter = 'all' | 'active' | 'inactive'
 type AddonFilter = 'all' | 'addon' | 'menu'
 
 const NO_CATEGORY = '__none__'
+const ALL_CATEGORIES = '__all__'
 
 const { t } = useI18n()
 const alertStore = useAlertStore()
@@ -33,7 +41,7 @@ const isLoading = ref(true)
 const dialogOpen = ref(false)
 const selectedProduct = ref<Product | null>(null)
 const searchQuery = ref('')
-const categoryFilter = ref('')
+const categoryFilter = ref(ALL_CATEGORIES)
 const statusFilter = ref<StatusFilter>('all')
 const addonFilter = ref<AddonFilter>('all')
 
@@ -54,7 +62,7 @@ const filteredProducts = computed(() => {
 
   if (categoryFilter.value === NO_CATEGORY) {
     result = result.filter((product) => !product.category_id)
-  } else if (categoryFilter.value) {
+  } else if (categoryFilter.value !== ALL_CATEGORIES) {
     result = result.filter((product) => product.category_id === categoryFilter.value)
   }
 
@@ -70,8 +78,6 @@ const filteredProducts = computed(() => {
 
   return result
 })
-
-const selectClass = 'border-input bg-background h-9 rounded-md border px-3 text-sm'
 
 async function loadProducts() {
   isLoading.value = true
@@ -140,27 +146,42 @@ onMounted(loadProducts)
           :placeholder="t('master.searchProduct')"
           class="max-w-sm"
         />
-        <select v-model="categoryFilter" :class="selectClass">
-          <option value="">{{ t('master.allCategories') }}</option>
-          <option :value="NO_CATEGORY">{{ t('master.noCategoryFilter') }}</option>
-          <option
-            v-for="category in categories"
-            :key="category.id"
-            :value="category.id"
-          >
-            {{ category.name }}
-          </option>
-        </select>
-        <select v-model="addonFilter" :class="selectClass">
-          <option value="all">{{ t('master.allTypes') }}</option>
-          <option value="menu">{{ t('master.mainMenu') }}</option>
-          <option value="addon">{{ t('master.addonType') }}</option>
-        </select>
-        <select v-model="statusFilter" :class="selectClass">
-          <option value="all">{{ t('status.allStatus') }}</option>
-          <option value="active">{{ t('common.active') }}</option>
-          <option value="inactive">{{ t('common.inactive') }}</option>
-        </select>
+        <Select v-model="categoryFilter">
+          <SelectTrigger class="w-full sm:w-[200px]">
+            <SelectValue :placeholder="t('master.allCategories')" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem :value="ALL_CATEGORIES">{{ t('master.allCategories') }}</SelectItem>
+            <SelectItem :value="NO_CATEGORY">{{ t('master.noCategoryFilter') }}</SelectItem>
+            <SelectItem
+              v-for="category in categories"
+              :key="category.id"
+              :value="category.id"
+            >
+              {{ category.name }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <Select v-model="addonFilter">
+          <SelectTrigger class="w-full sm:w-[180px]">
+            <SelectValue :placeholder="t('master.allTypes')" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{{ t('master.allTypes') }}</SelectItem>
+            <SelectItem value="menu">{{ t('master.mainMenu') }}</SelectItem>
+            <SelectItem value="addon">{{ t('master.addonType') }}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select v-model="statusFilter">
+          <SelectTrigger class="w-full sm:w-[180px]">
+            <SelectValue :placeholder="t('status.allStatus')" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{{ t('status.allStatus') }}</SelectItem>
+            <SelectItem value="active">{{ t('common.active') }}</SelectItem>
+            <SelectItem value="inactive">{{ t('common.inactive') }}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div class="rounded-xl border bg-background">

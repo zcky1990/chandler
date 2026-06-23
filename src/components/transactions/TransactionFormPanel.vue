@@ -47,19 +47,20 @@ function displayCustomerName(name: string) {
       <FieldGroup>
         <Field>
           <FieldLabel for="customer">{{ t('transaction.buyerLabel') }}</FieldLabel>
-          <select
-            id="customer"
-            v-model="selectedCustomerId"
-            class="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
-          >
-            <option
-              v-for="customer in customers"
-              :key="customer.id"
-              :value="customer.id"
-            >
-              {{ displayCustomerName(customer.name) }}
-            </option>
-          </select>
+          <Select v-model="selectedCustomerId">
+            <SelectTrigger id="customer" class="w-full">
+              <SelectValue :placeholder="t('transaction.buyerLabel')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem
+                v-for="customer in customers"
+                :key="customer.id"
+                :value="customer.id"
+              >
+                {{ displayCustomerName(customer.name) }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
           <p v-if="selectedCustomer" class="text-sm text-muted-foreground">
             {{ selectedCustomer.phone || selectedCustomer.email || selectedCustomer.address || t('common.noContact') }}
           </p>
