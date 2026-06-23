@@ -63,12 +63,6 @@ const welcomeText = computed(() => [t('home.welcome'), t('home.shopName')])
           <Button class="flex-1" @click="handleSearch">
             {{ t('common.search') }}
           </Button>
-          <Button variant="outline" class="flex-1" as-child>
-            <RouterLink to="/order">
-              <UtensilsCrossed class="size-4" />
-              {{ t('home.orderNow') }}
-            </RouterLink>
-          </Button>
           <Button
             v-if="showPaymentCta"
             variant="outline"

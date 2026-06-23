@@ -81,7 +81,7 @@ function handleClose() {
         </div>
       </div>
 
-      <DialogFooter class="gap-2 sm:gap-0">
+      <DialogFooter class="gap-2 sm:gap-2">
         <Button variant="outline" @click="handleClose">
           {{ t('common.done') }}
         </Button>

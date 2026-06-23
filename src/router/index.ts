@@ -16,6 +16,7 @@ import QueueDisplayPages from '@/pages/QueueDisplayPages.vue'
 import RestockPages from '@/pages/RestockPages.vue'
 import AnalyticsPages from '@/pages/AnalyticsPages.vue'
 import OrderPages from '@/pages/OrderPages.vue'
+import OrderSuccessPages from '@/pages/OrderSuccessPages.vue'
 import PreOrderInboxPages from '@/pages/PreOrderInboxPages.vue'
 import ProfilePages from '@/pages/ProfilePages.vue'
 
@@ -41,6 +42,11 @@ const router = createRouter({
       path: '/order',
       name: 'order',
       component: OrderPages,
+    },
+    {
+      path: '/order/success',
+      name: 'order-success',
+      component: OrderSuccessPages,
     },
     {
       path: '/dashboard',
@@ -120,7 +126,7 @@ router.beforeEach(async (to) => {
     return true
   }
 
-  if (to.path === '/' || to.path === '/order') {
+  if (to.path === '/' || to.path === '/order' || to.path === '/order/success') {
     return true
   }
 

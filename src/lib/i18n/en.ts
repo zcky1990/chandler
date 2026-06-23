@@ -248,6 +248,8 @@ export const en = {
   'order.successDesc': 'Your order number:',
   'order.successCashier': 'Please go to the cashier to complete payment.',
   'order.successHome': 'Back to Home',
+  'order.successPageDesc': 'Save this order number and show it to the cashier.',
+  'order.successNewOrder': 'Order Again',
   'order.inboxTitle': 'Order Inbox',
   'order.inboxSubtitle': 'Orders from the public page waiting to be processed.',
   'order.loadingOrders': 'Loading orders...',

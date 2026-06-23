@@ -248,6 +248,8 @@ export const id = {
   'order.successDesc': 'Nomor pesanan Anda:',
   'order.successCashier': 'Silakan menuju kasir untuk melakukan pembayaran.',
   'order.successHome': 'Kembali ke Beranda',
+  'order.successPageDesc': 'Simpan nomor pesanan ini dan tunjukkan ke kasir.',
+  'order.successNewOrder': 'Pesan Lagi',
   'order.inboxTitle': 'Pesanan Masuk',
   'order.inboxSubtitle': 'Pesanan dari halaman publik yang menunggu diproses.',
   'order.loadingOrders': 'Memuat pesanan...',

@@ -1,4 +1,5 @@
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   buildBundleLineKey,
   buildCartLineKey,
@@ -10,10 +11,11 @@ import {
 } from '@/lib/addon'
 import { formatPrice } from '@/lib/format'
 import { createPreOrder, formatPreOrderNumber } from '@/lib/pre-order'
+import { saveOrderSuccessPayload } from '@/lib/order-success'
 import { getProducts, getProductAddonsMap } from '@/lib/product'
 import { useAlertStore } from '@/stores/useAlertStore'
 import { useI18n } from '@/composables/useI18n'
-import type { PreOrder, Product } from '@/types/database'
+import type { Product } from '@/types/database'
 
 export type PreOrderCartItem = {
   lineKey: string
@@ -25,6 +27,7 @@ export type PreOrderCartItem = {
 export function usePreOrderCart() {
   const alertStore = useAlertStore()
   const { t } = useI18n()
+  const router = useRouter()
   const products = ref<Product[]>([])
   const productAddonsMap = ref<Record<string, Product[]>>({})
   const cart = ref<PreOrderCartItem[]>([])
@@ -37,8 +40,6 @@ export function usePreOrderCart() {
   const pendingProduct = ref<Product | null>(null)
   const pendingBundleIndex = ref(1)
   const pendingBundleTotal = ref(1)
-  const successDialogOpen = ref(false)
-  const submittedOrder = ref<PreOrder | null>(null)
   const searchQuery = ref('')
   const categoryFilter = ref('all')
   const menuQuantities = ref<Record<string, number>>({})
@@ -323,14 +324,17 @@ export function usePreOrderCart() {
 
     isSubmitting.value = false
 
-    if (error) {
+    if (error || !preOrder) {
       alertStore.showAlert(t('alert.error'), getErrorMessage(error), 'error')
       return
     }
 
-    submittedOrder.value = preOrder
     resetForm()
-    successDialogOpen.value = true
+    saveOrderSuccessPayload({
+      orderNumber: preOrder.order_number,
+      totalAmount: Number(preOrder.total_amount),
+    })
+    router.push('/order/success')
   }
 
   onMounted(loadData)
@@ -354,8 +358,6 @@ export function usePreOrderCart() {
     pendingBundleIndex,
     pendingBundleTotal,
     totalAmount,
-    successDialogOpen,
-    submittedOrder,
     formatPrice,
     formatPreOrderNumber,
     getCartLineSubtotal,

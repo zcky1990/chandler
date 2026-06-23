@@ -4,7 +4,6 @@ import { ArrowLeft } from '@lucide/vue'
 import AddonSelectDialog from '@/components/transactions/AddonSelectDialog.vue'
 import OrderCartPanel from '@/components/order/OrderCartPanel.vue'
 import OrderMenuPanel from '@/components/order/OrderMenuPanel.vue'
-import OrderSuccessDialog from '@/components/order/OrderSuccessDialog.vue'
 import { Button } from '@/components/ui/button'
 import { usePreOrderCart } from '@/composables/usePreOrderCart'
 import { useI18n } from '@/composables/useI18n'
@@ -29,8 +28,6 @@ const {
   pendingBundleIndex,
   pendingBundleTotal,
   totalAmount,
-  successDialogOpen,
-  submittedOrder,
   getCartLineSubtotal,
   getMenuQuantity,
   incrementMenuQuantity,
@@ -101,10 +98,6 @@ const {
         @confirm="handleAddonConfirm"
       />
 
-      <OrderSuccessDialog
-        v-model:open="successDialogOpen"
-        :order="submittedOrder"
-      />
     </div>
   </ApplicationLayout>
 </template>
