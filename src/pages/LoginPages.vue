@@ -2,6 +2,7 @@
 import LoginForm from '@/components/new-york-v4/blocks/login-01/components/LoginForm.vue'
 import ApplicationLayout from '@/layouts/ApplicationLayout.vue'
 import { persistAuthSession } from '@/lib/auth'
+import { useRoleStore } from '@/stores/useRoleStore'
 import { useI18n } from '@/composables/useI18n'
 import { useAlertStore } from '@/stores/useAlertStore'
 import { login } from '@/lib/auth'
@@ -9,6 +10,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const alertStore = useAlertStore()
+const roleStore = useRoleStore()
 const { t } = useI18n()
 
 function formatAuthError(error: unknown): string {
@@ -27,6 +29,7 @@ const handleLogin = async (email: string, password: string) => {
     alertStore.showAlert(t('alert.error'), formatAuthError(error), 'error')
   } else if (data?.session) {
     await persistAuthSession(data.session)
+    await roleStore.loadRole(true)
     router.push('/dashboard')
   }
 }

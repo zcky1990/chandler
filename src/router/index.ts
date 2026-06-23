@@ -3,6 +3,8 @@ import HomeView from '@/pages/HomePages.vue'
 import LoginView from '@/pages/LoginPages.vue'
 import SignUpView from '@/pages/SignUpPages.vue'
 import { validateOrRefreshSession } from '@/lib/auth'
+import { canAccessPath } from '@/lib/permissions'
+import { useRoleStore } from '@/stores/useRoleStore'
 import DashboardView from '@/pages/DashboardPages.vue'
 import NotFoundView from '@/pages/NotFoundPages.vue'
 import ProductMasterPages from '@/pages/ProductMasterPages.vue'
@@ -19,6 +21,7 @@ import ShiftPages from '@/pages/ShiftPages.vue'
 import OrderPages from '@/pages/OrderPages.vue'
 import OrderSuccessPages from '@/pages/OrderSuccessPages.vue'
 import PreOrderInboxPages from '@/pages/PreOrderInboxPages.vue'
+import UserRoleMasterPages from '@/pages/UserRoleMasterPages.vue'
 import ProfilePages from '@/pages/ProfilePages.vue'
 
 const router = createRouter({
@@ -70,6 +73,12 @@ const router = createRouter({
       component: CustomerMasterPages,
     },
     {
+      path: '/master/users',
+      name: 'master-users',
+      component: UserRoleMasterPages,
+      meta: { roles: ['owner'] },
+    },
+    {
       path: '/master/categories',
       name: 'master-categories',
       component: CategoryMasterPages,
@@ -98,11 +107,13 @@ const router = createRouter({
       path: '/stock/restock',
       name: 'stock-restock',
       component: RestockPages,
+      meta: { roles: ['owner'] },
     },
     {
       path: '/analytics',
       name: 'analytics',
       component: AnalyticsPages,
+      meta: { roles: ['owner'] },
     },
     {
       path: '/shifts',
@@ -113,6 +124,7 @@ const router = createRouter({
       path: '/config',
       name: 'config',
       component: ConfigPages,
+      meta: { roles: ['owner'] },
     },
     {
       path: '/orders/inbox',
@@ -153,6 +165,13 @@ router.beforeEach(async (to) => {
   const isAuthenticated = await validateOrRefreshSession(router, to.path)
   if (!isAuthenticated) {
     return '/login'
+  }
+
+  const roleStore = useRoleStore()
+  await roleStore.loadRole()
+
+  if (!canAccessPath(to.path, roleStore.role)) {
+    return '/dashboard'
   }
 
   return true

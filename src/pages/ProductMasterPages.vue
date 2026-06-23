@@ -21,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useI18n } from '@/composables/useI18n'
+import { useRoleStore } from '@/stores/useRoleStore'
 import { getCategories } from '@/lib/category'
 import { deleteProduct, getProducts } from '@/lib/product'
 import { formatPrice } from '@/lib/format'
@@ -34,6 +35,7 @@ const NO_CATEGORY = '__none__'
 const ALL_CATEGORIES = '__all__'
 
 const { t } = useI18n()
+const roleStore = useRoleStore()
 const alertStore = useAlertStore()
 const products = ref<Product[]>([])
 const categories = ref<ProductCategory[]>([])
@@ -134,11 +136,15 @@ onMounted(loadProducts)
           <h1 class="text-2xl font-bold tracking-tight">{{ t('master.productTitle') }}</h1>
           <p class="text-sm text-muted-foreground">{{ t('master.productSubtitle') }}</p>
         </div>
-        <Button @click="openCreateDialog">
+        <Button v-if="roleStore.isOwner" @click="openCreateDialog">
           <Plus class="size-4" />
           {{ t('master.addProduct') }}
         </Button>
       </div>
+
+      <p v-if="roleStore.isStaff" class="text-sm text-muted-foreground">
+        {{ t('role.readOnlyMaster') }}
+      </p>
 
       <div class="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
         <Input
@@ -196,17 +202,17 @@ onMounted(loadProducts)
               <TableHead>{{ t('common.stock') }}</TableHead>
               <TableHead>{{ t('common.sku') }}</TableHead>
               <TableHead>{{ t('common.status') }}</TableHead>
-              <TableHead class="text-right">{{ t('common.actions') }}</TableHead>
+              <TableHead v-if="roleStore.isOwner" class="text-right">{{ t('common.actions') }}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow v-if="isLoading">
-              <TableCell colspan="9" class="text-center text-muted-foreground">
+              <TableCell :colspan="roleStore.isOwner ? 9 : 8" class="text-center text-muted-foreground">
                 {{ t('common.loading') }}
               </TableCell>
             </TableRow>
             <TableRow v-else-if="!filteredProducts.length">
-              <TableCell colspan="9" class="text-center text-muted-foreground">
+              <TableCell :colspan="roleStore.isOwner ? 9 : 8" class="text-center text-muted-foreground">
                 {{ products.length ? t('master.noProductFilterMatch') : t('master.noProduct') }}
               </TableCell>
             </TableRow>
@@ -219,7 +225,7 @@ onMounted(loadProducts)
               <TableCell>{{ product.stock_quantity }}</TableCell>
               <TableCell>{{ product.sku || '-' }}</TableCell>
               <TableCell>{{ product.is_active ? t('common.active') : t('common.inactive') }}</TableCell>
-              <TableCell class="text-right">
+              <TableCell v-if="roleStore.isOwner" class="text-right">
                 <div class="flex justify-end gap-2">
                   <Button size="icon-sm" variant="outline" @click="openEditDialog(product)">
                     <Pencil class="size-4" />
@@ -235,6 +241,7 @@ onMounted(loadProducts)
       </div>
 
       <ProductFormDialog
+        v-if="roleStore.isOwner"
         v-model:open="dialogOpen"
         :product="selectedProduct"
         @saved="loadProducts"

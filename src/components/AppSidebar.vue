@@ -17,15 +17,22 @@ import {
 
 import { getCookie, clearAuthCookies } from '@/lib/cookies'
 import { getCurrentUser } from '@/lib/auth'
+import { canAccessPath } from '@/lib/permissions'
+import { useRoleStore } from '@/stores/useRoleStore'
 import { useRouter, RouterLink } from 'vue-router'
 import { useI18n } from '@/composables/useI18n'
-import { BarChart3, ClipboardList, Inbox, LayoutDashboard, List, LogOut, Monitor, Package, PackagePlus, Receipt, Settings, Tags, User, Users, Wallet } from '@lucide/vue'
+import { BarChart3, ClipboardList, Inbox, LayoutDashboard, List, LogOut, Monitor, Package, PackagePlus, Receipt, Settings, Shield, Tags, User, Users, Wallet } from '@lucide/vue'
 
 const userEmail = getCookie('_user_email')
 const userAvatar = ref<string | null>(null)
 const router = useRouter()
+const roleStore = useRoleStore()
 const { t, locale } = useI18n()
 const props = defineProps<SidebarProps>()
+
+function canShow(path: string) {
+  return canAccessPath(path, roleStore.role)
+}
 
 async function loadUserAvatar() {
   const { user } = await getCurrentUser()
@@ -67,6 +74,7 @@ const data = computed(() => {
           icon: LogOut,
           onClick: () => {
             clearAuthCookies()
+            roleStore.clear()
             router.push('/login')
           },
         },
@@ -77,6 +85,7 @@ const data = computed(() => {
 })
 
 onMounted(() => {
+  roleStore.loadRole()
   loadUserAvatar()
   window.addEventListener('user-avatar-changed', loadUserAvatar)
 })
@@ -100,7 +109,7 @@ onUnmounted(() => {
         <SidebarGroupLabel>{{ t('nav.home') }}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            <SidebarMenuItem>
+            <SidebarMenuItem v-if="canShow('/dashboard')">
               <SidebarMenuButton as-child>
                 <RouterLink to="/dashboard">
                   <LayoutDashboard />
@@ -116,7 +125,7 @@ onUnmounted(() => {
         <SidebarGroupLabel>{{ t('nav.operations') }}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            <SidebarMenuItem>
+            <SidebarMenuItem v-if="canShow('/transactions')">
               <SidebarMenuButton as-child>
                 <RouterLink to="/transactions">
                   <Receipt />
@@ -124,7 +133,7 @@ onUnmounted(() => {
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
+            <SidebarMenuItem v-if="canShow('/transactions/list')">
               <SidebarMenuButton as-child>
                 <RouterLink to="/transactions/list">
                   <List />
@@ -132,7 +141,7 @@ onUnmounted(() => {
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
+            <SidebarMenuItem v-if="canShow('/orders/inbox')">
               <SidebarMenuButton as-child>
                 <RouterLink to="/orders/inbox">
                   <Inbox />
@@ -140,7 +149,7 @@ onUnmounted(() => {
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
+            <SidebarMenuItem v-if="canShow('/queue')">
               <SidebarMenuButton as-child>
                 <RouterLink to="/queue">
                   <ClipboardList />
@@ -148,7 +157,7 @@ onUnmounted(() => {
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
+            <SidebarMenuItem v-if="canShow('/queue')">
               <SidebarMenuButton as-child>
                 <RouterLink to="/queue/display" target="_blank">
                   <Monitor />
@@ -156,7 +165,7 @@ onUnmounted(() => {
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
+            <SidebarMenuItem v-if="canShow('/stock/restock')">
               <SidebarMenuButton as-child>
                 <RouterLink to="/stock/restock">
                   <PackagePlus />
@@ -172,7 +181,7 @@ onUnmounted(() => {
         <SidebarGroupLabel>{{ t('nav.reports') }}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            <SidebarMenuItem>
+            <SidebarMenuItem v-if="canShow('/analytics')">
               <SidebarMenuButton as-child>
                 <RouterLink to="/analytics">
                   <BarChart3 />
@@ -180,7 +189,7 @@ onUnmounted(() => {
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
+            <SidebarMenuItem v-if="canShow('/shifts')">
               <SidebarMenuButton as-child>
                 <RouterLink to="/shifts">
                   <Wallet />
@@ -196,7 +205,7 @@ onUnmounted(() => {
         <SidebarGroupLabel>{{ t('nav.masterData') }}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            <SidebarMenuItem>
+            <SidebarMenuItem v-if="canShow('/master/products')">
               <SidebarMenuButton as-child>
                 <RouterLink to="/master/products">
                   <Package />
@@ -204,7 +213,7 @@ onUnmounted(() => {
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
+            <SidebarMenuItem v-if="canShow('/master/categories')">
               <SidebarMenuButton as-child>
                 <RouterLink to="/master/categories">
                   <Tags />
@@ -212,7 +221,7 @@ onUnmounted(() => {
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
+            <SidebarMenuItem v-if="canShow('/master/customers')">
               <SidebarMenuButton as-child>
                 <RouterLink to="/master/customers">
                   <Users />
@@ -220,10 +229,18 @@ onUnmounted(() => {
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            <SidebarMenuItem v-if="canShow('/master/users')">
+              <SidebarMenuButton as-child>
+                <RouterLink to="/master/users">
+                  <Shield />
+                  <span>{{ t('nav.users') }}</span>
+                </RouterLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-      <SidebarGroup>
+      <SidebarGroup v-if="canShow('/config')">
         <SidebarGroupLabel>{{ t('nav.settings') }}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>

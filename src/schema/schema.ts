@@ -176,3 +176,12 @@ export function passwordUpdateSchema() {
     path: ['confirmPassword'],
   })
 }
+
+export function userCreateSchema() {
+  return z.object({
+    fullName: z.string().min(1, { message: t('validation.nameRequired') }),
+    email: z.email().min(1, { message: t('validation.emailRequired') }),
+    password: z.string().min(8, { message: t('validation.passwordMinLength') }),
+    role: z.enum(['owner', 'staff']),
+  })
+}

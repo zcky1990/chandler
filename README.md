@@ -43,6 +43,7 @@ Aplikasi web untuk mengelola produk, pelanggan, transaksi penjualan, antrian pes
 | **Shift kasir (`/shifts`)** | Buka/tutup shift, saldo awal, penjualan per shift, selisih kas |
 | **Konfigurasi** | Upload QRIS, data rekening transfer, info struk toko |
 | **Profil (`/profile`)** | Ubah nama, password, foto profil (WEBP), bahasa & tema |
+| **Pengguna & Role (`/master/users`)** | Owner kelola akun dan role (owner/staff) |
 
 ---
 
@@ -285,6 +286,9 @@ Semua skema SQL ada di folder [`DDL/`](DDL/). Jalankan di **Supabase SQL Editor*
 | [`DDL/order_queues_daily_reset.ddl`](DDL/order_queues_daily_reset.ddl) | Reset nomor antrian per hari (timezone Asia/Jakarta) |
 | [`DDL/pre_orders_confirmed_payment.ddl`](DDL/pre_orders_confirmed_payment.ddl) | Kolom `confirmed_payment_method` untuk konfirmasi bayar pre-order `pay_now` |
 | [`DDL/cashier_shifts.ddl`](DDL/cashier_shifts.ddl) | Tabel `cashier_shifts` + kolom `transactions.shift_id` untuk rekonsiliasi kas |
+| [`DDL/roles.ddl`](DDL/roles.ddl) | Tabel referensi role (`owner`, `staff`) |
+| [`DDL/profiles_role.ddl`](DDL/profiles_role.ddl) | Kolom `profiles.role`, trigger signup, fungsi `is_owner()` |
+| [`DDL/role_owner_policies.ddl`](DDL/role_owner_policies.ddl) | RLS tulis master data & restock hanya untuk owner |
 | [`DDL/product_addons.ddl`](DDL/product_addons.ddl) | Kolom `is_addons`, mapping addon, addon per transaksi |
 | [`DDL/product_is_addons.ddl`](DDL/product_is_addons.ddl) | Migrasi `product_type` → `is_addons` jika DB sudah pakai kolom lama |
 | [`DDL/masterdata_policies.ddl`](DDL/masterdata_policies.ddl) | Jika insert/update produk/pelanggan mengembalikan **403** |
@@ -418,6 +422,7 @@ vue-superbase-project/
 | `/master/products` | Master produk | Master Data |
 | `/master/categories` | Master kategori | Master Data |
 | `/master/customers` | Master pembeli | Master Data |
+| `/master/users` | Pengguna & role (owner only) | Master Data |
 | `/config` | Konfigurasi toko | Pengaturan |
 
 ---

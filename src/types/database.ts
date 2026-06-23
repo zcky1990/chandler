@@ -153,6 +153,22 @@ export type CustomerTransactionSummary = {
   transactions: TransactionWithDetails[]
 }
 
+export type UserRole = 'owner' | 'staff'
+
+export type AppRole = {
+  code: UserRole
+  sort_order: number
+}
+
+export type Profile = {
+  id: string
+  full_name: string | null
+  email: string | null
+  role: UserRole
+  created_at: string
+  updated_at: string
+}
+
 export type ShopConfig = {
   id: string
   shop_name: string | null

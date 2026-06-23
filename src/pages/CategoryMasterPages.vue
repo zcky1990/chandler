@@ -21,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useI18n } from '@/composables/useI18n'
+import { useRoleStore } from '@/stores/useRoleStore'
 import { deleteCategory, getCategories } from '@/lib/category'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { ProductCategory } from '@/types/database'
@@ -28,6 +29,7 @@ import type { ProductCategory } from '@/types/database'
 type StatusFilter = 'all' | 'active' | 'inactive'
 
 const { t } = useI18n()
+const roleStore = useRoleStore()
 const alertStore = useAlertStore()
 const categories = ref<ProductCategory[]>([])
 const isLoading = ref(true)
@@ -104,11 +106,15 @@ onMounted(loadCategories)
           <h1 class="text-2xl font-bold tracking-tight">{{ t('master.categoryTitle') }}</h1>
           <p class="text-sm text-muted-foreground">{{ t('master.categorySubtitle') }}</p>
         </div>
-        <Button @click="openCreateDialog">
+        <Button v-if="roleStore.isOwner" @click="openCreateDialog">
           <Plus class="size-4" />
           {{ t('master.addCategory') }}
         </Button>
       </div>
+
+      <p v-if="roleStore.isStaff" class="text-sm text-muted-foreground">
+        {{ t('role.readOnlyMaster') }}
+      </p>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <Input
@@ -135,17 +141,17 @@ onMounted(loadCategories)
               <TableHead>{{ t('master.name') }}</TableHead>
               <TableHead>{{ t('master.description') }}</TableHead>
               <TableHead>{{ t('common.status') }}</TableHead>
-              <TableHead class="text-right">{{ t('common.actions') }}</TableHead>
+              <TableHead v-if="roleStore.isOwner" class="text-right">{{ t('common.actions') }}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow v-if="isLoading">
-              <TableCell colspan="4" class="text-center text-muted-foreground">
+              <TableCell :colspan="roleStore.isOwner ? 4 : 3" class="text-center text-muted-foreground">
                 {{ t('common.loading') }}
               </TableCell>
             </TableRow>
             <TableRow v-else-if="!filteredCategories.length">
-              <TableCell colspan="4" class="text-center text-muted-foreground">
+              <TableCell :colspan="roleStore.isOwner ? 4 : 3" class="text-center text-muted-foreground">
                 {{ categories.length ? t('master.noCategoryFilterMatch') : t('master.noCategory') }}
               </TableCell>
             </TableRow>
@@ -153,7 +159,7 @@ onMounted(loadCategories)
               <TableCell class="font-medium">{{ category.name }}</TableCell>
               <TableCell>{{ category.description || '-' }}</TableCell>
               <TableCell>{{ category.is_active ? t('common.active') : t('common.inactive') }}</TableCell>
-              <TableCell class="text-right">
+              <TableCell v-if="roleStore.isOwner" class="text-right">
                 <div class="flex justify-end gap-2">
                   <Button size="icon-sm" variant="outline" @click="openEditDialog(category)">
                     <Pencil class="size-4" />
@@ -169,6 +175,7 @@ onMounted(loadCategories)
       </div>
 
       <CategoryFormDialog
+        v-if="roleStore.isOwner"
         v-model:open="dialogOpen"
         :category="selectedCategory"
         @saved="loadCategories"

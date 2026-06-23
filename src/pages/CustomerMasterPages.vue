@@ -21,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useI18n } from '@/composables/useI18n'
+import { useRoleStore } from '@/stores/useRoleStore'
 import { deleteCustomer, getCustomers } from '@/lib/customer'
 import { useAlertStore } from '@/stores/useAlertStore'
 import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
@@ -29,6 +30,7 @@ import type { Customer } from '@/types/database'
 type StatusFilter = 'all' | 'active' | 'inactive'
 
 const { t } = useI18n()
+const roleStore = useRoleStore()
 const alertStore = useAlertStore()
 const customers = ref<Customer[]>([])
 const isLoading = ref(true)
@@ -117,11 +119,15 @@ onMounted(loadCustomers)
           <h1 class="text-2xl font-bold tracking-tight">{{ t('master.customerTitle') }}</h1>
           <p class="text-sm text-muted-foreground">{{ t('master.customerSubtitle') }}</p>
         </div>
-        <Button @click="openCreateDialog">
+        <Button v-if="roleStore.isOwner" @click="openCreateDialog">
           <Plus class="size-4" />
           {{ t('master.addCustomer') }}
         </Button>
       </div>
+
+      <p v-if="roleStore.isStaff" class="text-sm text-muted-foreground">
+        {{ t('role.readOnlyMaster') }}
+      </p>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <Input
@@ -150,17 +156,17 @@ onMounted(loadCustomers)
               <TableHead>{{ t('master.phone') }}</TableHead>
               <TableHead>{{ t('master.address') }}</TableHead>
               <TableHead>{{ t('common.status') }}</TableHead>
-              <TableHead class="text-right">{{ t('common.actions') }}</TableHead>
+              <TableHead v-if="roleStore.isOwner" class="text-right">{{ t('common.actions') }}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow v-if="isLoading">
-              <TableCell colspan="6" class="text-center text-muted-foreground">
+              <TableCell :colspan="roleStore.isOwner ? 6 : 5" class="text-center text-muted-foreground">
                 {{ t('common.loading') }}
               </TableCell>
             </TableRow>
             <TableRow v-else-if="!filteredCustomers.length">
-              <TableCell colspan="6" class="text-center text-muted-foreground">
+              <TableCell :colspan="roleStore.isOwner ? 6 : 5" class="text-center text-muted-foreground">
                 {{ customers.length ? t('master.noCustomerFilterMatch') : t('master.noCustomer') }}
               </TableCell>
             </TableRow>
@@ -170,7 +176,7 @@ onMounted(loadCustomers)
               <TableCell>{{ customer.phone || '-' }}</TableCell>
               <TableCell>{{ customer.address || '-' }}</TableCell>
               <TableCell>{{ customer.is_active ? t('common.active') : t('common.inactive') }}</TableCell>
-              <TableCell class="text-right">
+              <TableCell v-if="roleStore.isOwner" class="text-right">
                 <div class="flex justify-end gap-2">
                   <Button size="icon-sm" variant="outline" @click="openEditDialog(customer)">
                     <Pencil class="size-4" />
@@ -186,6 +192,7 @@ onMounted(loadCustomers)
       </div>
 
       <CustomerFormDialog
+        v-if="roleStore.isOwner"
         v-model:open="dialogOpen"
         :customer="selectedCustomer"
         @saved="loadCustomers"
