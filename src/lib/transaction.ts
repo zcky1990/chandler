@@ -13,7 +13,6 @@ import type {
   PaymentMethod,
   Transaction,
   TransactionInput,
-  TransactionItem,
   TransactionItemInput,
   TransactionItemWithProduct,
   TransactionWithDetails,
@@ -425,7 +424,16 @@ export const updateTransactionNotes = async (transactionId: string, notes: strin
 
 export const updateTransactionItems = async (
   transactionId: string,
-  input: { notes?: string | null, items: { id: string, product_id: string, quantity: number }[] },
+  input: {
+    notes?: string | null
+    items: {
+      id?: string
+      product_id: string
+      quantity: number
+      unit_price?: number
+      addons?: TransactionItemInput['addons']
+    }[]
+  },
 ) => {
   const validated = transactionItemsUpdateSchema.safeParse(input)
   if (!validated.success) {
@@ -466,7 +474,11 @@ export const updateTransactionItems = async (
   }
 
   const currentById = new Map(currentItems.map((item) => [item.id, item]))
-  const updatedIds = new Set(validated.data.items.map((item) => item.id))
+  const updatedIds = new Set(
+    validated.data.items.flatMap((item) => (item.id ? [item.id] : [])),
+  )
+  const existingUpdates = validated.data.items.filter((item) => item.id)
+  const newItems = validated.data.items.filter((item) => !item.id)
 
   for (const currentItem of currentItems) {
     if (updatedIds.has(currentItem.id)) continue
@@ -505,8 +517,8 @@ export const updateTransactionItems = async (
     }
   }
 
-  for (const item of validated.data.items) {
-    const currentItem = currentById.get(item.id)
+  for (const item of existingUpdates) {
+    const currentItem = currentById.get(item.id!)
     if (!currentItem) {
       return { transaction: null, error: { message: 'Item transaksi tidak ditemukan' } }
     }
@@ -542,9 +554,127 @@ export const updateTransactionItems = async (
       return { transaction: null, error }
     }
 
-    const { error: addonUpdateError } = await updateTransactionItemAddonSubtotals(item.id, item.quantity)
+    const { error: addonUpdateError } = await updateTransactionItemAddonSubtotals(item.id!, item.quantity)
     if (addonUpdateError) {
       return { transaction: null, error: addonUpdateError }
+    }
+  }
+
+  if (newItems.length) {
+    const { data: remainingItems, error: remainingError } = await supabaseClient
+      .from('transaction_items')
+      .select(`
+        id,
+        product_id,
+        quantity,
+        unit_price,
+        transaction_item_addons (
+          addon_product_id,
+          quantity
+        )
+      `)
+      .eq('transaction_id', transactionId)
+
+    if (remainingError || !remainingItems) {
+      return { transaction: null, error: remainingError }
+    }
+
+    const itemsByLineKey = new Map(
+      remainingItems.map((item) => [buildLineKeyFromDbItem(item as TransactionItemWithProduct), item]),
+    )
+
+    for (const newItem of newItems) {
+      const unitPrice = newItem.unit_price!
+      const lineKey = buildLineKeyFromInput({
+        product_id: newItem.product_id,
+        quantity: newItem.quantity,
+        unit_price: unitPrice,
+        addons: newItem.addons,
+      })
+      const existingItem = itemsByLineKey.get(lineKey)
+
+      if (existingItem) {
+        const quantity = existingItem.quantity + newItem.quantity
+        const subtotal = quantity * unitPrice
+
+        const { error: stockError } = await applyStockDelta(newItem.product_id, newItem.quantity, transactionId)
+        if (stockError) {
+          return { transaction: null, error: stockError }
+        }
+
+        for (const addon of existingItem.transaction_item_addons ?? []) {
+          const { error: addonStockError } = await applyStockDelta(
+            addon.addon_product_id,
+            newItem.quantity * addon.quantity,
+            transactionId,
+          )
+
+          if (addonStockError) {
+            return { transaction: null, error: addonStockError }
+          }
+        }
+
+        const { error } = await supabaseClient
+          .from('transaction_items')
+          .update({ quantity, subtotal })
+          .eq('id', existingItem.id)
+
+        if (error) {
+          return { transaction: null, error }
+        }
+
+        const { error: addonUpdateError } = await updateTransactionItemAddonSubtotals(existingItem.id, quantity)
+        if (addonUpdateError) {
+          return { transaction: null, error: addonUpdateError }
+        }
+
+        itemsByLineKey.set(lineKey, { ...existingItem, quantity })
+        continue
+      }
+
+      const { data: insertedItem, error: insertError } = await supabaseClient
+        .from('transaction_items')
+        .insert({
+          transaction_id: transactionId,
+          product_id: newItem.product_id,
+          quantity: newItem.quantity,
+          unit_price: unitPrice,
+          subtotal: newItem.quantity * unitPrice,
+        })
+        .select()
+        .single()
+
+      if (insertError || !insertedItem) {
+        return { transaction: null, error: insertError }
+      }
+
+      const { error: addonError } = await insertTransactionItemAddons(
+        insertedItem.id,
+        newItem.quantity,
+        newItem.addons,
+      )
+
+      if (addonError) {
+        return { transaction: null, error: addonError }
+      }
+
+      const { error: stockError } = await recordSaleStock(
+        [{
+          product_id: newItem.product_id,
+          quantity: newItem.quantity,
+          addons: newItem.addons?.map((addon) => ({
+            addon_product_id: addon.addon_product_id,
+            quantity: addon.quantity,
+          })),
+        }],
+        transactionId,
+      )
+
+      if (stockError) {
+        return { transaction: null, error: stockError }
+      }
+
+      itemsByLineKey.set(lineKey, insertedItem)
     }
   }
 

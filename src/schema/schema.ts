@@ -70,9 +70,19 @@ export const transactionSchema = z.object({
 export type TransactionSchema = z.infer<typeof transactionSchema>
 
 export const transactionItemUpdateSchema = z.object({
-  id: z.string().uuid({ message: 'Item tidak valid' }),
+  id: z.string().uuid({ message: 'Item tidak valid' }).optional(),
   product_id: z.string().uuid({ message: 'Produk tidak valid' }),
   quantity: z.coerce.number().int().min(1, { message: 'Jumlah minimal 1' }),
+  unit_price: z.coerce.number().min(0, { message: 'Harga tidak valid' }).optional(),
+  addons: z.array(transactionItemAddonSchema).optional(),
+}).superRefine((data, ctx) => {
+  if (!data.id && data.unit_price === undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Harga produk wajib untuk item baru',
+      path: ['unit_price'],
+    })
+  }
 })
 
 export const transactionItemsUpdateSchema = z.object({
