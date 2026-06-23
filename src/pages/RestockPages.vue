@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/table'
 import { getProducts } from '@/lib/product'
 import { getStockMovements } from '@/lib/stock'
+import { formatPrice } from '@/lib/format'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { Product, StockMovementWithProduct } from '@/types/database'
 
@@ -55,14 +56,6 @@ function formatDate(value: string) {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value))
-}
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(price)
 }
 
 function isLowStock(stock: number) {

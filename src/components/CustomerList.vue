@@ -2,6 +2,7 @@
 import { ChevronRight } from '@lucide/vue'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { formatPrice } from '@/lib/format'
 import type { CustomerWithDebt } from '@/types/database'
 
 defineProps<{
@@ -11,14 +12,6 @@ defineProps<{
 const emit = defineEmits<{
   select: [customer: CustomerWithDebt]
 }>()
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(price)
-}
 
 function getCustomerDetail(customer: CustomerWithDebt) {
   return customer.phone || customer.email || customer.address || 'Tidak ada detail kontak'

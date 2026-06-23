@@ -1,84 +1,27 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { ChefHat, Check, ClipboardList, Monitor, Play, Radio } from '@lucide/vue'
-import DashboardLayout from '@/layouts/DashboardLayout.vue'
+import { Check, ChefHat, ClipboardList, Monitor, Radio } from '@lucide/vue'
+import QueueCard from '@/components/queue/QueueCard.vue'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  completeQueue,
-  getActiveQueues,
-  markQueueReady,
-  pickupQueue,
-  subscribeActiveQueues,
-} from '@/lib/queue'
+import { Card, CardContent } from '@/components/ui/card'
+import { queueStatusLabels, useActiveQueues, useQueueFilter } from '@/composables/useActiveQueues'
+import { completeQueue, markQueueReady, pickupQueue } from '@/lib/queue'
+import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import { useAlertStore } from '@/stores/useAlertStore'
-import { formatItemWithAddons } from '@/lib/addon'
-import type { OrderQueueWithDetails, QueueStatus } from '@/types/database'
 
 const alertStore = useAlertStore()
-const queues = ref<OrderQueueWithDetails[]>([])
-const isLoading = ref(true)
 const isUpdating = ref(false)
-const isRealtimeConnected = ref(false)
-const activeFilter = ref<FilterStatus>('all')
 
-let unsubscribeRealtime: (() => void) | null = null
-
-const statusLabels: Record<QueueStatus, string> = {
-  waiting: 'Menunggu',
-  preparing: 'Disiapkan',
-  ready: 'Siap',
-  completed: 'Selesai',
-  cancelled: 'Dibatalkan',
-}
-
-const filterOptions: { value: FilterStatus, label: string }[] = [
-  { value: 'all', label: 'Semua Aktif' },
-  { value: 'waiting', label: 'Menunggu' },
-  { value: 'preparing', label: 'Disiapkan' },
-  { value: 'ready', label: 'Siap' },
-]
-
-const filteredQueues = computed(() => {
-  if (activeFilter.value === 'all') {
-    return queues.value
-  }
-
-  return queues.value.filter((queue) => queue.status === activeFilter.value)
-})
-
-const waitingCount = computed(() => queues.value.filter((queue) => queue.status === 'waiting').length)
-const preparingCount = computed(() => queues.value.filter((queue) => queue.status === 'preparing').length)
-const readyCount = computed(() => queues.value.filter((queue) => queue.status === 'ready').length)
-
-function formatQueueNumber(number: number) {
-  return `#${String(number).padStart(3, '0')}`
-}
-
-function formatItems(queue: OrderQueueWithDetails) {
-  return (queue.transactions?.transaction_items ?? [])
-    .map((item) => formatItemWithAddons(item))
-    .join(', ')
-}
-
-async function loadQueues(options?: { silent?: boolean }) {
-  if (!options?.silent) {
-    isLoading.value = true
-  }
-
-  const { queues: data, error } = await getActiveQueues()
-  isLoading.value = false
-
-  if (error) {
-    if (!options?.silent) {
-      alertStore.showAlert('Error', error.message, 'error')
-    }
-    return
-  }
-
-  queues.value = data ?? []
-}
+const { queues, isLoading, isRealtimeConnected, loadQueues } = useActiveQueues()
+const {
+  activeFilter,
+  filterOptions,
+  filteredQueues,
+  waitingCount,
+  preparingCount,
+  readyCount,
+} = useQueueFilter(() => queues.value)
 
 async function handlePickup(queueId: string) {
   isUpdating.value = true
@@ -118,22 +61,6 @@ async function handleComplete(queueId: string) {
 
   alertStore.showAlert('Berhasil', 'Antrian selesai', 'success')
 }
-
-onMounted(async () => {
-  await loadQueues()
-
-  unsubscribeRealtime = subscribeActiveQueues(
-    () => loadQueues({ silent: true }),
-    (status) => {
-      isRealtimeConnected.value = status === 'SUBSCRIBED'
-    },
-  )
-})
-
-onUnmounted(() => {
-  unsubscribeRealtime?.()
-  unsubscribeRealtime = null
-})
 </script>
 
 <template>
@@ -214,78 +141,16 @@ onUnmounted(() => {
       </div>
 
       <div v-else class="grid gap-3 lg:grid-cols-2">
-        <Card
+        <QueueCard
           v-for="queue in filteredQueues"
           :key="queue.id"
-          class="gap-0 py-0"
-        >
-          <CardHeader class="border-b px-4 py-4">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <CardTitle class="text-xl">
-                  {{ formatQueueNumber(queue.queue_number) }}
-                </CardTitle>
-                <p class="mt-1 text-sm text-muted-foreground">
-                  {{ queue.transactions?.customers?.name ?? 'Pembeli tidak diketahui' }}
-                  <span v-if="queue.table_number"> · Meja {{ queue.table_number }}</span>
-                </p>
-              </div>
-              <span class="rounded-md border px-2 py-1 text-xs font-medium">
-                {{ statusLabels[queue.status] }}
-              </span>
-            </div>
-          </CardHeader>
-
-          <CardContent class="space-y-4 p-4">
-            <div>
-              <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Item Pesanan
-              </p>
-              <p class="mt-1 text-sm">
-                {{ formatItems(queue) || '-' }}
-              </p>
-            </div>
-
-            <p
-              v-if="queue.transactions?.notes"
-              class="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground"
-            >
-              {{ queue.transactions.notes }}
-            </p>
-
-            <div class="flex flex-wrap gap-2">
-              <Button
-                v-if="queue.status === 'waiting'"
-                size="sm"
-                :disabled="isUpdating"
-                @click="handlePickup(queue.id)"
-              >
-                <Play class="size-4" />
-                Pickup
-              </Button>
-              <Button
-                v-if="queue.status === 'preparing'"
-                size="sm"
-                variant="secondary"
-                :disabled="isUpdating"
-                @click="handleMarkReady(queue.id)"
-              >
-                <ChefHat class="size-4" />
-                Siap
-              </Button>
-              <Button
-                v-if="queue.status === 'ready'"
-                size="sm"
-                variant="outline"
-                :disabled="isUpdating"
-                @click="handleComplete(queue.id)"
-              >
-                <Check class="size-4" />
-                Selesai
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          :queue="queue"
+          :status-label="queueStatusLabels[queue.status]"
+          :is-updating="isUpdating"
+          @pickup="handlePickup"
+          @mark-ready="handleMarkReady"
+          @complete="handleComplete"
+        />
       </div>
     </div>
   </DashboardLayout>

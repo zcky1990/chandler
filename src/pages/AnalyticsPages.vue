@@ -16,6 +16,7 @@ import RevenueBreakdownDonut from '@/components/analytics/RevenueBreakdownDonut.
 import TopProductsProfitChart from '@/components/analytics/TopProductsProfitChart.vue'
 import { getDateRangePreset, getFullAnalyticsReport } from '@/lib/analytics'
 import { getLowStockProducts } from '@/lib/stock'
+import { formatPercent, formatPrice } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -68,18 +69,6 @@ const marginBarWidth = computed(() => {
   if (!summary.value) return 0
   return Math.min(Math.max(summary.value.marginPercent, 0), 100)
 })
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(price)
-}
-
-function formatPercent(value: number) {
-  return `${value.toFixed(1)}%`
-}
 
 function getCurrentRange() {
   if (activePreset.value === 'custom') {

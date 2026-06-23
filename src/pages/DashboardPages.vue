@@ -21,6 +21,7 @@ import { getDateRangePreset, getFullAnalyticsReport } from '@/lib/analytics'
 import { getCookie } from '@/lib/cookies'
 import { getActiveQueues } from '@/lib/queue'
 import { getLowStockProducts } from '@/lib/stock'
+import { formatPercent, formatPrice } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -79,18 +80,6 @@ const quickActions = [
   { to: '/stock/restock', label: 'Restock', icon: PackagePlus, description: 'Tambah stok produk' },
   { to: '/analytics', label: 'Analisis', icon: BarChart3, description: 'Laporan keuntungan' },
 ]
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(price)
-}
-
-function formatPercent(value: number) {
-  return `${value.toFixed(1)}%`
-}
 
 async function loadDashboard() {
   isLoading.value = true

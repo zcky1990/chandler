@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import type { CartAddonSelection } from '@/lib/addon'
+import { formatPrice } from '@/lib/format'
 import type { Product } from '@/types/database'
 
 const props = defineProps<{
@@ -42,14 +43,6 @@ const selectedAddons = computed(() =>
 const addonTotal = computed(() =>
   selectedAddons.value.reduce((sum, addon) => sum + addon.price, 0),
 )
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(price)
-}
 
 function toggleAddon(addonId: string, checked: boolean) {
   if (checked) {

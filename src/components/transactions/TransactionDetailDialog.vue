@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { formatPrice } from '@/lib/format'
 
 import type { TransactionWithDetails } from '@/types/database'
 
@@ -22,14 +23,6 @@ const emit = defineEmits<{
   'update:open': [value: boolean]
   edit: []
 }>()
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(price)
-}
 
 function formatDateTime(value: string) {
   return new Intl.DateTimeFormat('id-ID', {

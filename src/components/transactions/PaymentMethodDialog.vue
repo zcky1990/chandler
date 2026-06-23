@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { getShopConfig } from '@/lib/config'
+import { formatPrice } from '@/lib/format'
 import type { PaymentMethod, ShopConfig, TransactionWithDetails } from '@/types/database'
 
 const props = defineProps<{
@@ -36,14 +37,6 @@ const isLoadingConfig = ref(false)
 const displayAmount = computed(() =>
   props.transaction?.total_amount ?? props.amount ?? 0,
 )
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(price)
-}
 
 function resetState() {
   selectedMethod.value = null

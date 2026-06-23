@@ -14,6 +14,7 @@ import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { restockProduct } from '@/lib/stock'
+import { formatPrice } from '@/lib/format'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { Product } from '@/types/database'
 
@@ -46,14 +47,6 @@ const defaultForm = (product: Product | null): RestockFormState => ({
 const form = ref<RestockFormState>(defaultForm(null))
 
 const totalCost = computed(() => form.value.quantity * form.value.unit_cost)
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(price)
-}
 
 watch(
   () => props.open,

@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { getTransactions } from '@/lib/transaction'
+import { formatPrice } from '@/lib/format'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { CustomerTransactionSummary, TransactionWithDetails } from '@/types/database'
 
@@ -32,14 +33,6 @@ const detailDialogOpen = ref(false)
 const editDialogOpen = ref(false)
 const selectedCustomer = ref<CustomerTransactionSummary | null>(null)
 const selectedTransaction = ref<TransactionWithDetails | null>(null)
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(price)
-}
 
 function formatDateTime(value: string) {
   return new Intl.DateTimeFormat('id-ID', {

@@ -9,6 +9,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { formatItemWithAddons } from '@/lib/addon'
+import { formatQueueNumber } from '@/lib/format'
 import { getActiveQueues, subscribeActiveQueues } from '@/lib/queue'
 import type { OrderQueueWithDetails, QueueStatus } from '@/types/database'
 
@@ -31,10 +32,6 @@ const statusClass: Record<QueueStatus, string> = {
   ready: 'bg-green-100 text-green-900 dark:bg-green-950 dark:text-green-200',
   completed: 'bg-muted text-muted-foreground',
   cancelled: 'bg-muted text-muted-foreground',
-}
-
-function formatQueueNumber(number: number) {
-  return `#${String(number).padStart(3, '0')}`
 }
 
 function formatItems(queue: OrderQueueWithDetails) {
@@ -73,7 +70,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-svh w-full bg-background">
+  <div class="min-h-svh w-full bg-background p-5 md:p-10">
     <Table>
       <TableHeader>
         <TableRow class="hover:bg-transparent">

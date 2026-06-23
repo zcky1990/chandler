@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { deleteProduct, getProducts } from '@/lib/product'
+import { formatPrice } from '@/lib/format'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { Product } from '@/types/database'
 
@@ -21,14 +22,6 @@ const products = ref<Product[]>([])
 const isLoading = ref(true)
 const dialogOpen = ref(false)
 const selectedProduct = ref<Product | null>(null)
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(price)
-}
 
 async function loadProducts() {
   isLoading.value = true

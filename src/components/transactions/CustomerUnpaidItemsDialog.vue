@@ -6,6 +6,7 @@ import {
   DialogContent,
 } from '@/components/ui/dialog'
 import { formatItemWithAddons } from '@/lib/addon'
+import { formatPrice } from '@/lib/format'
 import type { CustomerTransactionSummary } from '@/types/database'
 
 const props = defineProps<{
@@ -27,14 +28,6 @@ const unpaidTransactions = computed(() =>
 const totalOutstanding = computed(() =>
   unpaidTransactions.value.reduce((sum, transaction) => sum + Number(transaction.total_amount), 0),
 )
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(price)
-}
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('id-ID', {

@@ -15,6 +15,7 @@ import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { updateTransactionItems } from '@/lib/transaction'
+import { formatPrice } from '@/lib/format'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { TransactionWithDetails } from '@/types/database'
 
@@ -45,14 +46,6 @@ const errors = ref<Record<string, string>>({})
 const totalAmount = computed(() =>
   items.value.reduce((sum, item) => sum + item.quantity * item.unit_price, 0),
 )
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(price)
-}
 
 function resetForm() {
   errors.value = {}

@@ -1,18 +1,11 @@
 <script setup lang="ts">
 import { Card, CardContent } from '@/components/ui/card'
+import { formatPrice } from '@/lib/format'
 import type { Product } from '@/types/database'
 
 defineProps<{
   products: Product[]
 }>()
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(price)
-}
 </script>
 
 <template>

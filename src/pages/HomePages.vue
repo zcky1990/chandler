@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import ApplicationLayout from '@/layouts/ApplicationLayout.vue'
-import Search from '@/components/Search.vue'
+import HomeSearchFeature from '@/components/home/HomeSearchFeature.vue'
 </script>
 
 <template>
   <ApplicationLayout>
-    <Search />
+    <HomeSearchFeature />
   </ApplicationLayout>
 </template>

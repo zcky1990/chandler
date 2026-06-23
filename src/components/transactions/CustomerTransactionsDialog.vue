@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { formatItemWithAddons } from '@/lib/addon'
+import { formatPrice } from '@/lib/format'
 import PaymentMethodDialog from '@/components/transactions/PaymentMethodDialog.vue'
 import TransactionEditDialog from '@/components/transactions/TransactionEditDialog.vue'
 import { markTransactionAsPaid } from '@/lib/transaction'
@@ -38,14 +39,6 @@ const unpaidTransactions = computed(() =>
 const totalOutstanding = computed(() =>
   unpaidTransactions.value.reduce((sum, transaction) => sum + Number(transaction.total_amount), 0),
 )
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(price)
-}
 
 function formatShortDate(value: string) {
   return new Intl.DateTimeFormat('en-US', {
