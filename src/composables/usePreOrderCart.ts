@@ -1,4 +1,4 @@
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import {
   buildBundleLineKey,
   buildCartLineKey,
@@ -33,7 +33,8 @@ export function usePreOrderCart() {
   const isSubmitting = ref(false)
   const addonDialogOpen = ref(false)
   const pendingProduct = ref<Product | null>(null)
-  const pendingQuantity = ref(1)
+  const pendingBundleIndex = ref(1)
+  const pendingBundleTotal = ref(1)
   const successDialogOpen = ref(false)
   const submittedOrder = ref<PreOrder | null>(null)
   const searchQuery = ref('')
@@ -178,12 +179,19 @@ export function usePreOrderCart() {
     })
   }
 
+  function resetPendingAddonFlow() {
+    pendingProduct.value = null
+    pendingBundleIndex.value = 1
+    pendingBundleTotal.value = 1
+  }
+
   function openAddonDialog(product: Product, quantity = 1) {
     const mappedAddons = productAddonsMap.value[product.id] ?? []
 
     if (mappedAddons.length) {
       pendingProduct.value = product
-      pendingQuantity.value = quantity
+      pendingBundleTotal.value = quantity
+      pendingBundleIndex.value = 1
       addonDialogOpen.value = true
       return
     }
@@ -194,10 +202,22 @@ export function usePreOrderCart() {
   function handleAddonConfirm(addons: CartAddonSelection[]) {
     if (!pendingProduct.value) return
 
-    addToCart(pendingProduct.value, pendingQuantity.value, addons)
-    pendingProduct.value = null
-    pendingQuantity.value = 1
+    addToCart(pendingProduct.value, 1, addons)
+
+    if (pendingBundleIndex.value < pendingBundleTotal.value) {
+      pendingBundleIndex.value++
+      return
+    }
+
+    addonDialogOpen.value = false
+    resetPendingAddonFlow()
   }
+
+  watch(addonDialogOpen, (open) => {
+    if (!open) {
+      resetPendingAddonFlow()
+    }
+  })
 
   function updateQuantity(lineKey: string, quantity: number) {
     const item = getCartItem(lineKey)
@@ -209,17 +229,7 @@ export function usePreOrderCart() {
         return
       }
 
-      if (!hasEnoughStock(item.product, item.addons, 1)) {
-        alertStore.showAlert('Stok tidak cukup', 'Stok menu atau addon tidak mencukupi', 'error')
-        return
-      }
-
-      cart.value.push({
-        lineKey: buildBundleLineKey(item.product.id, item.addons),
-        product: item.product,
-        quantity: 1,
-        addons: item.addons,
-      })
+      openAddonDialog(item.product, quantity - item.quantity)
       return
     }
 
@@ -339,7 +349,8 @@ export function usePreOrderCart() {
     addonDialogOpen,
     pendingProduct,
     pendingProductAddons,
-    pendingQuantity,
+    pendingBundleIndex,
+    pendingBundleTotal,
     totalAmount,
     successDialogOpen,
     submittedOrder,

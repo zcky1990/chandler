@@ -27,6 +27,8 @@ const {
   addonDialogOpen,
   pendingProduct,
   pendingProductAddons,
+  pendingBundleIndex,
+  pendingBundleTotal,
   totalAmount,
   formatPrice,
   getCartLineSubtotal,
@@ -115,6 +117,8 @@ const {
         v-model:open="addonDialogOpen"
         :product="pendingProduct"
         :addons="pendingProductAddons"
+        :bundle-index="pendingBundleIndex"
+        :bundle-total="pendingBundleTotal"
         @confirm="handleAddonConfirm"
       />
     </div>

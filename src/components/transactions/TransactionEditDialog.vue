@@ -64,7 +64,8 @@ const selectedProductId = ref('')
 const addQuantity = ref(1)
 const addonDialogOpen = ref(false)
 const pendingProduct = ref<Product | null>(null)
-const pendingQuantity = ref(1)
+const pendingBundleIndex = ref(1)
+const pendingBundleTotal = ref(1)
 const isSubmitting = ref(false)
 const errors = ref<Record<string, string>>({})
 
@@ -129,7 +130,8 @@ function resetForm() {
   selectedProductId.value = ''
   addQuantity.value = 1
   pendingProduct.value = null
-  pendingQuantity.value = 1
+  pendingBundleIndex.value = 1
+  pendingBundleTotal.value = 1
 
   if (!props.transaction) {
     notes.value = ''
@@ -232,6 +234,26 @@ function addItem(product: Product, quantity: number, addons: CartAddonSelection[
   })
 }
 
+function resetPendingAddonFlow() {
+  pendingProduct.value = null
+  pendingBundleIndex.value = 1
+  pendingBundleTotal.value = 1
+}
+
+function openAddonDialog(product: Product, quantity = 1) {
+  const mappedAddons = productAddonsMap.value[product.id] ?? []
+
+  if (mappedAddons.length) {
+    pendingProduct.value = product
+    pendingBundleTotal.value = quantity
+    pendingBundleIndex.value = 1
+    addonDialogOpen.value = true
+    return
+  }
+
+  addItem(product, quantity)
+}
+
 function handleAddSelectedProduct() {
   if (!selectedProduct.value) {
     alertStore.showAlert('Error', 'Pilih produk terlebih dahulu', 'error')
@@ -243,29 +265,35 @@ function handleAddSelectedProduct() {
     return
   }
 
-  const mappedAddons = productAddonsMap.value[selectedProduct.value.id] ?? []
+  openAddonDialog(selectedProduct.value, addQuantity.value)
 
-  if (mappedAddons.length) {
-    pendingProduct.value = selectedProduct.value
-    pendingQuantity.value = addQuantity.value
-    addonDialogOpen.value = true
-    return
+  if (!addonDialogOpen.value) {
+    selectedProductId.value = ''
+    addQuantity.value = 1
   }
-
-  addItem(selectedProduct.value, addQuantity.value)
-  selectedProductId.value = ''
-  addQuantity.value = 1
 }
 
 function handleAddonConfirm(addons: CartAddonSelection[]) {
   if (!pendingProduct.value) return
 
-  addItem(pendingProduct.value, pendingQuantity.value, addons)
-  pendingProduct.value = null
-  pendingQuantity.value = 1
+  addItem(pendingProduct.value, 1, addons)
+
+  if (pendingBundleIndex.value < pendingBundleTotal.value) {
+    pendingBundleIndex.value++
+    return
+  }
+
+  addonDialogOpen.value = false
+  resetPendingAddonFlow()
   selectedProductId.value = ''
   addQuantity.value = 1
 }
+
+watch(addonDialogOpen, (open) => {
+  if (!open) {
+    resetPendingAddonFlow()
+  }
+})
 
 function updateQuantity(itemId: string, quantity: number) {
   const item = items.value.find((entry) => entry.id === itemId)
@@ -279,20 +307,10 @@ function updateQuantity(itemId: string, quantity: number) {
       return
     }
 
-    if (product && !hasEnoughStock(product, item.addons, 1)) {
-      alertStore.showAlert('Stok tidak cukup', 'Stok menu atau addon tidak mencukupi', 'error')
-      return
+    const product = products.value.find((entry) => entry.id === item.product_id)
+    if (product) {
+      openAddonDialog(product, quantity - item.quantity)
     }
-
-    items.value.push({
-      id: `new-${crypto.randomUUID()}`,
-      product_id: item.product_id,
-      name: item.name,
-      quantity: 1,
-      unit_price: item.unit_price,
-      isNew: true,
-      addons: item.addons,
-    })
     return
   }
 
@@ -542,6 +560,8 @@ async function handleSave() {
       v-model:open="addonDialogOpen"
       :product="pendingProduct"
       :addons="pendingProductAddons"
+      :bundle-index="pendingBundleIndex"
+      :bundle-total="pendingBundleTotal"
       @confirm="handleAddonConfirm"
     />
   </Dialog>

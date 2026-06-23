@@ -14,11 +14,16 @@ import type { CartAddonSelection } from '@/lib/addon'
 import { formatPrice } from '@/lib/format'
 import type { Product } from '@/types/database'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   open: boolean
   product: Product | null
   addons: Product[]
-}>()
+  bundleIndex?: number
+  bundleTotal?: number
+}>(), {
+  bundleIndex: 1,
+  bundleTotal: 1,
+})
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
@@ -28,13 +33,21 @@ const emit = defineEmits<{
 const selectedAddonIds = ref<string[]>([])
 
 watch(
-  () => props.open,
-  (isOpen) => {
+  () => [props.open, props.bundleIndex] as const,
+  ([isOpen]) => {
     if (isOpen) {
       selectedAddonIds.value = []
     }
   },
 )
+
+const confirmLabel = computed(() => {
+  if (props.bundleTotal > 1 && props.bundleIndex < props.bundleTotal) {
+    return `Lanjut (${props.bundleIndex}/${props.bundleTotal})`
+  }
+
+  return 'Tambah ke Keranjang'
+})
 
 const selectedAddons = computed(() =>
   props.addons.filter((addon) => selectedAddonIds.value.includes(addon.id)),
@@ -63,7 +76,6 @@ function handleConfirm() {
       quantity: 1,
     })),
   )
-  emit('update:open', false)
 }
 </script>
 
@@ -73,7 +85,13 @@ function handleConfirm() {
       <DialogHeader class="shrink-0 border-b px-6 pt-6 pb-4">
         <DialogTitle>Pilih Addon</DialogTitle>
         <DialogDescription v-if="product">
-          {{ product.name }} — addon opsional
+          {{ product.name }}
+          <template v-if="bundleTotal > 1">
+            — pilih addon untuk item {{ bundleIndex }} dari {{ bundleTotal }}
+          </template>
+          <template v-else>
+            — addon opsional
+          </template>
         </DialogDescription>
       </DialogHeader>
 
@@ -108,7 +126,7 @@ function handleConfirm() {
           <Button type="button" variant="outline">Batal</Button>
         </DialogClose>
         <Button type="button" @click="handleConfirm">
-          Tambah ke Keranjang
+          {{ confirmLabel }}
         </Button>
       </DialogFooter>
     </DialogContent>

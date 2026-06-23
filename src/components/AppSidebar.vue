@@ -77,6 +77,22 @@ const data = {
     </SidebarHeader>
     <SidebarContent>
       <SidebarGroup>
+        <SidebarGroupLabel>Beranda</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child>
+                <RouterLink to="/dashboard">
+                  <LayoutDashboard />
+                  <span>Dashboard</span>
+                </RouterLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      <SidebarGroup>
         <SidebarGroupLabel>Operasional</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
