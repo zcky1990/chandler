@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { Banknote, Eye, List, Pencil, Users } from '@lucide/vue'
+import { Banknote, Eye, List, Pencil, Printer, Users } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import CustomerTransactionsDialog from '@/components/transactions/CustomerTransactionsDialog.vue'
@@ -20,6 +20,7 @@ import {
 import { useI18n } from '@/composables/useI18n'
 import { getTransactions, markTransactionAsPaid } from '@/lib/transaction'
 import { buildInvoiceFromTransaction, type InvoiceData } from '@/lib/invoice'
+import { printTransactionReceipt } from '@/lib/print-invoice'
 import { formatPrice } from '@/lib/format'
 import { useAlertStore } from '@/stores/useAlertStore'
 import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
@@ -139,6 +140,11 @@ function openTransactionEdit(transaction: TransactionWithDetails) {
 function openPaymentDialog(transaction: TransactionWithDetails) {
   selectedTransaction.value = transaction
   paymentDialogOpen.value = true
+}
+
+async function handlePrintReceipt(transaction: TransactionWithDetails) {
+  if (!transaction.is_paid || !transaction.payment_method) return
+  await printTransactionReceipt(transaction)
 }
 
 async function handlePayment(method: PaymentMethod) {
@@ -324,6 +330,15 @@ onMounted(loadTransactions)
                 </TableCell>
                 <TableCell class="text-right">
                   <div class="flex justify-end gap-2">
+                    <Button
+                      v-if="transaction.is_paid && transaction.payment_method"
+                      size="icon-sm"
+                      variant="outline"
+                      :title="t('payment.printInvoice')"
+                      @click="handlePrintReceipt(transaction)"
+                    >
+                      <Printer class="size-4" />
+                    </Button>
                     <Button
                       v-if="!transaction.is_paid"
                       size="sm"

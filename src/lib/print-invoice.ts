@@ -1,10 +1,14 @@
 import {
+  applyShopInfoToInvoice,
+  buildInvoiceFromTransaction,
   formatInvoiceDateTime,
   getPaymentMethodLabel,
   type InvoiceData,
 } from '@/lib/invoice'
+import { getShopConfig } from '@/lib/config'
 import { formatPrice, formatQueueNumber } from '@/lib/format'
 import { useLocaleStore } from '@/stores/useLocaleStore'
+import type { PaymentMethod, TransactionWithDetails } from '@/types/database'
 
 function escapeHtml(value: string) {
   return value
@@ -152,4 +156,23 @@ export function printInvoice(data: InvoiceData) {
 
 export function formatInvoiceSummaryAmount(amount: number) {
   return formatPrice(amount)
+}
+
+export async function printTransactionReceipt(
+  transaction: TransactionWithDetails,
+  options?: { queueNumber?: number | null, paymentMethod?: PaymentMethod },
+) {
+  const paymentMethod = options?.paymentMethod ?? transaction.payment_method
+  if (!paymentMethod) return
+
+  const { config } = await getShopConfig()
+  const invoice = applyShopInfoToInvoice(
+    buildInvoiceFromTransaction(transaction, paymentMethod, {
+      paidAt: transaction.paid_at ?? undefined,
+      queueNumber: options?.queueNumber,
+    }),
+    config?.shop_name,
+    config?.shop_address,
+  )
+  printInvoice(invoice)
 }
