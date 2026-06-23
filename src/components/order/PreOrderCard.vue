@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { formatPreOrderItemWithAddons } from '@/lib/addon'
 import { formatPrice } from '@/lib/format'
-import { formatPreOrderNumber, getPreOrderPaymentLabel } from '@/lib/pre-order'
+import { formatPreOrderNumber, getPreOrderPaymentLabel, needsPreOrderPaymentConfirmation } from '@/lib/pre-order'
 import { useI18n } from '@/composables/useI18n'
 import type { PreOrderWithDetails } from '@/types/database'
 
@@ -24,6 +24,7 @@ const itemsSummary = computed(() =>
 )
 
 const paymentLabel = computed(() => getPreOrderPaymentLabel(props.preOrder))
+const needsPaymentConfirm = computed(() => needsPreOrderPaymentConfirmation(props.preOrder))
 </script>
 
 <template>
@@ -72,7 +73,7 @@ const paymentLabel = computed(() => getPreOrderPaymentLabel(props.preOrder))
           class="inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           @click="emit('process')"
         >
-          {{ t('common.process') }}
+          {{ needsPaymentConfirm ? t('order.confirmPayButton') : t('common.process') }}
         </button>
       </div>
     </div>

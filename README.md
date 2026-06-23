@@ -29,6 +29,7 @@ Aplikasi web untuk mengelola produk, pelanggan, transaksi penjualan, antrian pes
 |-------|------------|
 | **Halaman publik (`/`)** | Pencarian pelanggan/produk, lihat hutang, instruksi pembayaran QRIS/transfer |
 | **Pesan online (`/order`)** | Pelanggan pilih menu, kirim pre-order (bayar nanti / bayar sekarang) tanpa login |
+| **Sukses pesanan (`/order/success`)** | Konfirmasi nomor pesanan + instruksi bayar di kasir setelah pre-order |
 | **Pesanan masuk (`/orders/inbox`)** | Staff memproses pre-order menjadi transaksi + antrian opsional |
 | **Master Produk** | CRUD produk, harga jual, harga beli default, stok awal, kategori |
 | **Master Kategori** | CRUD kategori produk |
@@ -36,9 +37,11 @@ Aplikasi web untuk mengelola produk, pelanggan, transaksi penjualan, antrian pes
 | **Transaksi** | Buat penjualan, bayar / simpan hutang, antrian opsional |
 | **Daftar Transaksi** | Filter lunas/hutang, edit qty item |
 | **Antrian** | Status: menunggu → disiapkan → siap → selesai |
+| **Layar antrian (`/queue/display`)** | Tampilan fullscreen untuk TV dapur (publik, tanpa login) |
 | **Restock** | Tambah stok per batch dengan harga beli & riwayat |
 | **Analisis** | Pendapatan, HPP FIFO, laba kotor, chart, ranking produk |
-| **Konfigurasi** | Upload QRIS, data rekening transfer |
+| **Konfigurasi** | Upload QRIS, data rekening transfer, info struk toko |
+| **Profil (`/profile`)** | Ubah nama, password, foto profil (WEBP), bahasa & tema |
 
 ---
 
@@ -278,6 +281,8 @@ Semua skema SQL ada di folder [`DDL/`](DDL/). Jalankan di **Supabase SQL Editor*
 | [`DDL/stock_movements_costing.ddl`](DDL/stock_movements_costing.ddl) | Jika `stock_movements` dibuat **tanpa** kolom costing |
 | [`DDL/order_queues_table_number.ddl`](DDL/order_queues_table_number.ddl) | Jika `order_queues` dibuat **tanpa** `table_number` |
 | [`DDL/order_queues_realtime.ddl`](DDL/order_queues_realtime.ddl) | **Wajib** untuk antrian realtime di halaman `/queue` |
+| [`DDL/order_queues_daily_reset.ddl`](DDL/order_queues_daily_reset.ddl) | Reset nomor antrian per hari (timezone Asia/Jakarta) |
+| [`DDL/shop_config_invoice.ddl`](DDL/shop_config_invoice.ddl) | Kolom `shop_name`, `shop_address` untuk header struk |
 | [`DDL/product_addons.ddl`](DDL/product_addons.ddl) | Kolom `is_addons`, mapping addon, addon per transaksi |
 | [`DDL/product_is_addons.ddl`](DDL/product_is_addons.ddl) | Migrasi `product_type` → `is_addons` jika DB sudah pakai kolom lama |
 | [`DDL/masterdata_policies.ddl`](DDL/masterdata_policies.ddl) | Jika insert/update produk/pelanggan mengembalikan **403** |
@@ -358,10 +363,9 @@ Buka browser: `http://localhost:5173`
 
 | URL | Akses |
 |-----|-------|
-| `/` | Publik — pencarian pelanggan |
-| `/login` | Guest |
-| `/sign-up` | Guest |
-| `/transactions`, `/master/products`, dll. | Harus login |
+| `/`, `/order`, `/order/success`, `/queue/display` | Publik — tanpa login |
+| `/login`, `/sign-up` | Guest |
+| `/dashboard`, `/profile`, `/transactions`, `/master/products`, dll. | Harus login |
 
 ---
 
@@ -396,12 +400,16 @@ vue-superbase-project/
 |------|---------|--------------|
 | `/` | Pencarian publik | — |
 | `/order` | Pesan menu (publik) | — |
+| `/order/success` | Konfirmasi pesanan + nomor antrian kasir (publik) | — |
+| `/queue/display` | Layar antrian TV dapur (publik) | — |
 | `/login` | Login | — |
 | `/sign-up` | Daftar akun | — |
+| `/dashboard` | Dashboard ringkasan | Beranda |
+| `/profile` | Profil akun (nama, password, foto) | Akun (menu user) |
 | `/orders/inbox` | Pesanan masuk dari publik | Operasional |
 | `/transactions` | Buat transaksi | Operasional |
 | `/transactions/list` | Daftar transaksi | Operasional |
-| `/queue` | Antrian | Operasional |
+| `/queue` | Kelola antrian dapur | Operasional |
 | `/stock/restock` | Restock | Operasional |
 | `/analytics` | Analisis keuntungan | Laporan |
 | `/master/products` | Master produk | Master Data |

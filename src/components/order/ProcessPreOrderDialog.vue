@@ -19,7 +19,13 @@ import { useI18n } from '@/composables/useI18n'
 import { formatPreOrderItemWithAddons } from '@/lib/addon'
 import { formatPrice } from '@/lib/format'
 import { buildInvoiceFromTransaction, type InvoiceData } from '@/lib/invoice'
-import { formatPreOrderNumber, getPreOrderPaymentLabel, processPreOrder } from '@/lib/pre-order'
+import {
+  confirmPreOrderPayment,
+  formatPreOrderNumber,
+  getPreOrderPaymentLabel,
+  needsPreOrderPaymentConfirmation,
+  processPreOrder,
+} from '@/lib/pre-order'
 import { getTransactionById } from '@/lib/transaction'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { PaymentMethod, PreOrderWithDetails } from '@/types/database'
@@ -32,6 +38,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:open': [value: boolean]
   processed: []
+  paymentConfirmed: []
 }>()
 
 const { t } = useI18n()
@@ -40,10 +47,20 @@ const addToQueue = ref(true)
 const tableNumber = ref('')
 const isSubmitting = ref(false)
 const paymentDialogOpen = ref(false)
+const paymentDialogMode = ref<'confirm' | 'process'>('process')
 const paymentSuccessDialogOpen = ref(false)
 const paymentSuccessInvoice = ref<InvoiceData | null>(null)
+const dialogStep = ref<'confirm' | 'process'>('process')
 
 const items = computed(() => props.preOrder?.pre_order_items ?? [])
+
+const isConfirmStep = computed(
+  () => dialogStep.value === 'confirm' && props.preOrder && needsPreOrderPaymentConfirmation(props.preOrder),
+)
+
+const dialogTitle = computed(() =>
+  isConfirmStep.value ? t('order.confirmPayTitle') : t('order.processTitle'),
+)
 
 watch(
   () => props.open,
@@ -51,6 +68,20 @@ watch(
     if (!isOpen) return
     addToQueue.value = true
     tableNumber.value = props.preOrder?.table_number ?? ''
+    dialogStep.value =
+      props.preOrder && needsPreOrderPaymentConfirmation(props.preOrder) ? 'confirm' : 'process'
+  },
+)
+
+watch(
+  () => props.preOrder,
+  (preOrder) => {
+    if (!props.open || !preOrder) return
+    if (needsPreOrderPaymentConfirmation(preOrder)) {
+      dialogStep.value = 'confirm'
+      return
+    }
+    dialogStep.value = 'process'
   },
 )
 
@@ -62,12 +93,12 @@ function getErrorMessage(error: unknown) {
   return t('order.processFailed')
 }
 
-async function handlePayment(method: PaymentMethod) {
+async function finishProcess(paymentMethod: PaymentMethod) {
   if (!props.preOrder) return
 
   isSubmitting.value = true
   const { transaction, queueNumber, error } = await processPreOrder(props.preOrder.id, {
-    paymentMethod: method,
+    paymentMethod,
     addToQueue: addToQueue.value,
     tableNumber: tableNumber.value.trim() || null,
   })
@@ -95,7 +126,7 @@ async function handlePayment(method: PaymentMethod) {
 
   paymentSuccessInvoice.value = buildInvoiceFromTransaction(
     transactionDetails,
-    method,
+    paymentMethod,
     { queueNumber, paidAt: transaction.paid_at ?? new Date().toISOString() },
   )
   paymentSuccessDialogOpen.value = true
@@ -103,7 +134,48 @@ async function handlePayment(method: PaymentMethod) {
   emit('processed')
 }
 
+async function handlePayment(method: PaymentMethod) {
+  if (paymentDialogMode.value === 'confirm') {
+    if (!props.preOrder) return
+
+    isSubmitting.value = true
+    const { error } = await confirmPreOrderPayment(props.preOrder.id, method)
+    isSubmitting.value = false
+    paymentDialogOpen.value = false
+
+    if (error) {
+      alertStore.showAlert(t('alert.error'), getErrorMessage(error), 'error')
+      return
+    }
+
+    alertStore.showAlert(t('alert.success'), t('order.paymentConfirmSuccess'), 'success')
+    dialogStep.value = 'process'
+    emit('paymentConfirmed')
+    return
+  }
+
+  await finishProcess(method)
+}
+
+function openConfirmPaymentDialog() {
+  paymentDialogMode.value = 'confirm'
+  paymentDialogOpen.value = true
+}
+
 function handleProcessClick() {
+  if (!props.preOrder) return
+
+  if (props.preOrder.payment_choice === 'pay_now') {
+    const method = props.preOrder.confirmed_payment_method
+    if (!method) {
+      alertStore.showAlert(t('alert.error'), t('order.paymentConfirmRequired'), 'error')
+      return
+    }
+    finishProcess(method)
+    return
+  }
+
+  paymentDialogMode.value = 'process'
   paymentDialogOpen.value = true
 }
 </script>
@@ -112,7 +184,7 @@ function handleProcessClick() {
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-[520px]">
       <DialogHeader>
-        <DialogTitle>{{ t('order.processTitle') }}</DialogTitle>
+        <DialogTitle>{{ dialogTitle }}</DialogTitle>
         <DialogDescription v-if="preOrder">
           {{ formatPreOrderNumber(preOrder.order_number) }} · {{ getPreOrderPaymentLabel(preOrder) }}
         </DialogDescription>
@@ -135,34 +207,63 @@ function handleProcessClick() {
           <span class="text-lg font-bold">{{ formatPrice(preOrder.total_amount) }}</span>
         </div>
 
-        <Field>
-          <FieldLabel for="process-table-number">{{ t('order.processTable') }}</FieldLabel>
-          <Input
-            id="process-table-number"
-            v-model="tableNumber"
-            :placeholder="t('common.optional')"
-          />
-        </Field>
+        <template v-if="isConfirmStep">
+          <p class="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-3 text-sm">
+            {{ t('order.confirmPayDesc') }}
+          </p>
+        </template>
 
-        <div class="flex items-center justify-between rounded-lg border px-3 py-3">
-          <div>
-            <p class="text-sm font-medium">{{ t('order.addToQueue') }}</p>
-            <p class="text-xs text-muted-foreground">{{ t('order.addToQueueDesc') }}</p>
+        <template v-else>
+          <Field>
+            <FieldLabel for="process-table-number">{{ t('order.processTable') }}</FieldLabel>
+            <Input
+              id="process-table-number"
+              v-model="tableNumber"
+              :placeholder="t('common.optional')"
+            />
+          </Field>
+
+          <div class="flex items-center justify-between rounded-lg border px-3 py-3">
+            <div>
+              <p class="text-sm font-medium">{{ t('order.addToQueue') }}</p>
+              <p class="text-xs text-muted-foreground">{{ t('order.addToQueueDesc') }}</p>
+            </div>
+            <Switch v-model="addToQueue" />
           </div>
-          <Switch v-model="addToQueue" />
-        </div>
 
-        <p class="text-sm text-muted-foreground">
-          {{ t('order.walkInPayNote') }}
-        </p>
+          <p class="text-sm text-muted-foreground">
+            {{
+              preOrder.payment_choice === 'pay_now'
+                ? t('order.payNowConfirmedNote')
+                : t('order.walkInPayNote')
+            }}
+          </p>
+        </template>
       </div>
 
       <DialogFooter>
         <DialogClose as-child>
           <Button type="button" variant="outline">{{ t('common.cancel') }}</Button>
         </DialogClose>
-        <Button :disabled="isSubmitting || !preOrder" @click="handleProcessClick">
-          {{ isSubmitting ? t('order.processing') : t('order.continuePay') }}
+        <Button
+          v-if="isConfirmStep"
+          :disabled="isSubmitting || !preOrder"
+          @click="openConfirmPaymentDialog"
+        >
+          {{ isSubmitting ? t('order.processing') : t('order.confirmPayButton') }}
+        </Button>
+        <Button
+          v-else
+          :disabled="isSubmitting || !preOrder"
+          @click="handleProcessClick"
+        >
+          {{
+            isSubmitting
+              ? t('order.processing')
+              : preOrder?.payment_choice === 'pay_now'
+                ? t('order.processQueueButton')
+                : t('order.continuePay')
+          }}
         </Button>
       </DialogFooter>
     </DialogContent>

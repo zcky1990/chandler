@@ -19,7 +19,7 @@ import { getCookie, clearAuthCookies } from '@/lib/cookies'
 import { getCurrentUser } from '@/lib/auth'
 import { useRouter, RouterLink } from 'vue-router'
 import { useI18n } from '@/composables/useI18n'
-import { BarChart3, ClipboardList, Inbox, LayoutDashboard, List, LogOut, Package, PackagePlus, Receipt, Settings, Tags, User, Users } from '@lucide/vue'
+import { BarChart3, ClipboardList, Inbox, LayoutDashboard, List, LogOut, Monitor, Package, PackagePlus, Receipt, Settings, Tags, User, Users } from '@lucide/vue'
 
 const userEmail = getCookie('_user_email')
 const userAvatar = ref<string | null>(null)
@@ -145,6 +145,14 @@ onUnmounted(() => {
                 <RouterLink to="/queue">
                   <ClipboardList />
                   <span>{{ t('nav.queue') }}</span>
+                </RouterLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child>
+                <RouterLink to="/queue/display" target="_blank">
+                  <Monitor />
+                  <span>{{ t('nav.queueDisplay') }}</span>
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>

@@ -6,7 +6,8 @@ import ProcessPreOrderDialog from '@/components/order/ProcessPreOrderDialog.vue'
 import { Button } from '@/components/ui/button'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import { useI18n } from '@/composables/useI18n'
-import { cancelPreOrder, getPendingPreOrders, subscribePendingPreOrders } from '@/lib/pre-order'
+import { cancelPreOrder, formatPreOrderNumber, getPendingPreOrders, subscribePendingPreOrders, type PreOrderRealtimeChange } from '@/lib/pre-order'
+import { playNewOrderSound, unlockNotificationSound } from '@/lib/notification-sound'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { PreOrderWithDetails } from '@/types/database'
 
@@ -38,7 +39,45 @@ async function loadPreOrders(options?: { silent?: boolean }) {
   preOrders.value = data ?? []
 }
 
+function isNewPendingOrder(change: PreOrderRealtimeChange) {
+  if (change.eventType !== 'INSERT') return false
+  return change.newRecord?.status === 'pending'
+}
+
+function notifyNewPreOrder(change: PreOrderRealtimeChange) {
+  const orderNumber = Number(change.newRecord?.order_number ?? 0)
+  playNewOrderSound()
+  alertStore.showAlert(
+    t('order.newOrderTitle'),
+    t('order.newOrderDesc', { number: formatPreOrderNumber(orderNumber) }),
+    'success',
+  )
+}
+
+function handlePreOrderRealtime(change?: PreOrderRealtimeChange) {
+  if (change && isNewPendingOrder(change)) {
+    notifyNewPreOrder(change)
+  }
+  loadPreOrders({ silent: true })
+}
+
+function onRefresh() {
+  unlockNotificationSound()
+  loadPreOrders()
+}
+
+function syncSelectedPreOrder() {
+  if (!selectedPreOrder.value) return
+  selectedPreOrder.value = preOrders.value.find((order) => order.id === selectedPreOrder.value?.id) ?? null
+}
+
+async function handlePaymentConfirmed() {
+  await loadPreOrders({ silent: true })
+  syncSelectedPreOrder()
+}
+
 function openProcessDialog(preOrder: PreOrderWithDetails) {
+  unlockNotificationSound()
   selectedPreOrder.value = preOrder
   processDialogOpen.value = true
 }
@@ -60,7 +99,7 @@ onMounted(async () => {
   await loadPreOrders()
 
   unsubscribeRealtime = subscribePendingPreOrders(
-    () => loadPreOrders({ silent: true }),
+    handlePreOrderRealtime,
     (status) => {
       isRealtimeConnected.value = status === 'SUBSCRIBED'
     },
@@ -93,7 +132,7 @@ onUnmounted(() => {
             </span>
           </p>
         </div>
-        <Button variant="outline" :disabled="isLoading" @click="loadPreOrders">
+        <Button variant="outline" :disabled="isLoading" @click="onRefresh">
           {{ t('common.refresh') }}
         </Button>
       </div>
@@ -123,6 +162,7 @@ onUnmounted(() => {
         v-model:open="processDialogOpen"
         :pre-order="selectedPreOrder"
         @processed="loadPreOrders({ silent: true })"
+        @payment-confirmed="handlePaymentConfirmed"
       />
     </div>
   </DashboardLayout>

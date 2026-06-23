@@ -209,6 +209,7 @@ export type PreOrder = {
   status: PreOrderStatus
   payment_choice: PreOrderPaymentChoice
   payment_status: PreOrderPaymentStatus
+  confirmed_payment_method: PaymentMethod | null
   total_amount: number
   transaction_id: string | null
   created_at: string
@@ -264,7 +265,7 @@ export type PreOrderInput = {
 }
 
 export type ProcessPreOrderOptions = {
-  paymentMethod: PaymentMethod
+  paymentMethod?: PaymentMethod
   addToQueue?: boolean
   tableNumber?: string | null
 }

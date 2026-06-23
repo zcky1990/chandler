@@ -217,6 +217,28 @@ export const getPendingPreOrders = async () => {
   return { preOrders: data as PreOrderWithDetails[] | null, error }
 }
 
+export function needsPreOrderPaymentConfirmation(preOrder: PreOrder) {
+  return preOrder.payment_choice === 'pay_now' && preOrder.payment_status === 'awaiting_confirmation'
+}
+
+export const confirmPreOrderPayment = async (preOrderId: string, paymentMethod: PaymentMethod) => {
+  const supabaseClient = supabase()
+  const { data, error } = await supabaseClient
+    .from('pre_orders')
+    .update({
+      payment_status: 'confirmed',
+      confirmed_payment_method: paymentMethod,
+    })
+    .eq('id', preOrderId)
+    .eq('status', 'pending')
+    .eq('payment_choice', 'pay_now')
+    .eq('payment_status', 'awaiting_confirmation')
+    .select()
+    .single()
+
+  return { preOrder: data as PreOrder | null, error }
+}
+
 export const cancelPreOrder = async (preOrderId: string) => {
   const supabaseClient = supabase()
   const { data, error } = await supabaseClient
@@ -250,6 +272,29 @@ export const processPreOrder = async (preOrderId: string, options: ProcessPreOrd
 
   if (preOrder.status !== 'pending') {
     return { preOrder: null, transaction: null, queueNumber: null, error: { message: useLocaleStore().translate('order.alreadyProcessed') } }
+  }
+
+  if (preOrder.payment_choice === 'pay_now' && preOrder.payment_status !== 'confirmed') {
+    return {
+      preOrder: null,
+      transaction: null,
+      queueNumber: null,
+      error: { message: useLocaleStore().translate('order.paymentConfirmRequired') },
+    }
+  }
+
+  const paymentMethod: PaymentMethod | undefined =
+    preOrder.payment_choice === 'pay_now'
+      ? (preOrder.confirmed_payment_method as PaymentMethod | null) ?? options.paymentMethod
+      : options.paymentMethod
+
+  if (!paymentMethod) {
+    return {
+      preOrder: null,
+      transaction: null,
+      queueNumber: null,
+      error: { message: useLocaleStore().translate('order.paymentMethodRequired') },
+    }
   }
 
   const { error: lockError } = await supabaseClient
@@ -302,7 +347,7 @@ export const processPreOrder = async (preOrderId: string, options: ProcessPreOrd
       notes: buildOrderNotes(preOrder as PreOrder),
       items,
     },
-    { paymentMethod: options.paymentMethod },
+    { paymentMethod },
   )
 
   if (transactionError || !transaction) {
@@ -379,8 +424,14 @@ export const processPreOrder = async (preOrderId: string, options: ProcessPreOrd
 
 type PreOrderRealtimeStatus = 'SUBSCRIBED' | 'CHANNEL_ERROR' | 'TIMED_OUT' | 'CLOSED'
 
+export type PreOrderRealtimeChange = {
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE'
+  newRecord: Record<string, unknown> | null
+  oldRecord: Record<string, unknown> | null
+}
+
 export const subscribePendingPreOrders = (
-  onChange: () => void,
+  onChange: (change?: PreOrderRealtimeChange) => void,
   onStatusChange?: (status: PreOrderRealtimeStatus) => void,
   channelName = 'pre_orders_pending',
 ) => {
@@ -394,7 +445,13 @@ export const subscribePendingPreOrders = (
         schema: 'public',
         table: 'pre_orders',
       },
-      () => onChange(),
+      (payload) => {
+        onChange({
+          eventType: payload.eventType,
+          newRecord: (payload.new as Record<string, unknown>) ?? null,
+          oldRecord: (payload.old as Record<string, unknown>) ?? null,
+        })
+      },
     )
     .subscribe((status) => {
       if (status === 'SUBSCRIBED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
@@ -420,6 +477,10 @@ export function getPreOrderPaymentLabel(preOrder: PreOrder) {
 
   if (preOrder.payment_status === 'awaiting_confirmation') {
     return t('payment.awaitingConfirmation')
+  }
+
+  if (preOrder.payment_status === 'confirmed') {
+    return t('payment.confirmed')
   }
 
   return t('payment.payNow')
