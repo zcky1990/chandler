@@ -30,7 +30,8 @@ export const productSchema = z.object({
     z.literal(''),
   ]).nullable().optional(),
   is_active: z.boolean().default(true),
-  product_type: z.enum(['menu', 'addon']).default('menu'),
+  is_addons: z.boolean().default(false),
+  category_id: z.string().uuid({ message: 'Kategori tidak valid' }).nullable().optional(),
 })
 
 export const customerSchema = z.object({
@@ -44,6 +45,14 @@ export const customerSchema = z.object({
   notes: z.string().nullable().optional(),
   is_active: z.boolean().default(true),
 })
+
+export const categorySchema = z.object({
+  name: z.string().min(1, { message: 'Nama kategori harus diisi' }),
+  description: z.string().nullable().optional(),
+  is_active: z.boolean().default(true),
+})
+
+export type CategorySchema = z.infer<typeof categorySchema>
 
 export type ProductSchema = z.infer<typeof productSchema>
 export type CustomerSchema = z.infer<typeof customerSchema>
@@ -108,3 +117,13 @@ export const restockSchema = z.object({
 })
 
 export type RestockSchema = z.infer<typeof restockSchema>
+
+export const preOrderSubmitSchema = z.object({
+  customer_name: z.string().nullable().optional(),
+  table_number: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  payment_choice: z.enum(['pay_later', 'pay_now']),
+  items: z.array(transactionItemSchema).min(1, { message: 'Minimal 1 produk' }),
+})
+
+export type PreOrderSubmitSchema = z.infer<typeof preOrderSubmitSchema>

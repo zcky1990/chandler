@@ -68,3 +68,34 @@ export const TRANSACTION_ITEMS_WITH_ADDONS_SELECT = `
     products ( id, name )
   )
 `
+
+export const PRE_ORDER_ITEMS_WITH_ADDONS_SELECT = `
+  id,
+  product_id,
+  quantity,
+  unit_price,
+  subtotal,
+  products ( id, name ),
+  pre_order_item_addons (
+    id,
+    addon_product_id,
+    quantity,
+    unit_price,
+    subtotal,
+    products ( id, name )
+  )
+`
+
+export function formatPreOrderItemWithAddons(item: {
+  quantity: number
+  products: { name: string } | null
+  pre_order_item_addons?: { quantity: number, products: { name: string } | null }[]
+}) {
+  const menuName = item.products?.name ?? 'Produk'
+  const addonNames = (item.pre_order_item_addons ?? [])
+    .map((addon) => addon.products?.name ?? 'Addon')
+    .join(', ')
+
+  const base = `${menuName} x${item.quantity}`
+  return addonNames ? `${base} (+ ${addonNames})` : base
+}

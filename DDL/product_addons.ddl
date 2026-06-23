@@ -1,8 +1,7 @@
--- Tipe produk (menu vs addon) + mapping addon + addon per baris transaksi
+-- Mapping addon + addon per baris transaksi
 
 alter table public.products
-  add column if not exists product_type text not null default 'menu'
-  check (product_type in ('menu', 'addon'));
+  add column if not exists is_addons boolean not null default false;
 
 create table if not exists public.product_addons (
   id uuid primary key default gen_random_uuid(),

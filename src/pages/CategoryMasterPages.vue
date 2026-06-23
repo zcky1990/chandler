@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { Pencil, Plus, Trash2 } from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
-import CustomerFormDialog from '@/components/masterdata/CustomerFormDialog.vue'
+import CategoryFormDialog from '@/components/masterdata/CategoryFormDialog.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -13,42 +13,35 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { deleteCustomer, getCustomers } from '@/lib/customer'
+import { deleteCategory, getCategories } from '@/lib/category'
 import { useAlertStore } from '@/stores/useAlertStore'
-import type { Customer } from '@/types/database'
+import type { ProductCategory } from '@/types/database'
 
 type StatusFilter = 'all' | 'active' | 'inactive'
 
 const alertStore = useAlertStore()
-const customers = ref<Customer[]>([])
+const categories = ref<ProductCategory[]>([])
 const isLoading = ref(true)
 const dialogOpen = ref(false)
-const selectedCustomer = ref<Customer | null>(null)
+const selectedCategory = ref<ProductCategory | null>(null)
 const searchQuery = ref('')
 const statusFilter = ref<StatusFilter>('all')
 
-const filteredCustomers = computed(() => {
-  let result = customers.value
+const filteredCategories = computed(() => {
+  let result = categories.value
 
   if (statusFilter.value === 'active') {
-    result = result.filter((customer) => customer.is_active)
+    result = result.filter((category) => category.is_active)
   } else if (statusFilter.value === 'inactive') {
-    result = result.filter((customer) => !customer.is_active)
+    result = result.filter((category) => !category.is_active)
   }
 
   const query = searchQuery.value.trim().toLowerCase()
   if (query) {
-    result = result.filter((customer) => {
-      const name = customer.name.toLowerCase()
-      const email = customer.email?.toLowerCase() ?? ''
-      const phone = customer.phone?.toLowerCase() ?? ''
-      const address = customer.address?.toLowerCase() ?? ''
-      const notes = customer.notes?.toLowerCase() ?? ''
-      return name.includes(query)
-        || email.includes(query)
-        || phone.includes(query)
-        || address.includes(query)
-        || notes.includes(query)
+    result = result.filter((category) => {
+      const name = category.name.toLowerCase()
+      const description = category.description?.toLowerCase() ?? ''
+      return name.includes(query) || description.includes(query)
     })
   }
 
@@ -57,9 +50,9 @@ const filteredCustomers = computed(() => {
 
 const selectClass = 'border-input bg-background h-9 rounded-md border px-3 text-sm'
 
-async function loadCustomers() {
+async function loadCategories() {
   isLoading.value = true
-  const { customers: data, error } = await getCustomers()
+  const { categories: data, error } = await getCategories()
   isLoading.value = false
 
   if (error) {
@@ -67,33 +60,33 @@ async function loadCustomers() {
     return
   }
 
-  customers.value = data ?? []
+  categories.value = data ?? []
 }
 
 function openCreateDialog() {
-  selectedCustomer.value = null
+  selectedCategory.value = null
   dialogOpen.value = true
 }
 
-function openEditDialog(customer: Customer) {
-  selectedCustomer.value = customer
+function openEditDialog(category: ProductCategory) {
+  selectedCategory.value = category
   dialogOpen.value = true
 }
 
-async function handleDelete(customer: Customer) {
-  if (!confirm(`Hapus pembeli "${customer.name}"?`)) return
+async function handleDelete(category: ProductCategory) {
+  if (!confirm(`Hapus kategori "${category.name}"? Produk terkait akan kehilangan kategori.`)) return
 
-  const { error } = await deleteCustomer(customer.id)
+  const { error } = await deleteCategory(category.id)
   if (error) {
     alertStore.showAlert('Error', error.message, 'error')
     return
   }
 
-  alertStore.showAlert('Berhasil', 'Pembeli berhasil dihapus', 'success')
-  await loadCustomers()
+  alertStore.showAlert('Berhasil', 'Kategori berhasil dihapus', 'success')
+  await loadCategories()
 }
 
-onMounted(loadCustomers)
+onMounted(loadCategories)
 </script>
 
 <template>
@@ -101,19 +94,19 @@ onMounted(loadCustomers)
     <div class="flex flex-col gap-6 p-6">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold tracking-tight">Master Pembeli</h1>
-          <p class="text-sm text-muted-foreground">Kelola data pembeli warung.</p>
+          <h1 class="text-2xl font-bold tracking-tight">Master Kategori</h1>
+          <p class="text-sm text-muted-foreground">Kelola kategori produk warung.</p>
         </div>
         <Button @click="openCreateDialog">
           <Plus class="size-4" />
-          Tambah Pembeli
+          Tambah Kategori
         </Button>
       </div>
 
       <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <Input
           v-model="searchQuery"
-          placeholder="Cari nama, email, telepon, alamat..."
+          placeholder="Cari nama atau deskripsi..."
           class="max-w-sm"
         />
         <select v-model="statusFilter" :class="selectClass">
@@ -128,36 +121,32 @@ onMounted(loadCustomers)
           <TableHeader>
             <TableRow>
               <TableHead>Nama</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Telepon</TableHead>
-              <TableHead>Alamat</TableHead>
+              <TableHead>Deskripsi</TableHead>
               <TableHead>Status</TableHead>
               <TableHead class="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow v-if="isLoading">
-              <TableCell colspan="6" class="text-center text-muted-foreground">
+              <TableCell colspan="4" class="text-center text-muted-foreground">
                 Memuat data...
               </TableCell>
             </TableRow>
-            <TableRow v-else-if="!filteredCustomers.length">
-              <TableCell colspan="6" class="text-center text-muted-foreground">
-                {{ customers.length ? 'Tidak ada pembeli yang cocok dengan filter.' : 'Belum ada pembeli.' }}
+            <TableRow v-else-if="!filteredCategories.length">
+              <TableCell colspan="4" class="text-center text-muted-foreground">
+                {{ categories.length ? 'Tidak ada kategori yang cocok dengan filter.' : 'Belum ada kategori.' }}
               </TableCell>
             </TableRow>
-            <TableRow v-for="customer in filteredCustomers" :key="customer.id">
-              <TableCell class="font-medium">{{ customer.name }}</TableCell>
-              <TableCell>{{ customer.email || '-' }}</TableCell>
-              <TableCell>{{ customer.phone || '-' }}</TableCell>
-              <TableCell>{{ customer.address || '-' }}</TableCell>
-              <TableCell>{{ customer.is_active ? 'Aktif' : 'Nonaktif' }}</TableCell>
+            <TableRow v-for="category in filteredCategories" :key="category.id">
+              <TableCell class="font-medium">{{ category.name }}</TableCell>
+              <TableCell>{{ category.description || '-' }}</TableCell>
+              <TableCell>{{ category.is_active ? 'Aktif' : 'Nonaktif' }}</TableCell>
               <TableCell class="text-right">
                 <div class="flex justify-end gap-2">
-                  <Button size="icon-sm" variant="outline" @click="openEditDialog(customer)">
+                  <Button size="icon-sm" variant="outline" @click="openEditDialog(category)">
                     <Pencil class="size-4" />
                   </Button>
-                  <Button size="icon-sm" variant="destructive" @click="handleDelete(customer)">
+                  <Button size="icon-sm" variant="destructive" @click="handleDelete(category)">
                     <Trash2 class="size-4" />
                   </Button>
                 </div>
@@ -167,10 +156,10 @@ onMounted(loadCustomers)
         </Table>
       </div>
 
-      <CustomerFormDialog
+      <CategoryFormDialog
         v-model:open="dialogOpen"
-        :customer="selectedCustomer"
-        @saved="loadCustomers"
+        :category="selectedCategory"
+        @saved="loadCategories"
       />
     </div>
   </DashboardLayout>

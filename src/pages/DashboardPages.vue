@@ -6,6 +6,7 @@ import {
   Banknote,
   BarChart3,
   ClipboardList,
+  Inbox,
   LayoutDashboard,
   List,
   Monitor,
@@ -75,6 +76,7 @@ const activeQueueCount = computed(() => queueWaiting.value + queuePreparing.valu
 
 const quickActions = [
   { to: '/transactions', label: 'Buat Transaksi', icon: Receipt, description: 'Catat penjualan baru' },
+  { to: '/orders/inbox', label: 'Pesanan Masuk', icon: Inbox, description: 'Proses pesanan online' },
   { to: '/queue', label: 'Antrian', icon: ClipboardList, description: 'Kelola pesanan dapur' },
   { to: '/transactions/list', label: 'Daftar Transaksi', icon: List, description: 'Riwayat & pembayaran' },
   { to: '/stock/restock', label: 'Restock', icon: PackagePlus, description: 'Tambah stok produk' },

@@ -16,7 +16,7 @@ import {
 
 import { getCookie, clearAuthCookies } from '@/lib/cookies'
 import { useRouter, RouterLink } from 'vue-router'
-import { BarChart3, ClipboardList, LayoutDashboard, List, LogOut, Package, PackagePlus, Receipt, Settings, User, Users } from '@lucide/vue'
+import { BarChart3, ClipboardList, Inbox, LayoutDashboard, List, LogOut, Package, PackagePlus, Receipt, Settings, Tags, User, Users } from '@lucide/vue'
 
 
 const userEmail = getCookie('_user_email')
@@ -98,6 +98,14 @@ const data = {
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton as-child>
+                <RouterLink to="/orders/inbox">
+                  <Inbox />
+                  <span>Pesanan Masuk</span>
+                </RouterLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child>
                 <RouterLink to="/queue">
                   <ClipboardList />
                   <span>Antrian</span>
@@ -141,6 +149,14 @@ const data = {
                 <RouterLink to="/master/products">
                   <Package />
                   <span>Produk</span>
+                </RouterLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton as-child>
+                <RouterLink to="/master/categories">
+                  <Tags />
+                  <span>Kategori</span>
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>

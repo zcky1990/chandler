@@ -13,14 +13,20 @@ function normalizeProductInput(input: z.infer<typeof productSchema>): ProductInp
     stock_quantity: input.stock_quantity,
     sku: input.sku ?? null,
     image_url: input.image_url ?? null,
-    product_type: input.product_type ?? 'menu',
+    is_addons: input.is_addons ?? false,
+    category_id: input.category_id ?? null,
     is_active: input.is_active,
   }
 }
 
+const PRODUCT_SELECT = '*, product_categories ( id, name )'
+
 export const getProducts = async () => {
   const supabaseClient = supabase()
-  const { data, error } = await supabaseClient.from('products').select('*').order('created_at', { ascending: false })
+  const { data, error } = await supabaseClient
+    .from('products')
+    .select(PRODUCT_SELECT)
+    .order('created_at', { ascending: false })
   return { products: data as Product[] | null, error }
 }
 
@@ -29,7 +35,7 @@ export const getAddonProducts = async () => {
   const { data, error } = await supabaseClient
     .from('products')
     .select('*')
-    .eq('product_type', 'addon')
+    .eq('is_addons', true)
     .eq('is_active', true)
     .order('name', { ascending: true })
 
@@ -55,7 +61,7 @@ export const getProductAddons = async (productId: string) => {
 
   const addons = (data ?? [])
     .map((row) => extractJoinedProduct(row.products))
-    .filter((product): product is Product => !!product && product.is_active)
+    .filter((product): product is Product => !!product && product.is_active && product.is_addons)
 
   return { addons, error }
 }
@@ -71,7 +77,7 @@ export const getProductAddonsMap = async () => {
 
   for (const row of data ?? []) {
     const product = extractJoinedProduct(row.products)
-    if (!product || !product.is_active) continue
+    if (!product || !product.is_active || !product.is_addons) continue
 
     if (!map[row.product_id]) {
       map[row.product_id] = []
@@ -162,7 +168,8 @@ export const updateProduct = async (id: string, product: ProductInput) => {
       description: normalized.description,
       price: normalized.price,
       purchase_price: normalized.purchase_price,
-      product_type: normalized.product_type,
+      is_addons: normalized.is_addons,
+      category_id: normalized.category_id,
       sku: normalized.sku,
       image_url: normalized.image_url,
       is_active: normalized.is_active,

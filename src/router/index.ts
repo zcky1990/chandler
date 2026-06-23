@@ -7,6 +7,7 @@ import DashboardView from '@/pages/DashboardPages.vue'
 import NotFoundView from '@/pages/NotFoundPages.vue'
 import ProductMasterPages from '@/pages/ProductMasterPages.vue'
 import CustomerMasterPages from '@/pages/CustomerMasterPages.vue'
+import CategoryMasterPages from '@/pages/CategoryMasterPages.vue'
 import TransactionPages from '@/pages/TransactionPages.vue'
 import TransactionListPages from '@/pages/TransactionListPages.vue'
 import ConfigPages from '@/pages/ConfigPages.vue'
@@ -14,6 +15,8 @@ import QueuePages from '@/pages/QueuePages.vue'
 import QueueDisplayPages from '@/pages/QueueDisplayPages.vue'
 import RestockPages from '@/pages/RestockPages.vue'
 import AnalyticsPages from '@/pages/AnalyticsPages.vue'
+import OrderPages from '@/pages/OrderPages.vue'
+import PreOrderInboxPages from '@/pages/PreOrderInboxPages.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -34,6 +37,11 @@ const router = createRouter({
       component: SignUpView,
     },
     {
+      path: '/order',
+      name: 'order',
+      component: OrderPages,
+    },
+    {
       path: '/dashboard',
       name: 'dashboard',
       component: DashboardView,
@@ -47,6 +55,11 @@ const router = createRouter({
       path: '/master/customers',
       name: 'master-customers',
       component: CustomerMasterPages,
+    },
+    {
+      path: '/master/categories',
+      name: 'master-categories',
+      component: CategoryMasterPages,
     },
     {
       path: '/transactions',
@@ -84,6 +97,11 @@ const router = createRouter({
       component: ConfigPages,
     },
     {
+      path: '/orders/inbox',
+      name: 'orders-inbox',
+      component: PreOrderInboxPages,
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: NotFoundView,
@@ -96,7 +114,7 @@ router.beforeEach(async (to) => {
     return true
   }
 
-  if (to.path === '/') {
+  if (to.path === '/' || to.path === '/order') {
     return true
   }
 

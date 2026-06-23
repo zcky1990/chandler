@@ -28,7 +28,10 @@ Aplikasi web untuk mengelola produk, pelanggan, transaksi penjualan, antrian pes
 | Modul | Keterangan |
 |-------|------------|
 | **Halaman publik (`/`)** | Pencarian pelanggan/produk, lihat hutang, instruksi pembayaran QRIS/transfer |
-| **Master Produk** | CRUD produk, harga jual, harga beli default, stok awal |
+| **Pesan online (`/order`)** | Pelanggan pilih menu, kirim pre-order (bayar nanti / bayar sekarang) tanpa login |
+| **Pesanan masuk (`/orders/inbox`)** | Staff memproses pre-order menjadi transaksi + antrian opsional |
+| **Master Produk** | CRUD produk, harga jual, harga beli default, stok awal, kategori |
+| **Master Kategori** | CRUD kategori produk |
 | **Master Pembeli** | CRUD pelanggan |
 | **Transaksi** | Buat penjualan, bayar / simpan hutang, antrian opsional |
 | **Daftar Transaksi** | Filter lunas/hutang, edit qty item |
@@ -258,12 +261,14 @@ Semua skema SQL ada di folder [`DDL/`](DDL/). Jalankan di **Supabase SQL Editor*
 | 1 | [`DDL/customers.ddl`](DDL/customers.ddl) | Tabel `customers` + RLS + fungsi `handle_updated_at()` |
 | 2 | [`DDL/profiles.ddl`](DDL/profiles.ddl) | Tabel `profiles` + `handle_updated_at()` + trigger auto-create dari `auth.users` |
 | 3 | [`DDL/product.ddl`](DDL/product.ddl) | Tabel `products` (termasuk `purchase_price`) + RLS |
-| 4 | [`DDL/transactions.ddl`](DDL/transactions.ddl) | Tabel `transactions`, `transaction_items` + walk-in customer |
-| 5 | [`DDL/transaction_payment_method.ddl`](DDL/transaction_payment_method.ddl) | Kolom `payment_method`, `paid_at` *(lewati jika sudah ada di langkah 4)* |
-| 6 | [`DDL/shop_config.ddl`](DDL/shop_config.ddl) | Tabel `shop_config`, bucket storage `shop-assets` |
-| 7 | [`DDL/order_queues.ddl`](DDL/order_queues.ddl) | Tabel `order_queues` (antrian dapur) |
-| 8 | [`DDL/stock_movements.ddl`](DDL/stock_movements.ddl) | Tabel audit stok `stock_movements` |
-| 9 | [`DDL/stock_lot_allocations.ddl`](DDL/stock_lot_allocations.ddl) | Alokasi FIFO penjualan ke batch restock |
+| 4 | [`DDL/product_categories.ddl`](DDL/product_categories.ddl) | Tabel `product_categories` + kolom `category_id` di `products` |
+| 5 | [`DDL/transactions.ddl`](DDL/transactions.ddl) | Tabel `transactions`, `transaction_items` + walk-in customer |
+| 6 | [`DDL/transaction_payment_method.ddl`](DDL/transaction_payment_method.ddl) | Kolom `payment_method`, `paid_at` *(lewati jika sudah ada di langkah 4)* |
+| 7 | [`DDL/shop_config.ddl`](DDL/shop_config.ddl) | Tabel `shop_config`, bucket storage `shop-assets` |
+| 8 | [`DDL/order_queues.ddl`](DDL/order_queues.ddl) | Tabel `order_queues` (antrian dapur) |
+| 9 | [`DDL/pre_orders.ddl`](DDL/pre_orders.ddl) | Tabel `pre_orders`, `pre_order_items`, addon + RLS anon insert + realtime |
+| 10 | [`DDL/stock_movements.ddl`](DDL/stock_movements.ddl) | Tabel audit stok `stock_movements` |
+| 11 | [`DDL/stock_lot_allocations.ddl`](DDL/stock_lot_allocations.ddl) | Alokasi FIFO penjualan ke batch restock |
 
 **Migrasi — hanya jika database sudah ada sebelum fitur tersebut:**
 
@@ -273,7 +278,8 @@ Semua skema SQL ada di folder [`DDL/`](DDL/). Jalankan di **Supabase SQL Editor*
 | [`DDL/stock_movements_costing.ddl`](DDL/stock_movements_costing.ddl) | Jika `stock_movements` dibuat **tanpa** kolom costing |
 | [`DDL/order_queues_table_number.ddl`](DDL/order_queues_table_number.ddl) | Jika `order_queues` dibuat **tanpa** `table_number` |
 | [`DDL/order_queues_realtime.ddl`](DDL/order_queues_realtime.ddl) | **Wajib** untuk antrian realtime di halaman `/queue` |
-| [`DDL/product_addons.ddl`](DDL/product_addons.ddl) | Tipe produk menu/addon, mapping addon, addon per transaksi |
+| [`DDL/product_addons.ddl`](DDL/product_addons.ddl) | Kolom `is_addons`, mapping addon, addon per transaksi |
+| [`DDL/product_is_addons.ddl`](DDL/product_is_addons.ddl) | Migrasi `product_type` → `is_addons` jika DB sudah pakai kolom lama |
 | [`DDL/masterdata_policies.ddl`](DDL/masterdata_policies.ddl) | Jika insert/update produk/pelanggan mengembalikan **403** |
 
 ### Cara menjalankan di SQL Editor
@@ -293,12 +299,13 @@ from information_schema.tables
 where table_schema = 'public'
   and table_name in (
     'customers', 'profiles', 'products', 'transactions', 'transaction_items',
-    'shop_config', 'order_queues', 'stock_movements', 'stock_lot_allocations'
+    'shop_config', 'order_queues', 'pre_orders', 'pre_order_items', 'pre_order_item_addons',
+    'stock_movements', 'stock_lot_allocations'
   )
 order by table_name;
 ```
 
-Harus mengembalikan **9** baris.
+Harus mengembalikan **12** baris.
 
 ---
 
@@ -388,14 +395,17 @@ vue-superbase-project/
 | Path | Halaman | Grup sidebar |
 |------|---------|--------------|
 | `/` | Pencarian publik | — |
+| `/order` | Pesan menu (publik) | — |
 | `/login` | Login | — |
 | `/sign-up` | Daftar akun | — |
+| `/orders/inbox` | Pesanan masuk dari publik | Operasional |
 | `/transactions` | Buat transaksi | Operasional |
 | `/transactions/list` | Daftar transaksi | Operasional |
 | `/queue` | Antrian | Operasional |
 | `/stock/restock` | Restock | Operasional |
 | `/analytics` | Analisis keuntungan | Laporan |
 | `/master/products` | Master produk | Master Data |
+| `/master/categories` | Master kategori | Master Data |
 | `/master/customers` | Master pembeli | Master Data |
 | `/config` | Konfigurasi toko | Pengaturan |
 

@@ -74,7 +74,7 @@ const selectedProduct = computed(() =>
 const availableProducts = computed(() =>
   products.value.filter((product) =>
     product.stock_quantity > 0
-    && (product.product_type ?? 'menu') === 'menu',
+    && !product.is_addons,
   ),
 )
 

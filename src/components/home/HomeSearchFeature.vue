@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import TextType from '@/components/ui/text-type/TextType.vue'
 import { useHomeSearch } from '@/composables/useHomeSearch'
-import { Banknote } from '@lucide/vue'
+import { Banknote, UtensilsCrossed } from '@lucide/vue'
+import { RouterLink } from 'vue-router'
 
 const {
   searchQuery,
@@ -55,6 +56,12 @@ const {
         <div class="flex flex-col gap-2 sm:flex-row">
           <Button class="flex-1" @click="handleSearch">
             Cari
+          </Button>
+          <Button variant="outline" class="flex-1" as-child>
+            <RouterLink to="/order">
+              <UtensilsCrossed class="size-4" />
+              Pesan Sekarang
+            </RouterLink>
           </Button>
           <Button
             v-if="showPaymentCta"

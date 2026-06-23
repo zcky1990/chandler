@@ -1,4 +1,18 @@
-export type ProductType = 'menu' | 'addon'
+export type ProductCategory = {
+  id: string
+  name: string
+  description: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type ProductCategoryInput = Omit<ProductCategory, 'id' | 'created_at' | 'updated_at'>
+
+export type ProductCategorySummary = {
+  id: string
+  name: string
+}
 
 export type Product = {
   id: string
@@ -9,13 +23,15 @@ export type Product = {
   stock_quantity: number
   sku: string | null
   image_url: string | null
-  product_type: ProductType
+  is_addons: boolean
+  category_id: string | null
   is_active: boolean
   created_at: string
   updated_at: string
+  product_categories?: ProductCategorySummary | null
 }
 
-export type ProductInput = Omit<Product, 'id' | 'created_at' | 'updated_at'>
+export type ProductInput = Omit<Product, 'id' | 'created_at' | 'updated_at' | 'product_categories'>
 
 export type Customer = {
   id: string
@@ -171,6 +187,82 @@ export type OrderQueue = {
 
 export type OrderQueueWithDetails = OrderQueue & {
   transactions: TransactionWithDetails | null
+}
+
+export type PreOrderStatus = 'pending' | 'processing' | 'completed' | 'cancelled'
+
+export type PreOrderPaymentChoice = 'pay_later' | 'pay_now'
+
+export type PreOrderPaymentStatus = 'unpaid' | 'awaiting_confirmation' | 'confirmed'
+
+export type PreOrder = {
+  id: string
+  order_number: number
+  order_date: string
+  customer_name: string | null
+  table_number: string | null
+  notes: string | null
+  status: PreOrderStatus
+  payment_choice: PreOrderPaymentChoice
+  payment_status: PreOrderPaymentStatus
+  total_amount: number
+  transaction_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type PreOrderItem = {
+  id: string
+  pre_order_id: string
+  product_id: string
+  quantity: number
+  unit_price: number
+  subtotal: number
+  created_at: string
+}
+
+export type PreOrderItemAddon = {
+  id: string
+  pre_order_item_id: string
+  addon_product_id: string
+  quantity: number
+  unit_price: number
+  subtotal: number
+  created_at: string
+}
+
+export type PreOrderItemAddonWithProduct = PreOrderItemAddon & {
+  products: TransactionProduct | null
+}
+
+export type PreOrderItemWithProduct = PreOrderItem & {
+  products: TransactionProduct | null
+  pre_order_item_addons?: PreOrderItemAddonWithProduct[]
+}
+
+export type PreOrderWithDetails = PreOrder & {
+  pre_order_items: PreOrderItemWithProduct[]
+}
+
+export type PreOrderItemInput = {
+  product_id: string
+  quantity: number
+  unit_price: number
+  addons?: TransactionItemAddonInput[]
+}
+
+export type PreOrderInput = {
+  customer_name?: string | null
+  table_number?: string | null
+  notes?: string | null
+  payment_choice: PreOrderPaymentChoice
+  items: PreOrderItemInput[]
+}
+
+export type ProcessPreOrderOptions = {
+  paymentMethod: PaymentMethod
+  addToQueue?: boolean
+  tableNumber?: string | null
 }
 
 export type StockMovementType = 'restock' | 'sale' | 'adjustment'
