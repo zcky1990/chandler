@@ -3,6 +3,7 @@ import type { Router } from 'vue-router'
 import { clearAuthCookies, getCookie, setCookie } from './cookies'
 import { supabase } from './supabase'
 import { useLocaleStore } from '@/stores/useLocaleStore'
+import { isWebpImageFile } from './product'
 import { loginSchema, signUpSchema, passwordUpdateSchema, profileUpdateSchema } from '@/schema/schema'
 
 export const isGuestRoute = (path: string) => {
@@ -137,10 +138,10 @@ export type UserProfile = {
 
 const AVATAR_BUCKET = 'shop-assets'
 const AVATAR_MAX_BYTES = 5 * 1024 * 1024
-const AVATAR_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp'] as const
+const LEGACY_AVATAR_EXTENSIONS = ['png', 'jpg', 'jpeg'] as const
 
-function getAvatarStoragePath(userId: string, extension: string) {
-  return `avatars/${userId}.${extension}`
+function getAvatarStoragePath(userId: string) {
+  return `avatars/${userId}.webp`
 }
 
 function getAvatarPathFromUrl(imageUrl: string | null) {
@@ -160,28 +161,30 @@ function getAvatarPathFromUrl(imageUrl: string | null) {
 
 async function removeAvatarFiles(userId: string) {
   const supabaseClient = supabase()
-  const paths = AVATAR_EXTENSIONS.map((extension) => getAvatarStoragePath(userId, extension))
+  const paths = [
+    getAvatarStoragePath(userId),
+    ...LEGACY_AVATAR_EXTENSIONS.map((extension) => `avatars/${userId}.${extension}`),
+  ]
   const { error } = await supabaseClient.storage.from(AVATAR_BUCKET).remove(paths)
   return { error }
 }
 
 export async function uploadAvatarImage(file: File, userId: string) {
-  const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
-  if (!AVATAR_EXTENSIONS.includes(extension as (typeof AVATAR_EXTENSIONS)[number])) {
-    return { url: null, error: { message: useLocaleStore().translate('config.imageMustBeImage') } }
+  if (!isWebpImageFile(file)) {
+    return { url: null, error: { message: useLocaleStore().translate('master.imageWebpRequired') } }
   }
 
   if (file.size > AVATAR_MAX_BYTES) {
     return { url: null, error: { message: useLocaleStore().translate('config.imageMaxSize') } }
   }
 
-  const path = getAvatarStoragePath(userId, extension)
+  const path = getAvatarStoragePath(userId)
   const supabaseClient = supabase()
   await removeAvatarFiles(userId)
 
   const { error: uploadError } = await supabaseClient.storage
     .from(AVATAR_BUCKET)
-    .upload(path, file, { upsert: true, contentType: file.type })
+    .upload(path, file, { upsert: true, contentType: 'image/webp' })
 
   if (uploadError) {
     return { url: null, error: uploadError }

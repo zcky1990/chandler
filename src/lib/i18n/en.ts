@@ -633,7 +633,7 @@ export const en = {
   'profile.newPassword': 'New Password',
   'profile.confirmNewPassword': 'Confirm New Password',
   'profile.avatar': 'Profile Photo',
-  'profile.avatarDesc': 'PNG, JPG, or WEBP. Max 5 MB.',
+  'profile.avatarDesc': 'WEBP format only. Max 5 MB.',
   'profile.uploadAvatar': 'Upload Photo',
   'profile.removeAvatar': 'Remove Photo',
   'profile.avatarUploaded': 'Profile photo uploaded successfully',

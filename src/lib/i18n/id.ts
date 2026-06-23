@@ -633,7 +633,7 @@ export const id = {
   'profile.newPassword': 'Password Baru',
   'profile.confirmNewPassword': 'Konfirmasi Password Baru',
   'profile.avatar': 'Foto Profil',
-  'profile.avatarDesc': 'PNG, JPG, atau WEBP. Maksimal 5 MB.',
+  'profile.avatarDesc': 'Format WEBP. Maksimal 5 MB.',
   'profile.uploadAvatar': 'Unggah Foto',
   'profile.removeAvatar': 'Hapus Foto',
   'profile.avatarUploaded': 'Foto profil berhasil diunggah',

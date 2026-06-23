@@ -214,7 +214,7 @@ onMounted(loadProfile)
                     <input
                       ref="avatarInput"
                       type="file"
-                      accept="image/png,image/jpeg,image/webp"
+                      accept="image/webp,.webp"
                       class="hidden"
                       @change="handleAvatarUpload"
                     >
