@@ -9,36 +9,34 @@ const notes = defineModel<string>('notes', { required: true })
 </script>
 
 <template>
-  <section class="rounded-xl border bg-background p-4">
-    <h2 class="mb-3 text-sm font-medium">Detail Pesanan</h2>
-    <FieldGroup>
-      <Field>
-        <FieldLabel for="order-customer-name">Nama (opsional)</FieldLabel>
-        <Input
-          id="order-customer-name"
-          v-model="customerName"
-          placeholder="Nama Anda"
-        />
-      </Field>
+  <FieldGroup class="gap-4">
+    <Field>
+      <FieldLabel for="order-customer-name">Nama Pelanggan</FieldLabel>
+      <Input
+        id="order-customer-name"
+        v-model="customerName"
+        placeholder="Opsional"
+      />
+    </Field>
 
-      <Field>
-        <FieldLabel for="order-table-number">Nomor meja (opsional)</FieldLabel>
-        <Input
-          id="order-table-number"
-          v-model="tableNumber"
-          placeholder="Contoh: 5"
-        />
-      </Field>
+    <Field>
+      <FieldLabel for="order-table-number">Nomor Meja</FieldLabel>
+      <Input
+        id="order-table-number"
+        v-model="tableNumber"
+        placeholder="Contoh: 5"
+      />
+    </Field>
 
-      <Field>
-        <FieldLabel for="order-notes">Catatan (opsional)</FieldLabel>
-        <Textarea
-          id="order-notes"
-          v-model="notes"
-          placeholder="Permintaan khusus"
-          rows="2"
-        />
-      </Field>
-    </FieldGroup>
-  </section>
+    <Field>
+      <FieldLabel for="order-notes">Catatan</FieldLabel>
+      <Textarea
+        id="order-notes"
+        v-model="notes"
+        placeholder="Permintaan khusus"
+        rows="2"
+        class="resize-none"
+      />
+    </Field>
+  </FieldGroup>
 </template>

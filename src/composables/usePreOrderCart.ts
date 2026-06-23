@@ -33,6 +33,9 @@ export function usePreOrderCart() {
   const pendingQuantity = ref(1)
   const successDialogOpen = ref(false)
   const submittedOrder = ref<PreOrder | null>(null)
+  const searchQuery = ref('')
+  const categoryFilter = ref('all')
+  const menuQuantities = ref<Record<string, number>>({})
 
   const availableProducts = computed(() =>
     products.value.filter((product) =>
@@ -41,6 +44,38 @@ export function usePreOrderCart() {
       && !product.is_addons,
     ),
   )
+
+  const menuCategories = computed(() => {
+    const map = new Map<string, { id: string, name: string }>()
+
+    for (const product of availableProducts.value) {
+      const category = product.product_categories
+      if (category) {
+        map.set(category.id, category)
+      }
+    }
+
+    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name))
+  })
+
+  const filteredMenuProducts = computed(() => {
+    let result = availableProducts.value
+
+    if (categoryFilter.value !== 'all') {
+      result = result.filter((product) => product.category_id === categoryFilter.value)
+    }
+
+    const query = searchQuery.value.trim().toLowerCase()
+    if (query) {
+      result = result.filter((product) => {
+        const name = product.name.toLowerCase()
+        const category = product.product_categories?.name.toLowerCase() ?? ''
+        return name.includes(query) || category.includes(query)
+      })
+    }
+
+    return result
+  })
 
   const pendingProductAddons = computed(() =>
     pendingProduct.value ? (productAddonsMap.value[pendingProduct.value.id] ?? []) : [],
@@ -165,6 +200,29 @@ export function usePreOrderCart() {
     cart.value = cart.value.filter((item) => item.lineKey !== lineKey)
   }
 
+  function clearCart() {
+    cart.value = []
+  }
+
+  function getMenuQuantity(productId: string) {
+    return menuQuantities.value[productId] ?? 1
+  }
+
+  function incrementMenuQuantity(productId: string, maxStock: number) {
+    const next = Math.min(getMenuQuantity(productId) + 1, maxStock)
+    menuQuantities.value[productId] = next
+  }
+
+  function decrementMenuQuantity(productId: string) {
+    const next = Math.max(getMenuQuantity(productId) - 1, 1)
+    menuQuantities.value[productId] = next
+  }
+
+  function addProductFromMenu(product: Product) {
+    openAddonDialog(product, getMenuQuantity(product.id))
+    menuQuantities.value[product.id] = 1
+  }
+
   function resetForm() {
     cart.value = []
     customerName.value = ''
@@ -231,9 +289,13 @@ export function usePreOrderCart() {
     customerName,
     tableNumber,
     notes,
+    searchQuery,
+    categoryFilter,
     isLoading,
     isSubmitting,
     availableProducts,
+    filteredMenuProducts,
+    menuCategories,
     addonDialogOpen,
     pendingProduct,
     pendingProductAddons,
@@ -244,10 +306,15 @@ export function usePreOrderCart() {
     formatPrice,
     formatPreOrderNumber,
     getCartLineSubtotal,
+    getMenuQuantity,
+    incrementMenuQuantity,
+    decrementMenuQuantity,
+    addProductFromMenu,
     openAddonDialog,
     handleAddonConfirm,
     updateQuantity,
     removeFromCart,
+    clearCart,
     submitOrder,
   }
 }
