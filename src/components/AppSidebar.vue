@@ -48,14 +48,6 @@ const data = computed(() => {
       group: t('nav.account'),
       items: [
         {
-          title: t('nav.dashboard'),
-          url: '/dashboard',
-          icon: LayoutDashboard,
-          onClick: () => {
-            router.push('/dashboard')
-          },
-        },
-        {
           title: t('nav.profile'),
           url: '/profile',
           icon: User,
