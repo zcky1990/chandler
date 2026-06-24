@@ -335,6 +335,9 @@ VITE_SUPERBASE_PUBLISH_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 # Opsional: nomor WA untuk kirim bukti bayar dari halaman publik (format: 6281234567890)
 VITE_PAYMENT_PROOF_WHATSAPP=6281234567890
+
+# Opsional: history (default) atau hash — hash untuk deploy tanpa server rewrite
+# VITE_ROUTER_MODE=hash
 ```
 
 ---

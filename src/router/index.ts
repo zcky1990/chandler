@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
 import HomeView from '@/pages/HomePages.vue'
 import LoginView from '@/pages/LoginPages.vue'
 import SignUpView from '@/pages/SignUpPages.vue'
@@ -24,8 +24,16 @@ import PreOrderInboxPages from '@/pages/PreOrderInboxPages.vue'
 import UserRoleMasterPages from '@/pages/UserRoleMasterPages.vue'
 import ProfilePages from '@/pages/ProfilePages.vue'
 
+function createAppRouterHistory() {
+  if (import.meta.env.VITE_ROUTER_MODE === 'hash') {
+    return createWebHashHistory(import.meta.env.BASE_URL)
+  }
+
+  return createWebHistory(import.meta.env.BASE_URL)
+}
+
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createAppRouterHistory(),
   routes: [
     {
       path: '/',
