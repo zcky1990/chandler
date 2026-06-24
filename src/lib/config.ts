@@ -1,7 +1,9 @@
 import { shopConfigSchema } from '@/schema/schema'
 import { useLocaleStore } from '@/stores/useLocaleStore'
 import { supabase } from './supabase'
-import type { ShopConfig, ShopConfigInput } from '@/types/database'
+import type { ShopConfig, ShopConfigInput, PaymentFlowMode } from '@/types/database'
+
+export type { PaymentFlowMode }
 
 export const SHOP_CONFIG_ID = '00000000-0000-0000-0000-000000000001'
 const QRIS_STORAGE_BUCKET = 'shop-assets'
@@ -43,6 +45,12 @@ export const updateShopConfig = async (input: ShopConfigInput) => {
   }
   if (input.qris_image_url !== undefined) {
     payload.qris_image_url = input.qris_image_url
+  }
+  if (input.payment_flow_mode !== undefined) {
+    payload.payment_flow_mode = validated.data.payment_flow_mode
+  }
+  if (input.require_table_for_eat_first !== undefined) {
+    payload.require_table_for_eat_first = validated.data.require_table_for_eat_first
   }
 
   const supabaseClient = supabase()
@@ -117,4 +125,16 @@ export function hasTransferConfig(config: ShopConfig | null) {
 
 export function hasPaymentConfig(config: ShopConfig | null) {
   return hasQrisConfig(config) || hasTransferConfig(config)
+}
+
+export function canPayFirst(config: ShopConfig | null) {
+  return (config?.payment_flow_mode ?? 'both') !== 'eat_first_only'
+}
+
+export function canEatFirst(config: ShopConfig | null) {
+  return (config?.payment_flow_mode ?? 'both') !== 'pay_first_only'
+}
+
+export function requiresTableForEatFirst(config: ShopConfig | null) {
+  return config?.require_table_for_eat_first !== false
 }

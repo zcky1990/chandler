@@ -56,6 +56,8 @@ export const WALK_IN_CUSTOMER_NAME = 'Walk-in Customer'
 
 export type PaymentMethod = 'qris' | 'cash' | 'transfer'
 
+export type PaymentFlowMode = 'pay_first_only' | 'eat_first_only' | 'both'
+
 export type TransactionStatus = 'active' | 'cancelled'
 
 export type TransactionEventType = 'cancelled'
@@ -72,6 +74,7 @@ export type Transaction = {
   cancelled_at: string | null
   cancelled_by: string | null
   cancellation_reason: string | null
+  table_number: string | null
   notes: string | null
   created_at: string
   updated_at: string
@@ -104,11 +107,15 @@ export type TransactionItem = {
 export type TransactionInput = {
   customer_id: string
   notes?: string | null
+  table_number?: string | null
   items: TransactionItemInput[]
 }
 
 export type CreateTransactionOptions = {
   paymentMethod?: PaymentMethod
+  table_number?: string | null
+  paymentFlowMode?: PaymentFlowMode
+  requireTableForEatFirst?: boolean
 }
 
 export type ProductAddon = {
@@ -165,6 +172,10 @@ export type TransactionWithDetails = Transaction & {
   transaction_items: TransactionItemWithProduct[]
 }
 
+export type OpenTableTransaction = TransactionWithDetails & {
+  order_queues: Pick<OrderQueue, 'id' | 'queue_number' | 'status' | 'table_number' | 'created_at'>[] | null
+}
+
 export type CustomerTransactionSummary = {
   customerId: string
   customerName: string
@@ -199,6 +210,8 @@ export type ShopConfig = {
   transfer_bank_name: string | null
   transfer_account_number: string | null
   transfer_account_holder: string | null
+  payment_flow_mode: PaymentFlowMode
+  require_table_for_eat_first: boolean
   created_at: string
   updated_at: string
 }
@@ -210,6 +223,8 @@ export type ShopConfigInput = {
   transfer_bank_name?: string | null
   transfer_account_number?: string | null
   transfer_account_holder?: string | null
+  payment_flow_mode?: PaymentFlowMode
+  require_table_for_eat_first?: boolean
 }
 
 export type TableShape = 'round' | 'square'

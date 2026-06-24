@@ -93,6 +93,36 @@ function getErrorMessage(error: unknown) {
   return t('order.processFailed')
 }
 
+async function finishProcessEatFirst() {
+  if (!props.preOrder) return
+
+  isSubmitting.value = true
+  const { transaction, queueNumber, error } = await processPreOrder(props.preOrder.id, {
+    addToQueue: addToQueue.value,
+    tableNumber: tableNumber.value.trim() || null,
+  })
+  isSubmitting.value = false
+
+  if (error) {
+    alertStore.showAlert(t('alert.error'), getErrorMessage(error), 'error')
+    return
+  }
+
+  if (!transaction) {
+    alertStore.showAlert(t('alert.error'), t('order.transactionNotFound'), 'error')
+    return
+  }
+
+  const queueLabel = queueNumber ? ` #${queueNumber}` : ''
+  alertStore.showAlert(
+    t('alert.success'),
+    `${t('order.processWithoutPaySuccess')}${queueLabel}`,
+    'success',
+  )
+  emit('update:open', false)
+  emit('processed')
+}
+
 async function finishProcess(paymentMethod: PaymentMethod) {
   if (!props.preOrder) return
 
@@ -175,8 +205,7 @@ function handleProcessClick() {
     return
   }
 
-  paymentDialogMode.value = 'process'
-  paymentDialogOpen.value = true
+  finishProcessEatFirst()
 }
 </script>
 
@@ -235,7 +264,7 @@ function handleProcessClick() {
             {{
               preOrder.payment_choice === 'pay_now'
                 ? t('order.payNowConfirmedNote')
-                : t('order.walkInPayNote')
+                : t('order.processWithoutPay')
             }}
           </p>
         </template>
@@ -262,7 +291,7 @@ function handleProcessClick() {
               ? t('order.processing')
               : preOrder?.payment_choice === 'pay_now'
                 ? t('order.processQueueButton')
-                : t('order.continuePay')
+                : t('order.processToKitchen')
           }}
         </Button>
       </DialogFooter>

@@ -11,6 +11,7 @@ import {
 import { createCustomer, getCustomers } from './customer'
 import { applyStockDelta, recordSaleStock, recordStockReturn, restoreTransactionStock } from './stock'
 import { cancelQueueByTransactionId } from './queue'
+import { canEatFirst, canPayFirst, getShopConfig, requiresTableForEatFirst } from './config'
 import { resolveOpenShiftIdForCurrentUser } from './shift'
 import type {
   Customer,
@@ -23,6 +24,7 @@ import type {
   TransactionItemWithProduct,
   TransactionStatus,
   TransactionWithDetails,
+  OpenTableTransaction,
 } from '@/types/database'
 import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
 import type { z } from 'zod'
@@ -191,11 +193,18 @@ function getTodayRange() {
   }
 }
 
-async function findPendingTransactionToday(customerId: string) {
+async function findPendingTransactionToday(customerId: string, tableNumber?: string | null) {
   const { start, end } = getTodayRange()
   const supabaseClient = supabase()
+  const walkInCustomer = await getWalkInCustomer()
+  const isWalkIn = walkInCustomer?.id === customerId
+  const normalizedTable = tableNumber?.trim() || null
 
-  const { data, error } = await supabaseClient
+  if (isWalkIn && !normalizedTable) {
+    return { transaction: null, error: null }
+  }
+
+  let query = supabaseClient
     .from('transactions')
     .select(`
       *,
@@ -208,6 +217,12 @@ async function findPendingTransactionToday(customerId: string) {
     .eq('status', ACTIVE_TRANSACTION_STATUS)
     .gte('created_at', start)
     .lte('created_at', end)
+
+  if (isWalkIn && normalizedTable) {
+    query = query.eq('table_number', normalizedTable)
+  }
+
+  const { data, error } = await query
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
@@ -354,8 +369,11 @@ export async function getCustomersForTransaction() {
   return { customers: orderedCustomers, error: null }
 }
 
-export async function getPendingTransactionForCustomer(customerId: string) {
-  const { transaction, error } = await findPendingTransactionToday(customerId)
+export async function getPendingTransactionForCustomer(
+  customerId: string,
+  tableNumber?: string | null,
+) {
+  const { transaction, error } = await findPendingTransactionToday(customerId, tableNumber)
   return { transaction, error }
 }
 
@@ -934,18 +952,46 @@ export const createTransaction = async (
   const payload = validated.data as z.infer<ReturnType<typeof transactionSchema>>
   const items = expandItemsForSubmit(payload.items)
   const payImmediately = !!options?.paymentMethod
+  const tableNumber = payload.table_number?.trim() || options?.table_number?.trim() || null
+
+  const { config: shopConfig } = await getShopConfig()
+  const flowMode = options?.paymentFlowMode ?? shopConfig?.payment_flow_mode ?? 'both'
+  const requireTable = options?.requireTableForEatFirst ?? requiresTableForEatFirst(shopConfig)
+
+  if (payImmediately && !canPayFirst({ ...shopConfig, payment_flow_mode: flowMode } as typeof shopConfig)) {
+    return {
+      transaction: null,
+      merged: false,
+      error: { message: useLocaleStore().translate('transaction.payFirstNotAllowed') },
+    }
+  }
+
+  if (!payImmediately && !canEatFirst({ ...shopConfig, payment_flow_mode: flowMode } as typeof shopConfig)) {
+    return {
+      transaction: null,
+      merged: false,
+      error: { message: useLocaleStore().translate('transaction.eatFirstNotAllowed') },
+    }
+  }
 
   if (!payImmediately) {
     const walkInCustomer = await getWalkInCustomer()
-    if (walkInCustomer && payload.customer_id === walkInCustomer.id) {
-      return {
-        transaction: null,
-        merged: false,
-        error: { message: useLocaleStore().translate('transaction.walkInMustPay') },
+    const isWalkIn = walkInCustomer && payload.customer_id === walkInCustomer.id
+
+    if (isWalkIn) {
+      if (requireTable && !tableNumber) {
+        return {
+          transaction: null,
+          merged: false,
+          error: { message: useLocaleStore().translate('transaction.tableRequired') },
+        }
       }
     }
 
-    const { transaction: pendingTransaction, error: pendingError } = await findPendingTransactionToday(payload.customer_id)
+    const { transaction: pendingTransaction, error: pendingError } = await findPendingTransactionToday(
+      payload.customer_id,
+      tableNumber,
+    )
 
     if (pendingError) {
       return { transaction: null, merged: false, error: pendingError }
@@ -978,6 +1024,7 @@ export const createTransaction = async (
       payment_method: payImmediately ? options!.paymentMethod! : null,
       paid_at: payImmediately ? new Date().toISOString() : null,
       notes: payload.notes ?? null,
+      table_number: tableNumber,
       ...(shiftId ? { shift_id: shiftId } : {}),
     })
     .select()
@@ -1030,4 +1077,30 @@ export const createTransaction = async (
     merged: false,
     error: null,
   }
+}
+
+export const getOpenTableTransactions = async () => {
+  const { start, end } = getTodayRange()
+  const supabaseClient = supabase()
+
+  const { data, error } = await supabaseClient
+    .from('transactions')
+    .select(`
+      *,
+      customers ( id, name ),
+      order_queues (
+        id,
+        queue_number,
+        status,
+        table_number,
+        created_at
+      )
+    `)
+    .eq('is_paid', false)
+    .eq('status', ACTIVE_TRANSACTION_STATUS)
+    .gte('created_at', start)
+    .lte('created_at', end)
+    .order('created_at', { ascending: false })
+
+  return { transactions: data as OpenTableTransaction[] | null, error }
 }

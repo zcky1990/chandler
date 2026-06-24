@@ -12,6 +12,7 @@ import CustomerMasterPages from '@/pages/CustomerMasterPages.vue'
 import CategoryMasterPages from '@/pages/CategoryMasterPages.vue'
 import TransactionPages from '@/pages/TransactionPages.vue'
 import TransactionListPages from '@/pages/TransactionListPages.vue'
+import OpenTablesPages from '@/pages/OpenTablesPages.vue'
 import ConfigPages from '@/pages/ConfigPages.vue'
 import QueuePages from '@/pages/QueuePages.vue'
 import QueueDisplayPages from '@/pages/QueueDisplayPages.vue'
@@ -104,6 +105,11 @@ const router = createRouter({
       path: '/transactions/list',
       name: 'transactions-list',
       component: TransactionListPages,
+    },
+    {
+      path: '/transactions/open',
+      name: 'transactions-open',
+      component: OpenTablesPages,
     },
     {
       path: '/queue',

@@ -11,11 +11,12 @@ import {
 } from '@/lib/addon'
 import { formatPrice } from '@/lib/format'
 import { createPreOrder, formatPreOrderNumber } from '@/lib/pre-order'
+import { canEatFirst, canPayFirst, getShopConfig, requiresTableForEatFirst } from '@/lib/config'
 import { saveOrderSuccessPayload } from '@/lib/order-success'
 import { getProducts, getProductAddonsMap } from '@/lib/product'
 import { useAlertStore } from '@/stores/useAlertStore'
 import { useI18n } from '@/composables/useI18n'
-import type { Product } from '@/types/database'
+import type { PreOrderPaymentChoice, Product, ShopConfig } from '@/types/database'
 
 export type PreOrderCartItem = {
   lineKey: string
@@ -43,6 +44,12 @@ export function usePreOrderCart() {
   const searchQuery = ref('')
   const categoryFilter = ref('all')
   const menuQuantities = ref<Record<string, number>>({})
+  const shopConfig = ref<ShopConfig | null>(null)
+  const paymentChoice = ref<PreOrderPaymentChoice>('pay_later')
+
+  const allowPayNow = computed(() => canPayFirst(shopConfig.value))
+  const allowPayLater = computed(() => canEatFirst(shopConfig.value))
+  const requireTableForEatFirst = computed(() => requiresTableForEatFirst(shopConfig.value))
 
   const availableProducts = computed(() =>
     products.value.filter((product) =>
@@ -117,9 +124,10 @@ export function usePreOrderCart() {
   async function loadData() {
     isLoading.value = true
 
-    const [productResult, addonMapResult] = await Promise.all([
+    const [productResult, addonMapResult, configResult] = await Promise.all([
       getProducts(),
       getProductAddonsMap(),
+      getShopConfig(),
     ])
 
     isLoading.value = false
@@ -131,6 +139,14 @@ export function usePreOrderCart() {
 
     products.value = (productResult.products ?? []).filter((product) => product.is_active)
     productAddonsMap.value = addonMapResult.map ?? {}
+    shopConfig.value = configResult.config
+
+    const mode = configResult.config?.payment_flow_mode ?? 'both'
+    if (mode === 'pay_first_only') {
+      paymentChoice.value = 'pay_now'
+    } else if (mode === 'eat_first_only') {
+      paymentChoice.value = 'pay_later'
+    }
   }
 
   function getCartItem(lineKey: string) {
@@ -307,13 +323,18 @@ export function usePreOrderCart() {
   async function submitOrder() {
     if (!validateCart()) return
 
+    if (paymentChoice.value === 'pay_later' && requireTableForEatFirst.value && !tableNumber.value.trim()) {
+      alertStore.showAlert(t('alert.error'), t('transaction.tableRequired'), 'error')
+      return
+    }
+
     isSubmitting.value = true
 
     const { preOrder, error } = await createPreOrder({
       customer_name: customerName.value.trim() || null,
       table_number: tableNumber.value.trim() || null,
       notes: notes.value.trim() || null,
-      payment_choice: 'pay_later',
+      payment_choice: paymentChoice.value,
       items: expandItemsForSubmit(cart.value.map((item) => ({
         product_id: item.product.id,
         quantity: item.quantity,
@@ -358,6 +379,10 @@ export function usePreOrderCart() {
     pendingBundleIndex,
     pendingBundleTotal,
     totalAmount,
+    paymentChoice,
+    allowPayNow,
+    allowPayLater,
+    requireTableForEatFirst,
     formatPrice,
     formatPreOrderNumber,
     getCartLineSubtotal,

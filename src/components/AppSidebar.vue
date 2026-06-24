@@ -21,7 +21,7 @@ import { canAccessPath } from '@/lib/permissions'
 import { useRoleStore } from '@/stores/useRoleStore'
 import { useRouter, RouterLink } from 'vue-router'
 import { useI18n } from '@/composables/useI18n'
-import { BarChart3, ClipboardCheck, ClipboardList, Inbox, LayoutDashboard, LayoutGrid, List, LogOut, Monitor, Package, PackagePlus, Receipt, Settings, Shield, Tags, User, Users, Wallet } from '@lucide/vue'
+import { BarChart3, ClipboardCheck, ClipboardList, Inbox, LayoutDashboard, LayoutGrid, List, LogOut, Monitor, Package, PackagePlus, Receipt, Settings, Shield, Tags, User, Users, UtensilsCrossed, Wallet } from '@lucide/vue'
 
 const userEmail = getCookie('_user_email')
 const userAvatar = ref<string | null>(null)
@@ -138,6 +138,14 @@ onUnmounted(() => {
                 <RouterLink to="/transactions/list">
                   <List />
                   <span>{{ t('nav.transactionList') }}</span>
+                </RouterLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem v-if="canShow('/transactions/open')">
+              <SidebarMenuButton as-child>
+                <RouterLink to="/transactions/open">
+                  <UtensilsCrossed />
+                  <span>{{ t('nav.openTables') }}</span>
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>

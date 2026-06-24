@@ -28,6 +28,9 @@ const {
   pendingBundleIndex,
   pendingBundleTotal,
   totalAmount,
+  allowPayNow,
+  allowPayLater,
+  paymentChoice,
   getCartLineSubtotal,
   getMenuQuantity,
   incrementMenuQuantity,
@@ -78,9 +81,12 @@ const {
           v-model:customer-name="customerName"
           v-model:table-number="tableNumber"
           v-model:notes="notes"
+          v-model:payment-choice="paymentChoice"
           :cart="cart"
           :total-amount="totalAmount"
           :is-submitting="isSubmitting"
+          :allow-pay-now="allowPayNow"
+          :allow-pay-later="allowPayLater"
           :get-cart-line-subtotal="getCartLineSubtotal"
           @update-quantity="updateQuantity"
           @remove="removeFromCart"

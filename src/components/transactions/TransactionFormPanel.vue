@@ -20,6 +20,8 @@ defineProps<{
   customers: Customer[]
   selectedCustomer: Customer | null
   requiresImmediatePayment?: boolean
+  allowEatFirst?: boolean
+  requireTableForEatFirst?: boolean
   availableProducts: Product[]
   selectedProduct: Product | null
 }>()
@@ -28,6 +30,7 @@ const { t } = useI18n()
 
 const selectedCustomerId = defineModel<string>('selectedCustomerId', { required: true })
 const notes = defineModel<string>('notes', { required: true })
+const tableNumber = defineModel<string>('tableNumber', { required: false, default: '' })
 const selectedProductId = defineModel<string>('selectedProductId', { required: true })
 const addQuantity = defineModel<number>('addQuantity', { required: true })
 
@@ -65,11 +68,20 @@ function displayCustomerName(name: string) {
             {{ selectedCustomer.phone || selectedCustomer.email || selectedCustomer.address || t('common.noContact') }}
           </p>
           <p
-            v-if="requiresImmediatePayment"
+            v-if="requiresImmediatePayment && allowEatFirst"
             class="text-sm text-amber-600 dark:text-amber-400"
           >
-            {{ t('transaction.walkInMustPay') }}
+            {{ t('transaction.tableRequired') }}
           </p>
+        </Field>
+
+        <Field v-if="allowEatFirst">
+          <FieldLabel for="table-number">{{ t('common.table') }}</FieldLabel>
+          <Input
+            id="table-number"
+            v-model="tableNumber"
+            :placeholder="requireTableForEatFirst ? t('transaction.tableRequired') : t('common.optional')"
+          />
         </Field>
 
         <Field>

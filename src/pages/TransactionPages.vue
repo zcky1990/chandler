@@ -17,6 +17,10 @@ const {
   selectedCustomerId,
   selectedCustomer,
   requiresImmediatePayment,
+  allowPayFirst,
+  allowEatFirst,
+  requireTableForEatFirst,
+  tableNumber,
   notes,
   selectedProductId,
   selectedProduct,
@@ -82,11 +86,14 @@ const {
         <TransactionFormPanel
           v-model:selected-customer-id="selectedCustomerId"
           v-model:notes="notes"
+          v-model:table-number="tableNumber"
           v-model:selected-product-id="selectedProductId"
           v-model:add-quantity="addQuantity"
           :customers="customers"
           :selected-customer="selectedCustomer"
           :requires-immediate-payment="requiresImmediatePayment"
+          :allow-eat-first="allowEatFirst"
+          :require-table-for-eat-first="requireTableForEatFirst"
           :available-products="availableProducts"
           :selected-product="selectedProduct"
           @add-product="handleAddSelectedProduct"
@@ -97,6 +104,8 @@ const {
           :total-amount="totalAmount"
           :is-submitting="isSubmitting"
           :requires-immediate-payment="requiresImmediatePayment"
+          :allow-pay-first="allowPayFirst"
+          :allow-eat-first="allowEatFirst"
           :get-cart-line-subtotal="getCartLineSubtotal"
           @update-quantity="updateQuantity"
           @remove="removeFromCart"

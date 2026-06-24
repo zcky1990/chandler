@@ -20,6 +20,7 @@ Aplikasi web untuk mengelola produk, pelanggan, transaksi penjualan, antrian pes
 12. [Konsep Bisnis: Stok & HPP](#konsep-bisnis-stok--hpp)
 13. [Diagram Aktivitas (Mermaid)](#diagram-aktivitas-mermaid)
     - [Alur Pesanan Online (Sequence)](#8-alur-pesanan-online--pre-order-ke-antrian-dapur-sequence)
+    - [Makan Dulu, Bayar Nanti (Dine-in)](#9-makan-dulu-bayar-nanti-dine-in)
 14. [Troubleshooting](#troubleshooting)
 
 ---
@@ -35,14 +36,15 @@ Aplikasi web untuk mengelola produk, pelanggan, transaksi penjualan, antrian pes
 | **Master Produk** | CRUD produk, harga jual, harga beli default, stok awal, kategori |
 | **Master Kategori** | CRUD kategori produk |
 | **Master Pembeli** | CRUD pelanggan |
-| **Transaksi** | Buat penjualan, bayar / simpan hutang, antrian opsional |
+| **Transaksi** | Buat penjualan, bayar / makan dulu (hutang), antrian opsional |
+| **Meja Terbuka (`/transactions/open`)** | Daftar bon dine-in belum lunas — tagih setelah pelanggan selesai makan |
 | **Daftar Transaksi** | Filter lunas/hutang, edit qty item |
 | **Antrian** | Status: menunggu → disiapkan → siap → diantar → selesai |
 | **Layar antrian (`/queue/display`)** | Tampilan fullscreen untuk TV dapur (publik, tanpa login) |
 | **Restock** | Tambah stok per batch dengan harga beli & riwayat |
 | **Analisis** | Pendapatan, HPP FIFO, laba kotor, chart, ranking produk |
 | **Shift kasir (`/shifts`)** | Buka/tutup shift, saldo awal, penjualan per shift, selisih kas |
-| **Konfigurasi** | Upload QRIS, data rekening transfer, info struk toko |
+| **Konfigurasi** | Upload QRIS, data rekening transfer, info struk toko, mode pembayaran dine-in |
 | **Profil (`/profile`)** | Ubah nama, password, foto profil (WEBP), bahasa & tema |
 | **Pengguna & Role (`/master/users`)** | Owner kelola akun dan role (owner/staff) |
 
@@ -274,6 +276,18 @@ Semua skema SQL ada di folder [`DDL/`](DDL/). Nama file diawali angka urutan (`0
 | [`20-role_owner_policies.ddl`](DDL/20-role_owner_policies.ddl) | RLS tulis master data & restock (owner) | — |
 | [`21-auth_login_seed.ddl`](DDL/21-auth_login_seed.ddl) | Akun owner awal + sinkronisasi profiles | — |
 
+### 22–28 · Fitur lanjutan (instalasi baru)
+
+| File | Keterangan | Lewati jika… |
+|------|------------|--------------|
+| [`22-transaction_cancellation.ddl`](DDL/22-transaction_cancellation.ddl) | Pembatalan transaksi + audit trail | — |
+| [`23-stock_opname.ddl`](DDL/23-stock_opname.ddl) | Stok opname / penyesuaian inventori | — |
+| [`24-floor_tables.ddl`](DDL/24-floor_tables.ddl) | Denah meja (floor plan) | — |
+| [`25-floor_tables_zones.ddl`](DDL/25-floor_tables_zones.ddl) | Zona non-meja di denah | — |
+| [`26-order_queues_serving.ddl`](DDL/26-order_queues_serving.ddl) | Status antrian `serving` (mengantar ke meja) | — |
+| [`27-transactions_table_number.ddl`](DDL/27-transactions_table_number.ddl) | Kolom `table_number` di transaksi + index bon terbuka | — |
+| [`28-shop_config_payment_flow.ddl`](DDL/28-shop_config_payment_flow.ddl) | Mode pembayaran dine-in (`payment_flow_mode`) | — |
+
 ### 90–94 · Migrasi database lama (opsional)
 
 | File | Keterangan | Lewati jika… |
@@ -408,6 +422,7 @@ vue-superbase-project/
 | `/profile` | Profil akun (nama, password, foto) | Akun (menu user) |
 | `/orders/inbox` | Pesanan masuk dari publik | Operasional |
 | `/transactions` | Buat transaksi | Operasional |
+| `/transactions/open` | Meja terbuka — tagih bon dine-in | Operasional |
 | `/transactions/list` | Daftar transaksi | Operasional |
 | `/queue` | Kelola antrian dapur | Operasional |
 | `/stock/restock` | Restock | Operasional |
@@ -687,6 +702,62 @@ sequenceDiagram
 | Selesai | `order_queues.status = completed` | `/queue` → `completeQueue()` |
 
 > **Catatan:** Kasir juga bisa membuat transaksi langsung di `/transactions` tanpa pre-order. Jika opsi antrian diaktifkan, alur dapur tetap: `waiting` → `preparing` → `ready` → `serving` → `completed`.
+
+### 9. Makan Dulu, Bayar Nanti (Dine-in)
+
+Alur **eat-first** memungkinkan pelanggan makan dulu dan bayar setelah selesai. Transaksi dibuat dengan `is_paid = false` (bon terbuka); stok tetap berkurang saat pesanan dibuat agar dapur bisa memproses.
+
+**Pengaturan toko** (`/config` → Mode Pembayaran Dine-in):
+
+| `payment_flow_mode` | Perilaku |
+|---------------------|----------|
+| `pay_first_only` | Hanya bayar dulu (takeaway / bayar di depan) |
+| `eat_first_only` | Hanya makan dulu, bayar nanti (full dine-in) |
+| `both` | Kasir dan pelanggan QR bisa memilih |
+
+| `require_table_for_eat_first` | Perilaku |
+|-------------------------------|----------|
+| `true` (default) | Walk-in dan pre-order `pay_later` wajib nomor meja |
+| `false` | Walk-in boleh hutang tanpa meja |
+
+**Merge bon terbuka (hari yang sama):**
+
+- Pelanggan terdaftar → gabung per `customer_id`
+- Walk-in → gabung per `table_number` (meja berbeda tidak tercampur)
+
+```mermaid
+sequenceDiagram
+    autonumber
+
+    actor Pelanggan
+    actor Kasir
+    actor Staff as Staff Dapur
+
+    participant App as Vue App
+    participant SB as Supabase
+
+    Note over Pelanggan,App: Via kasir /transactions atau QR /order (pay_later)
+
+    Pelanggan->>App: Pesan dine-in + nomor meja
+    App->>SB: createTransaction is_paid=false + table_number
+    App->>SB: createQueue status waiting (opsional)
+    SB-->>Staff: Realtime antrian baru
+
+    Staff->>App: waiting → preparing → ready → serving → completed
+
+    Pelanggan->>Kasir: Minta bon setelah makan
+    Kasir->>App: Buka /transactions/open
+    App->>SB: markTransactionAsPaid
+    SB-->>App: Transaksi lunas
+```
+
+| Tahap | Status di database | Halaman / aksi |
+|-------|-------------------|----------------|
+| Bon dibuka | `transactions.is_paid = false`, `status = active` | `/transactions` → Makan Dulu, atau `/orders/inbox` → Kirim ke Dapur |
+| Antrian dapur | `order_queues.status = waiting` … `completed` | `/queue` |
+| Tagihan | `transactions.is_paid = true`, `paid_at` terisi | `/transactions/open` → Bayar |
+
+> **DDL:** Jalankan [`27-transactions_table_number.ddl`](DDL/27-transactions_table_number.ddl) dan [`28-shop_config_payment_flow.ddl`](DDL/28-shop_config_payment_flow.ddl) sebelum menggunakan fitur ini.
 
 ---
 

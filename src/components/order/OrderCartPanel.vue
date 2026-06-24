@@ -8,11 +8,14 @@ import { useI18n } from '@/composables/useI18n'
 import { formatPrice } from '@/lib/format'
 import { hasBundleAddons } from '@/lib/addon'
 import type { PreOrderCartItem } from '@/composables/usePreOrderCart'
+import type { PreOrderPaymentChoice } from '@/types/database'
 
 defineProps<{
   cart: PreOrderCartItem[]
   totalAmount: number
   isSubmitting: boolean
+  allowPayNow?: boolean
+  allowPayLater?: boolean
   getCartLineSubtotal: (item: PreOrderCartItem) => number
 }>()
 
@@ -21,6 +24,7 @@ const { t } = useI18n()
 const customerName = defineModel<string>('customerName', { required: true })
 const tableNumber = defineModel<string>('tableNumber', { required: true })
 const notes = defineModel<string>('notes', { required: true })
+const paymentChoice = defineModel<PreOrderPaymentChoice>('paymentChoice', { required: true })
 
 const emit = defineEmits<{
   updateQuantity: [lineKey: string, quantity: number]
@@ -45,6 +49,27 @@ const emit = defineEmits<{
         />
 
         <Separator />
+
+        <div v-if="allowPayNow && allowPayLater" class="grid grid-cols-2 gap-2">
+          <Button
+            type="button"
+            size="sm"
+            :variant="paymentChoice === 'pay_later' ? 'default' : 'outline'"
+            @click="paymentChoice = 'pay_later'"
+          >
+            {{ t('order.payLaterChoice') }}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            :variant="paymentChoice === 'pay_now' ? 'default' : 'outline'"
+            @click="paymentChoice = 'pay_now'"
+          >
+            {{ t('order.payNowChoice') }}
+          </Button>
+        </div>
+
+        <Separator v-if="allowPayNow && allowPayLater" />
 
         <div class="flex items-center justify-between">
           <p class="text-sm font-medium">{{ t('order.orderItems') }}</p>

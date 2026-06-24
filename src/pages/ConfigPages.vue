@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { ImageIcon, Landmark, Printer, QrCode, Trash2, Upload } from '@lucide/vue'
+import { ImageIcon, Landmark, Printer, QrCode, Trash2, Upload, Wallet } from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import { Button } from '@/components/ui/button'
 import {
@@ -12,16 +12,25 @@ import {
 } from '@/components/ui/card'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useI18n } from '@/composables/useI18n'
 import { getShopConfig, removeQrisImage, updateShopConfig, uploadQrisImage } from '@/lib/config'
 import { useAlertStore } from '@/stores/useAlertStore'
-import type { ShopConfig } from '@/types/database'
+import type { PaymentFlowMode, ShopConfig } from '@/types/database'
 
 const { t } = useI18n()
 const alertStore = useAlertStore()
 const isLoading = ref(true)
 const isSavingTransfer = ref(false)
 const isSavingReceipt = ref(false)
+const isSavingPaymentFlow = ref(false)
 const isUploadingQris = ref(false)
 const isRemovingQris = ref(false)
 const qrisPreview = ref<string | null>(null)
@@ -37,6 +46,11 @@ const receiptForm = ref({
   shop_address: '',
 })
 
+const paymentFlowForm = ref({
+  payment_flow_mode: 'both' as PaymentFlowMode,
+  require_table_for_eat_first: true,
+})
+
 function applyConfig(config: ShopConfig | null) {
   qrisPreview.value = config?.qris_image_url ?? null
   transferForm.value = {
@@ -47,6 +61,10 @@ function applyConfig(config: ShopConfig | null) {
   receiptForm.value = {
     shop_name: config?.shop_name ?? '',
     shop_address: config?.shop_address ?? '',
+  }
+  paymentFlowForm.value = {
+    payment_flow_mode: config?.payment_flow_mode ?? 'both',
+    require_table_for_eat_first: config?.require_table_for_eat_first ?? true,
   }
 }
 
@@ -147,6 +165,22 @@ async function handleSaveReceipt() {
   alertStore.showAlert(t('alert.success'), t('config.receiptSaved'), 'success')
 }
 
+async function handleSavePaymentFlow() {
+  isSavingPaymentFlow.value = true
+  const { error } = await updateShopConfig(paymentFlowForm.value)
+  isSavingPaymentFlow.value = false
+
+  if (error) {
+    const message = typeof error === 'object' && 'message' in error
+      ? String(error.message)
+      : t('config.paymentFlowSaveFailed')
+    alertStore.showAlert(t('alert.error'), message, 'error')
+    return
+  }
+
+  alertStore.showAlert(t('alert.success'), t('config.paymentFlowSaved'), 'success')
+}
+
 onMounted(loadConfig)
 </script>
 
@@ -199,6 +233,58 @@ onMounted(loadConfig)
               </FieldGroup>
               <Button type="submit" class="mt-6" :disabled="isSavingReceipt">
                 {{ isSavingReceipt ? t('common.saving') : t('config.saveReceipt') }}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card class="lg:col-span-2">
+          <CardHeader>
+            <div class="flex items-center gap-3">
+              <div class="flex size-10 items-center justify-center rounded-lg bg-foreground text-background">
+                <Wallet class="size-5" />
+              </div>
+              <div>
+                <CardTitle>{{ t('config.paymentFlowTitle') }}</CardTitle>
+                <CardDescription>{{ t('config.paymentFlowDesc') }}</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form class="max-w-xl space-y-4" @submit.prevent="handleSavePaymentFlow">
+              <Field>
+                <FieldLabel>{{ t('config.paymentFlowMode') }}</FieldLabel>
+                <Select v-model="paymentFlowForm.payment_flow_mode">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pay_first_only">{{ t('config.paymentFlowPayFirst') }}</SelectItem>
+                    <SelectItem value="eat_first_only">{{ t('config.paymentFlowEatFirst') }}</SelectItem>
+                    <SelectItem value="both">{{ t('config.paymentFlowBoth') }}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p class="mt-1 text-xs text-muted-foreground">
+                  {{
+                    paymentFlowForm.payment_flow_mode === 'pay_first_only'
+                      ? t('config.paymentFlowPayFirstHint')
+                      : paymentFlowForm.payment_flow_mode === 'eat_first_only'
+                        ? t('config.paymentFlowEatFirstHint')
+                        : t('config.paymentFlowBothHint')
+                  }}
+                </p>
+              </Field>
+
+              <div class="flex items-center justify-between rounded-lg border px-3 py-3">
+                <div>
+                  <p class="text-sm font-medium">{{ t('config.requireTableForEatFirst') }}</p>
+                  <p class="text-xs text-muted-foreground">{{ t('config.requireTableForEatFirstDesc') }}</p>
+                </div>
+                <Switch v-model="paymentFlowForm.require_table_for_eat_first" />
+              </div>
+
+              <Button type="submit" :disabled="isSavingPaymentFlow">
+                {{ isSavingPaymentFlow ? t('common.saving') : t('config.savePaymentFlow') }}
               </Button>
             </form>
           </CardContent>

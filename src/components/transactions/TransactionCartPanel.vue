@@ -12,6 +12,8 @@ defineProps<{
   totalAmount: number
   isSubmitting: boolean
   requiresImmediatePayment?: boolean
+  allowPayFirst?: boolean
+  allowEatFirst?: boolean
   getCartLineSubtotal: (item: CartItem) => number
 }>()
 
@@ -126,23 +128,24 @@ const emit = defineEmits<{
 
       <div class="mt-4 grid gap-2 sm:grid-cols-2">
         <Button
-          v-if="!requiresImmediatePayment"
+          v-if="allowEatFirst && !requiresImmediatePayment"
           variant="outline"
           :disabled="isSubmitting || !cart.length"
           @click="emit('submitDebt')"
         >
-          {{ isSubmitting ? t('common.saving') : t('transaction.saveDebt') }}
+          {{ isSubmitting ? t('common.saving') : t('transaction.eatFirst') }}
         </Button>
         <Button
-          v-if="!requiresImmediatePayment"
+          v-if="allowEatFirst && !requiresImmediatePayment"
           variant="outline"
           :disabled="isSubmitting || !cart.length"
           @click="emit('submitDebtQueue')"
         >
           <ClipboardList class="size-4" />
-          {{ isSubmitting ? t('common.processing') : t('transaction.saveDebtQueue') }}
+          {{ isSubmitting ? t('common.processing') : t('transaction.eatFirstQueue') }}
         </Button>
         <Button
+          v-if="allowPayFirst"
           :disabled="isSubmitting || !cart.length"
           @click="emit('pay')"
         >
@@ -150,6 +153,7 @@ const emit = defineEmits<{
           {{ isSubmitting ? t('common.processing') : t('transaction.pay') }}
         </Button>
         <Button
+          v-if="allowPayFirst"
           :disabled="isSubmitting || !cart.length"
           @click="emit('payQueue')"
         >

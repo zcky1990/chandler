@@ -7,6 +7,7 @@ import {
   PRE_ORDER_ITEMS_WITH_ADDONS_SELECT,
 } from './addon'
 import { createQueueEntry } from './queue'
+import { canEatFirst, canPayFirst, getShopConfig, requiresTableForEatFirst } from './config'
 import { createTransaction, getWalkInCustomer } from './transaction'
 import { preOrderSubmitSchema } from '@/schema/schema'
 import type {
@@ -283,12 +284,42 @@ export const processPreOrder = async (preOrderId: string, options: ProcessPreOrd
     }
   }
 
-  const paymentMethod: PaymentMethod | undefined =
-    preOrder.payment_choice === 'pay_now'
-      ? (preOrder.confirmed_payment_method as PaymentMethod | null) ?? options.paymentMethod
-      : options.paymentMethod
+  const payImmediately = preOrder.payment_choice === 'pay_now'
+  const resolvedTableNumber = (options.tableNumber ?? preOrder.table_number)?.trim() || null
 
-  if (!paymentMethod) {
+  const { config: shopConfig } = await getShopConfig()
+  if (payImmediately && !canPayFirst(shopConfig)) {
+    return {
+      preOrder: null,
+      transaction: null,
+      queueNumber: null,
+      error: { message: useLocaleStore().translate('transaction.payFirstNotAllowed') },
+    }
+  }
+
+  if (!payImmediately && !canEatFirst(shopConfig)) {
+    return {
+      preOrder: null,
+      transaction: null,
+      queueNumber: null,
+      error: { message: useLocaleStore().translate('transaction.eatFirstNotAllowed') },
+    }
+  }
+
+  if (!payImmediately && requiresTableForEatFirst(shopConfig) && !resolvedTableNumber) {
+    return {
+      preOrder: null,
+      transaction: null,
+      queueNumber: null,
+      error: { message: useLocaleStore().translate('transaction.tableRequired') },
+    }
+  }
+
+  const paymentMethod: PaymentMethod | undefined = payImmediately
+    ? (preOrder.confirmed_payment_method as PaymentMethod | null) ?? options.paymentMethod
+    : options.paymentMethod
+
+  if (payImmediately && !paymentMethod) {
     return {
       preOrder: null,
       transaction: null,
@@ -345,9 +376,16 @@ export const processPreOrder = async (preOrderId: string, options: ProcessPreOrd
     {
       customer_id: walkInCustomer.id,
       notes: buildOrderNotes(preOrder as PreOrder),
+      table_number: resolvedTableNumber,
       items,
     },
-    { paymentMethod },
+    payImmediately
+      ? { paymentMethod: paymentMethod! }
+      : {
+          table_number: resolvedTableNumber,
+          paymentFlowMode: shopConfig?.payment_flow_mode,
+          requireTableForEatFirst: shopConfig?.require_table_for_eat_first,
+        },
   )
 
   if (transactionError || !transaction) {
@@ -371,7 +409,7 @@ export const processPreOrder = async (preOrderId: string, options: ProcessPreOrd
     }
 
     const paymentStatus: PreOrderPaymentStatus =
-      preOrder.payment_choice === 'pay_now' ? 'confirmed' : 'confirmed'
+      preOrder.payment_choice === 'pay_now' ? 'confirmed' : 'unpaid'
 
     const { data: completedOrder, error: completeError } = await supabaseClient
       .from('pre_orders')
@@ -397,7 +435,7 @@ export const processPreOrder = async (preOrderId: string, options: ProcessPreOrd
   }
 
   const paymentStatus: PreOrderPaymentStatus =
-    preOrder.payment_choice === 'pay_now' ? 'confirmed' : 'confirmed'
+    preOrder.payment_choice === 'pay_now' ? 'confirmed' : 'unpaid'
 
   const { data: completedOrder, error: completeError } = await supabaseClient
     .from('pre_orders')

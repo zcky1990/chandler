@@ -93,6 +93,7 @@ export function transactionSchema() {
   return z.object({
     customer_id: z.string().uuid({ message: t('validation.buyerRequired') }),
     notes: z.string().nullable().optional(),
+    table_number: z.string().trim().nullable().optional(),
     items: z.array(transactionItemSchema()).min(1, { message: t('validation.minOneProduct') }),
   })
 }
@@ -141,6 +142,8 @@ export function shopConfigSchema() {
     transfer_bank_name: z.string().nullable().optional(),
     transfer_account_number: z.string().nullable().optional(),
     transfer_account_holder: z.string().nullable().optional(),
+    payment_flow_mode: z.enum(['pay_first_only', 'eat_first_only', 'both']).optional(),
+    require_table_for_eat_first: z.boolean().optional(),
   })
 }
 

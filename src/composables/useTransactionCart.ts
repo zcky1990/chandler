@@ -6,9 +6,10 @@ import { getProducts, getProductAddonsMap } from '@/lib/product'
 import { createQueueEntry } from '@/lib/queue'
 import { isWalkInCustomer } from '@/lib/customer'
 import { createTransaction, getCustomersForTransaction, getPendingTransactionForCustomer } from '@/lib/transaction'
+import { canEatFirst, canPayFirst, getShopConfig, requiresTableForEatFirst } from '@/lib/config'
 import { useAlertStore } from '@/stores/useAlertStore'
 import { useI18n } from '@/composables/useI18n'
-import type { Customer, PaymentMethod, Product, Transaction } from '@/types/database'
+import type { Customer, PaymentMethod, Product, ShopConfig, Transaction } from '@/types/database'
 import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
 
 export type CartItem = {
@@ -43,12 +44,23 @@ export function useTransactionCart() {
   const pendingBundleTotal = ref(1)
   const paymentSuccessDialogOpen = ref(false)
   const paymentSuccessInvoice = ref<InvoiceData | null>(null)
+  const tableNumber = ref('')
+  const shopConfig = ref<ShopConfig | null>(null)
 
 const selectedCustomer = computed(() =>
   customers.value.find((customer) => customer.id === selectedCustomerId.value) ?? null,
 )
 
-const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustomer.value))
+const allowPayFirst = computed(() => canPayFirst(shopConfig.value))
+const allowEatFirst = computed(() => canEatFirst(shopConfig.value))
+const requireTableForEatFirst = computed(() => requiresTableForEatFirst(shopConfig.value))
+
+const requiresImmediatePayment = computed(() => {
+  if (!allowEatFirst.value) return true
+  if (!isWalkInCustomer(selectedCustomer.value)) return false
+  if (!requireTableForEatFirst.value) return false
+  return !tableNumber.value.trim()
+})
 
   const selectedProduct = computed(() =>
     products.value.find((product) => product.id === selectedProductId.value) ?? null,
@@ -94,10 +106,11 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
   async function loadData() {
     isLoading.value = true
 
-    const [customerResult, productResult, addonMapResult] = await Promise.all([
+    const [customerResult, productResult, addonMapResult, configResult] = await Promise.all([
       getCustomersForTransaction(),
       getProducts(),
       getProductAddonsMap(),
+      getShopConfig(),
     ])
 
     isLoading.value = false
@@ -117,6 +130,7 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
 
     products.value = (productResult.products ?? []).filter((product) => product.is_active)
     productAddonsMap.value = addonMapResult.map ?? {}
+    shopConfig.value = configResult.config
     await loadPendingTransaction()
   }
 
@@ -126,7 +140,10 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
       return
     }
 
-    const { transaction, error } = await getPendingTransactionForCustomer(selectedCustomerId.value)
+    const { transaction, error } = await getPendingTransactionForCustomer(
+      selectedCustomerId.value,
+      isWalkInCustomer(selectedCustomer.value) ? tableNumber.value : null,
+    )
     if (error) {
       pendingTransaction.value = null
       return
@@ -136,6 +153,7 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
   }
 
   watch(selectedCustomerId, loadPendingTransaction)
+  watch(tableNumber, loadPendingTransaction)
 
   function getCartItem(lineKey: string) {
     return cart.value.find((item) => item.lineKey === lineKey)
@@ -281,6 +299,7 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
   function resetForm() {
     cart.value = []
     notes.value = ''
+    tableNumber.value = ''
     selectedProductId.value = ''
     addQuantity.value = 1
     const walkIn = customers.value.find((customer) => customer.name === WALK_IN_CUSTOMER_NAME)
@@ -312,7 +331,17 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
     return {
       customer_id: selectedCustomerId.value,
       notes: notes.value || null,
+      table_number: tableNumber.value.trim() || null,
       items: expandItemsForSubmit(items),
+    }
+  }
+
+  function getCreateOptions(paymentMethod?: PaymentMethod) {
+    return {
+      ...(paymentMethod ? { paymentMethod } : {}),
+      table_number: tableNumber.value.trim() || null,
+      paymentFlowMode: shopConfig.value?.payment_flow_mode,
+      requireTableForEatFirst: shopConfig.value?.require_table_for_eat_first,
     }
   }
 
@@ -344,17 +373,39 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
     return `${prefix} ${formatQueueNumber(queueNumber)}${tableLabel}`
   }
 
-  async function handleSubmit(addToQueue = false, tableNumber: string | null = null) {
+  async function handleSubmit(addToQueue = false, dialogTableNumber: string | null = null) {
     if (!validateCart()) return
 
-    if (requiresImmediatePayment.value) {
-      alertStore.showAlert(t('alert.warning'), t('transaction.walkInMustPay'), 'error')
+    const effectiveTableNumber = dialogTableNumber?.trim() || tableNumber.value.trim() || null
+
+    if (!allowEatFirst.value) {
+      alertStore.showAlert(t('alert.warning'), t('transaction.eatFirstNotAllowed'), 'error')
+      return
+    }
+
+    if (
+      requireTableForEatFirst.value
+      && isWalkInCustomer(selectedCustomer.value)
+      && !effectiveTableNumber
+    ) {
+      alertStore.showAlert(t('alert.warning'), t('transaction.tableRequired'), 'error')
       return
     }
 
     isSubmitting.value = true
 
-    const { transaction, merged, error } = await createTransaction(getTransactionPayload())
+    const payload = {
+      ...getTransactionPayload(),
+      table_number: effectiveTableNumber,
+    }
+
+    const { transaction, merged, error } = await createTransaction(
+      payload,
+      {
+        ...getCreateOptions(),
+        table_number: effectiveTableNumber,
+      },
+    )
 
     if (error) {
       isSubmitting.value = false
@@ -363,7 +414,7 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
     }
 
     if (addToQueue && transaction) {
-      const queue = await createQueueForTransaction(transaction.id, tableNumber)
+      const queue = await createQueueForTransaction(transaction.id, effectiveTableNumber)
       isSubmitting.value = false
 
       if (!queue) {
@@ -375,8 +426,8 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
       alertStore.showAlert(
         t('alert.success'),
         merged
-          ? queueSuccessMessage(queue.queue_number, tableNumber, t('transaction.successDebtQueueUpdated'))
-          : queueSuccessMessage(queue.queue_number, tableNumber, t('transaction.successDebtQueueNew')),
+          ? queueSuccessMessage(queue.queue_number, effectiveTableNumber, t('transaction.successDebtQueueUpdated'))
+          : queueSuccessMessage(queue.queue_number, effectiveTableNumber, t('transaction.successDebtQueueNew')),
         'success',
       )
     } else {
@@ -398,7 +449,17 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
     if (!validateCart()) return
 
     if (action === 'debt' && requiresImmediatePayment.value) {
-      alertStore.showAlert(t('alert.warning'), t('transaction.walkInMustPay'), 'error')
+      alertStore.showAlert(t('alert.warning'), t('transaction.tableRequired'), 'error')
+      return
+    }
+
+    if (action === 'pay' && !allowPayFirst.value) {
+      alertStore.showAlert(t('alert.warning'), t('transaction.payFirstNotAllowed'), 'error')
+      return
+    }
+
+    if (action === 'debt' && !allowEatFirst.value) {
+      alertStore.showAlert(t('alert.warning'), t('transaction.eatFirstNotAllowed'), 'error')
       return
     }
 
@@ -423,6 +484,10 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
 
   function openPaymentDialog(withQueue = false) {
     if (!validateCart()) return
+    if (!allowPayFirst.value) {
+      alertStore.showAlert(t('alert.warning'), t('transaction.payFirstNotAllowed'), 'error')
+      return
+    }
     paymentWithQueue.value = withQueue
     pendingTableNumber.value = null
     paymentDialogOpen.value = true
@@ -451,7 +516,10 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
     const addToQueue = paymentWithQueue.value
     const tableNumber = pendingTableNumber.value
 
-    const { transaction, error } = await createTransaction(getTransactionPayload(), { paymentMethod: method })
+    const { transaction, error } = await createTransaction(
+      getTransactionPayload(),
+      getCreateOptions(method),
+    )
 
     if (error) {
       isSubmitting.value = false
@@ -494,6 +562,10 @@ const requiresImmediatePayment = computed(() => isWalkInCustomer(selectedCustome
     selectedCustomerId,
     selectedCustomer,
     requiresImmediatePayment,
+    allowPayFirst,
+    allowEatFirst,
+    requireTableForEatFirst,
+    tableNumber,
     notes,
     selectedProductId,
     selectedProduct,
