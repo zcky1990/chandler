@@ -46,6 +46,8 @@ async function loadTables() {
     id: table.id,
     label: table.label,
     shape: table.shape,
+    kind: table.kind,
+    color: table.color,
     pos_x: table.pos_x,
     pos_y: table.pos_y,
     width: table.width,

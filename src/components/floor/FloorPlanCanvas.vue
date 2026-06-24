@@ -6,12 +6,14 @@ import {
   FLOOR_GRID_SIZE,
 } from '@/lib/floor'
 import { useI18n } from '@/composables/useI18n'
-import type { QueueStatus, TableOccupancy, TableShape } from '@/types/database'
+import type { FloorElementKind, QueueStatus, TableOccupancy, TableShape } from '@/types/database'
 
 export type CanvasTable = {
   id: string
   label: string
   shape: TableShape
+  kind: FloorElementKind
+  color?: string | null
   pos_x: number
   pos_y: number
   width: number
@@ -56,6 +58,10 @@ function occupancyFor(table: CanvasTable): TableOccupancy | undefined {
   return props.occupancyByLabel?.[table.label.trim()]
 }
 
+function isZone(table: CanvasTable) {
+  return table.kind === 'zone'
+}
+
 function tableClass(table: CanvasTable) {
   const classes: string[] = ['border-2']
 
@@ -65,7 +71,9 @@ function tableClass(table: CanvasTable) {
     classes.push('rounded-lg')
   }
 
-  if (showOccupancy.value) {
+  if (isZone(table)) {
+    classes.push('text-foreground')
+  } else if (showOccupancy.value) {
     const occupancy = occupancyFor(table)
     classes.push(
       occupancy
@@ -84,6 +92,28 @@ function tableClass(table: CanvasTable) {
   }
 
   return classes
+}
+
+function withAlpha(color: string, alphaHex: string) {
+  return /^#[0-9a-fA-F]{6}$/.test(color) ? `${color}${alphaHex}` : color
+}
+
+function elementStyle(table: CanvasTable) {
+  const style: Record<string, string> = {
+    left: `${table.pos_x}px`,
+    top: `${table.pos_y}px`,
+    width: `${table.width}px`,
+    height: `${table.height}px`,
+    touchAction: props.editable ? 'none' : 'auto',
+    zIndex: isZone(table) ? '0' : '1',
+  }
+
+  if (isZone(table) && table.color) {
+    style.backgroundColor = withAlpha(table.color, '33')
+    style.borderColor = table.color
+  }
+
+  return style
 }
 
 type DragState = {
@@ -177,28 +207,24 @@ defineExpose({ canvasRef })
         :key="table.id"
         class="absolute flex flex-col items-center justify-center px-1 text-center transition-shadow"
         :class="tableClass(table)"
-        :style="{
-          left: `${table.pos_x}px`,
-          top: `${table.pos_y}px`,
-          width: `${table.width}px`,
-          height: `${table.height}px`,
-          touchAction: editable ? 'none' : 'auto',
-        }"
+        :style="elementStyle(table)"
         @pointerdown="onPointerDown($event, table)"
         @pointermove="onPointerMove"
         @pointerup="onPointerUp"
         @pointercancel="onPointerUp"
       >
         <span class="text-sm font-bold leading-tight">{{ table.label }}</span>
-        <span v-if="table.seats" class="text-[10px] leading-tight opacity-80">
-          {{ t('floor.seatsShort', { count: table.seats }) }}
-        </span>
-        <span
-          v-if="showOccupancy && occupancyFor(table)"
-          class="text-[10px] font-medium leading-tight"
-        >
-          #{{ occupancyFor(table)!.queueNumber }}
-        </span>
+        <template v-if="table.kind === 'table'">
+          <span v-if="table.seats" class="text-[10px] leading-tight opacity-80">
+            {{ t('floor.seatsShort', { count: table.seats }) }}
+          </span>
+          <span
+            v-if="showOccupancy && occupancyFor(table)"
+            class="text-[10px] font-medium leading-tight"
+          >
+            #{{ occupancyFor(table)!.queueNumber }}
+          </span>
+        </template>
       </div>
     </div>
   </div>

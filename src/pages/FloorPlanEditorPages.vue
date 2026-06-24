@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { Eye, Plus, Save, Trash2 } from '@lucide/vue'
+import { Eye, Plus, Save, Square, Trash2 } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import FloorPlanCanvas, { type CanvasTable } from '@/components/floor/FloorPlanCanvas.vue'
@@ -57,6 +57,8 @@ async function loadTables() {
     id: table.id,
     label: table.label,
     shape: table.shape,
+    kind: table.kind,
+    color: table.color,
     pos_x: table.pos_x,
     pos_y: table.pos_y,
     width: table.width,
@@ -77,11 +79,33 @@ function addTable() {
       id,
       label: nextLabel(),
       shape: 'square',
+      kind: 'table',
+      color: null,
       pos_x: 20,
       pos_y: 20,
       width: 80,
       height: 80,
       seats: 4,
+    },
+  ]
+  selectedId.value = id
+}
+
+function addZone() {
+  const id = crypto.randomUUID()
+  tables.value = [
+    ...tables.value,
+    {
+      id,
+      label: t('floor.newZoneName'),
+      shape: 'square',
+      kind: 'zone',
+      color: '#94a3b8',
+      pos_x: 20,
+      pos_y: 20,
+      width: 160,
+      height: 100,
+      seats: null,
     },
   ]
   selectedId.value = id
@@ -106,6 +130,8 @@ async function handleSave() {
     id: table.id,
     label: table.label,
     shape: table.shape,
+    kind: table.kind,
+    color: table.color ?? null,
     pos_x: table.pos_x,
     pos_y: table.pos_y,
     width: table.width,
@@ -156,10 +182,14 @@ onMounted(loadTables)
 
       <div class="flex flex-col gap-4 lg:flex-row">
         <div class="flex-1 space-y-3">
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             <Button size="sm" @click="addTable">
               <Plus class="size-4" />
               {{ t('floor.addTable') }}
+            </Button>
+            <Button size="sm" variant="outline" @click="addZone">
+              <Square class="size-4" />
+              {{ t('floor.addZone') }}
             </Button>
             <span class="text-sm text-muted-foreground">{{ t('floor.dragHint') }}</span>
           </div>
@@ -182,7 +212,9 @@ onMounted(loadTables)
 
           <FieldGroup v-else class="gap-3">
             <Field>
-              <FieldLabel>{{ t('floor.tableLabel') }}</FieldLabel>
+              <FieldLabel>
+                {{ selectedTable.kind === 'zone' ? t('floor.zoneName') : t('floor.tableLabel') }}
+              </FieldLabel>
               <Input
                 :model-value="selectedTable.label"
                 @update:model-value="updateSelected('label', String($event))"
@@ -205,7 +237,24 @@ onMounted(loadTables)
               </Select>
             </Field>
 
-            <Field>
+            <Field v-if="selectedTable.kind === 'zone'">
+              <FieldLabel>{{ t('floor.color') }}</FieldLabel>
+              <div class="flex items-center gap-2">
+                <input
+                  type="color"
+                  class="h-9 w-12 cursor-pointer rounded border bg-background"
+                  :value="selectedTable.color ?? '#94a3b8'"
+                  @input="updateSelected('color', ($event.target as HTMLInputElement).value)"
+                >
+                <Input
+                  class="flex-1"
+                  :model-value="selectedTable.color ?? ''"
+                  @update:model-value="updateSelected('color', String($event))"
+                />
+              </div>
+            </Field>
+
+            <Field v-if="selectedTable.kind === 'table'">
               <FieldLabel>{{ t('floor.seats') }}</FieldLabel>
               <Input
                 type="number"
@@ -238,7 +287,7 @@ onMounted(loadTables)
 
             <Button variant="destructive" size="sm" @click="deleteSelected">
               <Trash2 class="size-4" />
-              {{ t('floor.deleteTable') }}
+              {{ selectedTable.kind === 'zone' ? t('floor.deleteZone') : t('floor.deleteTable') }}
             </Button>
           </FieldGroup>
         </div>

@@ -172,6 +172,8 @@ export function floorTableSchema() {
     id: z.string().uuid().optional(),
     label: z.string().trim().min(1, { message: t('validation.tableLabelRequired') }),
     shape: z.enum(['round', 'square']),
+    kind: z.enum(['table', 'zone']).default('table'),
+    color: z.string().trim().nullable().optional(),
     pos_x: z.coerce.number().int(),
     pos_y: z.coerce.number().int(),
     width: z.coerce.number().int().min(1, { message: t('validation.tableSizeInvalid') }),

@@ -214,10 +214,14 @@ export type ShopConfigInput = {
 
 export type TableShape = 'round' | 'square'
 
+export type FloorElementKind = 'table' | 'zone'
+
 export type FloorTable = {
   id: string
   label: string
   shape: TableShape
+  kind: FloorElementKind
+  color: string | null
   pos_x: number
   pos_y: number
   width: number
@@ -233,6 +237,8 @@ export type FloorTableInput = {
   id?: string
   label: string
   shape: TableShape
+  kind: FloorElementKind
+  color?: string | null
   pos_x: number
   pos_y: number
   width: number

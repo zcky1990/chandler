@@ -32,10 +32,23 @@ function escapeHtml(value: string) {
 }
 
 function buildTableSvg(table: FloorTable, occupancy?: TableOccupancy) {
-  const fill = occupancy ? OCCUPANCY_FILL[occupancy.status] : '#eef2ff'
-  const stroke = occupancy ? OCCUPANCY_STROKE[occupancy.status] : '#6366f1'
   const cx = table.pos_x + table.width / 2
   const cy = table.pos_y + table.height / 2
+
+  if (table.kind === 'zone') {
+    const zoneColor = /^#[0-9a-fA-F]{6}$/.test(table.color ?? '') ? table.color! : '#94a3b8'
+    const zoneShape = table.shape === 'round'
+      ? `<ellipse cx="${cx}" cy="${cy}" rx="${table.width / 2}" ry="${table.height / 2}" fill="${zoneColor}" fill-opacity="0.2" stroke="${zoneColor}" stroke-width="2" />`
+      : `<rect x="${table.pos_x}" y="${table.pos_y}" width="${table.width}" height="${table.height}" rx="8" fill="${zoneColor}" fill-opacity="0.2" stroke="${zoneColor}" stroke-width="2" />`
+
+    return `
+      ${zoneShape}
+      <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="15" font-weight="bold" fill="#0f172a">${escapeHtml(table.label)}</text>
+    `
+  }
+
+  const fill = occupancy ? OCCUPANCY_FILL[occupancy.status] : '#eef2ff'
+  const stroke = occupancy ? OCCUPANCY_STROKE[occupancy.status] : '#6366f1'
 
   const shape = table.shape === 'round'
     ? `<ellipse cx="${cx}" cy="${cy}" rx="${table.width / 2}" ry="${table.height / 2}" fill="${fill}" stroke="${stroke}" stroke-width="2" />`
@@ -68,8 +81,14 @@ function buildFloorHtml(tables: FloorTable[], options?: PrintFloorOptions) {
     timeStyle: 'short',
   }).format(new Date())
 
-  const tablesSvg = tables
-    .map((table) => buildTableSvg(table, options?.occupancyByLabel?.[table.label.trim()]))
+  const tablesSvg = [...tables]
+    .sort((a, b) => Number(a.kind === 'zone' ? 0 : 1) - Number(b.kind === 'zone' ? 0 : 1))
+    .map((table) =>
+      buildTableSvg(
+        table,
+        table.kind === 'zone' ? undefined : options?.occupancyByLabel?.[table.label.trim()],
+      ),
+    )
     .join('')
 
   const legend = options?.occupancyByLabel
