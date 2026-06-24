@@ -17,6 +17,8 @@ import QueuePages from '@/pages/QueuePages.vue'
 import QueueDisplayPages from '@/pages/QueueDisplayPages.vue'
 import RestockPages from '@/pages/RestockPages.vue'
 import StockOpnamePages from '@/pages/StockOpnamePages.vue'
+import FloorPlanPages from '@/pages/FloorPlanPages.vue'
+import FloorPlanEditorPages from '@/pages/FloorPlanEditorPages.vue'
 import AnalyticsPages from '@/pages/AnalyticsPages.vue'
 import ShiftPages from '@/pages/ShiftPages.vue'
 import OrderPages from '@/pages/OrderPages.vue'
@@ -106,6 +108,17 @@ const router = createRouter({
       path: '/queue',
       name: 'queue',
       component: QueuePages,
+    },
+    {
+      path: '/floor-plan',
+      name: 'floor-plan',
+      component: FloorPlanPages,
+    },
+    {
+      path: '/floor-plan/edit',
+      name: 'floor-plan-edit',
+      component: FloorPlanEditorPages,
+      meta: { roles: ['owner'] },
     },
     {
       path: '/queue/display',

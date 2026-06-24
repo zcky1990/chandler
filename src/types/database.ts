@@ -212,6 +212,42 @@ export type ShopConfigInput = {
   transfer_account_holder?: string | null
 }
 
+export type TableShape = 'round' | 'square'
+
+export type FloorTable = {
+  id: string
+  label: string
+  shape: TableShape
+  pos_x: number
+  pos_y: number
+  width: number
+  height: number
+  seats: number | null
+  area: string | null
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export type FloorTableInput = {
+  id?: string
+  label: string
+  shape: TableShape
+  pos_x: number
+  pos_y: number
+  width: number
+  height: number
+  seats?: number | null
+  area?: string | null
+  sort_order: number
+}
+
+export type TableOccupancy = {
+  label: string
+  status: QueueStatus
+  queueNumber: number
+}
+
 export type QueueStatus = 'waiting' | 'preparing' | 'ready' | 'completed' | 'cancelled'
 
 export type OrderQueue = {

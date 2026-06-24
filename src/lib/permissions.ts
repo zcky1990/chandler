@@ -9,6 +9,8 @@ const PATH_ACCESS: Record<string, UserRole[]> = {
   '/transactions/list': ['owner', 'staff'],
   '/orders/inbox': ['owner', 'staff'],
   '/queue': ['owner', 'staff'],
+  '/floor-plan': ['owner', 'staff'],
+  '/floor-plan/edit': ['owner'],
   '/stock/restock': ['owner'],
   '/stock/opname': ['owner'],
   '/analytics': ['owner'],

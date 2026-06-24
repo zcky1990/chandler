@@ -167,6 +167,23 @@ export function stockOpnameSchema() {
 
 export type StockOpnameSchema = z.infer<ReturnType<typeof stockOpnameSchema>>
 
+export function floorTableSchema() {
+  return z.object({
+    id: z.string().uuid().optional(),
+    label: z.string().trim().min(1, { message: t('validation.tableLabelRequired') }),
+    shape: z.enum(['round', 'square']),
+    pos_x: z.coerce.number().int(),
+    pos_y: z.coerce.number().int(),
+    width: z.coerce.number().int().min(1, { message: t('validation.tableSizeInvalid') }),
+    height: z.coerce.number().int().min(1, { message: t('validation.tableSizeInvalid') }),
+    seats: z.coerce.number().int().min(0).nullable().optional(),
+    area: z.string().trim().nullable().optional(),
+    sort_order: z.coerce.number().int().default(0),
+  })
+}
+
+export type FloorTableSchema = z.infer<ReturnType<typeof floorTableSchema>>
+
 export function preOrderSubmitSchema() {
   return z.object({
     customer_name: z.string().nullable().optional(),
