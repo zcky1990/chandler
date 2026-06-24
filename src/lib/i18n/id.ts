@@ -439,6 +439,7 @@ export const id = {
   'floor.edit': 'Edit',
   'floor.viewLive': 'Tampilan Langsung',
   'floor.print': 'Cetak',
+  'floor.display': 'Layar Tampilan',
   'floor.printTitle': 'Susunan Meja',
   'floor.generatedAt': 'Dibuat:',
   'floor.emptyCanvas': 'Belum ada meja. Tambah meja untuk mulai menyusun.',

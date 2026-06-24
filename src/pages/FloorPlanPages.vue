@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
-import { Pencil, Printer, RefreshCw } from '@lucide/vue'
+import { Monitor, Pencil, Printer, RefreshCw } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import FloorPlanCanvas, { type CanvasTable } from '@/components/floor/FloorPlanCanvas.vue'
@@ -106,6 +106,12 @@ onUnmounted(() => {
           <Button variant="outline" :disabled="!floorTables.length" @click="handlePrint">
             <Printer class="size-4" />
             {{ t('floor.print') }}
+          </Button>
+          <Button variant="outline" as-child>
+            <RouterLink to="/floor-plan/display" target="_blank">
+              <Monitor class="size-4" />
+              {{ t('floor.display') }}
+            </RouterLink>
           </Button>
           <Button v-if="roleStore.isOwner" as-child>
             <RouterLink to="/floor-plan/edit">

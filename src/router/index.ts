@@ -19,6 +19,7 @@ import RestockPages from '@/pages/RestockPages.vue'
 import StockOpnamePages from '@/pages/StockOpnamePages.vue'
 import FloorPlanPages from '@/pages/FloorPlanPages.vue'
 import FloorPlanEditorPages from '@/pages/FloorPlanEditorPages.vue'
+import FloorPlanDisplayPages from '@/pages/FloorPlanDisplayPages.vue'
 import AnalyticsPages from '@/pages/AnalyticsPages.vue'
 import ShiftPages from '@/pages/ShiftPages.vue'
 import OrderPages from '@/pages/OrderPages.vue'
@@ -121,6 +122,11 @@ const router = createRouter({
       meta: { roles: ['owner'] },
     },
     {
+      path: '/floor-plan/display',
+      name: 'floor-plan-display',
+      component: FloorPlanDisplayPages,
+    },
+    {
       path: '/queue/display',
       name: 'queue-display',
       component: QueueDisplayPages,
@@ -178,7 +184,7 @@ router.beforeEach(async (to) => {
 
   const isGuestRoute = to.path === '/login'
 
-  if (to.path === '/queue/display') {
+  if (to.path === '/queue/display' || to.path === '/floor-plan/display') {
     return true
   }
 

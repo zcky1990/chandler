@@ -439,6 +439,7 @@ export const en = {
   'floor.edit': 'Edit',
   'floor.viewLive': 'Live View',
   'floor.print': 'Print',
+  'floor.display': 'Display Screen',
   'floor.printTitle': 'Table Arrangement',
   'floor.generatedAt': 'Generated:',
   'floor.emptyCanvas': 'No tables yet. Add a table to start arranging.',
