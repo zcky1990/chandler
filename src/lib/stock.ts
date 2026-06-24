@@ -493,6 +493,46 @@ export const recordStockReturn = async (
   return { movement: movement as StockMovement, error: null }
 }
 
+export async function restoreTransactionStock(
+  items: {
+    product_id: string
+    quantity: number
+    transaction_item_addons?: { addon_product_id: string, quantity: number }[]
+  }[],
+  transactionId: string,
+  notes?: string,
+) {
+  const returnNotes = notes ?? useLocaleStore().translate('stock.returnFromCancel')
+
+  for (const item of items) {
+    const { error } = await recordStockReturn(item.product_id, item.quantity, {
+      referenceId: transactionId,
+      notes: returnNotes,
+    })
+
+    if (error) {
+      return { error }
+    }
+
+    for (const addon of item.transaction_item_addons ?? []) {
+      const { error: addonError } = await recordStockReturn(
+        addon.addon_product_id,
+        item.quantity * addon.quantity,
+        {
+          referenceId: transactionId,
+          notes: returnNotes,
+        },
+      )
+
+      if (addonError) {
+        return { error: addonError }
+      }
+    }
+  }
+
+  return { error: null }
+}
+
 export const getStockMovements = async (filters?: {
   productId?: string
   movementType?: StockMovementType

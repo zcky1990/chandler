@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Banknote, Pencil } from '@lucide/vue'
+import { Banknote, Ban, Pencil } from '@lucide/vue'
 import {
   Dialog,
   DialogContent,
@@ -14,9 +14,10 @@ import { formatItemWithAddons } from '@/lib/addon'
 import { formatPrice } from '@/lib/format'
 import PaymentMethodDialog from '@/components/transactions/PaymentMethodDialog.vue'
 import PaymentSuccessDialog from '@/components/transactions/PaymentSuccessDialog.vue'
+import CancelTransactionDialog from '@/components/transactions/CancelTransactionDialog.vue'
 import TransactionEditDialog from '@/components/transactions/TransactionEditDialog.vue'
 import { buildInvoiceFromTransaction, type InvoiceData } from '@/lib/invoice'
-import { markTransactionAsPaid } from '@/lib/transaction'
+import { markTransactionAsPaid, isActiveTransaction } from '@/lib/transaction'
 import { useAlertStore } from '@/stores/useAlertStore'
 import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
 import type { CustomerTransactionSummary, PaymentMethod, TransactionWithDetails } from '@/types/database'
@@ -38,6 +39,7 @@ const paymentDialogOpen = ref(false)
 const paymentSuccessDialogOpen = ref(false)
 const paymentSuccessInvoice = ref<InvoiceData | null>(null)
 const editDialogOpen = ref(false)
+const cancelDialogOpen = ref(false)
 const selectedTransaction = ref<TransactionWithDetails | null>(null)
 const isPaying = ref(false)
 
@@ -45,7 +47,7 @@ const dateLocale = computed(() => (locale.value === 'en' ? 'en-US' : 'id-ID'))
 
 const unpaidTransactions = computed(() =>
   (props.customer?.transactions ?? [])
-    .filter((transaction) => !transaction.is_paid)
+    .filter((transaction) => isActiveTransaction(transaction) && !transaction.is_paid)
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
 )
 
@@ -81,6 +83,11 @@ function openPaymentDialog(transaction: TransactionWithDetails) {
 function openEditDialog(transaction: TransactionWithDetails) {
   selectedTransaction.value = transaction
   editDialogOpen.value = true
+}
+
+function openCancelDialog(transaction: TransactionWithDetails) {
+  selectedTransaction.value = transaction
+  cancelDialogOpen.value = true
 }
 
 async function handlePayment(method: PaymentMethod) {
@@ -172,6 +179,15 @@ function handleSaved() {
               </Button>
               <Button
                 size="sm"
+                variant="outline"
+                class="shrink-0"
+                :title="t('transaction.voidCancel')"
+                @click="openCancelDialog(transaction)"
+              >
+                <Ban class="size-3.5" />
+              </Button>
+              <Button
+                size="sm"
                 class="flex-1"
                 :disabled="isPaying"
                 @click="openPaymentDialog(transaction)"
@@ -213,5 +229,11 @@ function handleSaved() {
     v-model:open="editDialogOpen"
     :transaction="selectedTransaction"
     @saved="handleSaved"
+  />
+
+  <CancelTransactionDialog
+    v-model:open="cancelDialogOpen"
+    :transaction="selectedTransaction"
+    @cancelled="handleSaved"
   />
 </template>

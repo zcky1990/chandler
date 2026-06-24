@@ -56,6 +56,10 @@ export const WALK_IN_CUSTOMER_NAME = 'Walk-in Customer'
 
 export type PaymentMethod = 'qris' | 'cash' | 'transfer'
 
+export type TransactionStatus = 'active' | 'cancelled'
+
+export type TransactionEventType = 'cancelled'
+
 export type Transaction = {
   id: string
   customer_id: string
@@ -64,9 +68,27 @@ export type Transaction = {
   payment_method: PaymentMethod | null
   paid_at: string | null
   shift_id: string | null
+  status: TransactionStatus
+  cancelled_at: string | null
+  cancelled_by: string | null
+  cancellation_reason: string | null
   notes: string | null
   created_at: string
   updated_at: string
+}
+
+export type TransactionEvent = {
+  id: string
+  transaction_id: string
+  event_type: TransactionEventType
+  performed_by: string | null
+  reason: string | null
+  metadata: Record<string, unknown> | null
+  created_at: string
+}
+
+export type TransactionEventWithPerformer = TransactionEvent & {
+  profiles: { full_name: string | null, email: string | null } | null
 }
 
 export type TransactionItem = {

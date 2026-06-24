@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
-import { transactionItemsUpdateSchema, transactionSchema } from '@/schema/schema'
+import { cancelTransactionSchema, transactionItemsUpdateSchema, transactionSchema } from '@/schema/schema'
 import { useLocaleStore } from '@/stores/useLocaleStore'
+import { getCurrentUser } from './auth'
 import {
   expandItemsForSubmit,
   getAddonSignature,
@@ -8,16 +9,19 @@ import {
   TRANSACTION_ITEMS_WITH_ADDONS_SELECT,
 } from './addon'
 import { createCustomer, getCustomers } from './customer'
-import { applyStockDelta, recordSaleStock, recordStockReturn } from './stock'
+import { applyStockDelta, recordSaleStock, recordStockReturn, restoreTransactionStock } from './stock'
+import { cancelQueueByTransactionId } from './queue'
 import { resolveOpenShiftIdForCurrentUser } from './shift'
 import type {
   Customer,
   CreateTransactionOptions,
   PaymentMethod,
   Transaction,
+  TransactionEventWithPerformer,
   TransactionInput,
   TransactionItemInput,
   TransactionItemWithProduct,
+  TransactionStatus,
   TransactionWithDetails,
 } from '@/types/database'
 import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
@@ -27,6 +31,35 @@ type CreateTransactionResult = {
   transaction: Transaction | null
   merged: boolean
   error: unknown
+}
+
+export const ACTIVE_TRANSACTION_STATUS: TransactionStatus = 'active'
+
+export function isActiveTransaction(transaction: Pick<Transaction, 'status'> | { status?: TransactionStatus }) {
+  return (transaction.status ?? ACTIVE_TRANSACTION_STATUS) === ACTIVE_TRANSACTION_STATUS
+}
+
+async function insertTransactionEvent(
+  transactionId: string,
+  eventType: 'cancelled',
+  options: {
+    performedBy?: string | null
+    reason?: string | null
+    metadata?: Record<string, unknown> | null
+  },
+) {
+  const supabaseClient = supabase()
+  const { error } = await supabaseClient
+    .from('transaction_events')
+    .insert({
+      transaction_id: transactionId,
+      event_type: eventType,
+      performed_by: options.performedBy ?? null,
+      reason: options.reason ?? null,
+      metadata: options.metadata ?? null,
+    })
+
+  return { error }
 }
 
 function buildLineKey(productId: string, addons: { addon_product_id: string, quantity: number }[] = []) {
@@ -172,6 +205,7 @@ async function findPendingTransactionToday(customerId: string) {
     `)
     .eq('customer_id', customerId)
     .eq('is_paid', false)
+    .eq('status', ACTIVE_TRANSACTION_STATUS)
     .gte('created_at', start)
     .lte('created_at', end)
     .order('created_at', { ascending: false })
@@ -371,6 +405,7 @@ export const getCustomerTransactionSummary = async (customerId: string, customer
     `)
     .eq('customer_id', customerId)
     .eq('is_paid', false)
+    .eq('status', ACTIVE_TRANSACTION_STATUS)
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -411,6 +446,7 @@ export const getCustomersWithDebt = async (customerIds: string[]) => {
     .select('customer_id, total_amount')
     .in('customer_id', customerIds)
     .eq('is_paid', false)
+    .eq('status', ACTIVE_TRANSACTION_STATUS)
 
   if (error) {
     return {
@@ -436,6 +472,20 @@ export const markTransactionAsPaid = async (
   paymentMethod: PaymentMethod,
 ) => {
   const supabaseClient = supabase()
+  const { data: existing, error: fetchError } = await supabaseClient
+    .from('transactions')
+    .select('status')
+    .eq('id', transactionId)
+    .single()
+
+  if (fetchError || !existing) {
+    return { transaction: null, error: fetchError ?? { message: useLocaleStore().translate('order.transactionNotFound') } }
+  }
+
+  if (!isActiveTransaction(existing as Pick<Transaction, 'status'>)) {
+    return { transaction: null, error: { message: useLocaleStore().translate('error.transactionAlreadyCancelled') } }
+  }
+
   const shiftId = await resolveOpenShiftIdForCurrentUser()
   const { data, error } = await supabaseClient
     .from('transactions')
@@ -450,6 +500,123 @@ export const markTransactionAsPaid = async (
     .single()
 
   return { transaction: data as Transaction | null, error }
+}
+
+export const getTransactionEvents = async (transactionId: string) => {
+  const supabaseClient = supabase()
+  const { data, error } = await supabaseClient
+    .from('transaction_events')
+    .select(`
+      *,
+      profiles:performed_by ( full_name, email )
+    `)
+    .eq('transaction_id', transactionId)
+    .order('created_at', { ascending: false })
+
+  return { events: data as TransactionEventWithPerformer[] | null, error }
+}
+
+export const cancelTransaction = async (
+  transactionId: string,
+  input: { reason: string },
+) => {
+  const validated = cancelTransactionSchema().safeParse(input)
+  if (!validated.success) {
+    return { transaction: null, error: validated.error.flatten().fieldErrors }
+  }
+
+  const { user, error: userError } = await getCurrentUser()
+  if (userError || !user) {
+    return {
+      transaction: null,
+      error: userError ?? { message: useLocaleStore().translate('shift.userRequired') },
+    }
+  }
+
+  const supabaseClient = supabase()
+  const { data: transactionRow, error: fetchError } = await supabaseClient
+    .from('transactions')
+    .select(`
+      id,
+      status,
+      is_paid,
+      payment_method,
+      total_amount,
+      transaction_items (
+        id,
+        product_id,
+        quantity,
+        transaction_item_addons (
+          addon_product_id,
+          quantity
+        )
+      )
+    `)
+    .eq('id', transactionId)
+    .single()
+
+  if (fetchError || !transactionRow) {
+    return {
+      transaction: null,
+      error: fetchError ?? { message: useLocaleStore().translate('order.transactionNotFound') },
+    }
+  }
+
+  if (!isActiveTransaction(transactionRow as Pick<Transaction, 'status'>)) {
+    return { transaction: null, error: { message: useLocaleStore().translate('error.transactionAlreadyCancelled') } }
+  }
+
+  const reason = validated.data.reason.trim()
+  const items = (transactionRow.transaction_items ?? []) as {
+    product_id: string
+    quantity: number
+    transaction_item_addons?: { addon_product_id: string, quantity: number }[]
+  }[]
+
+  const { error: stockError } = await restoreTransactionStock(items, transactionId)
+  if (stockError) {
+    return { transaction: null, error: stockError }
+  }
+
+  const { error: queueError } = await cancelQueueByTransactionId(transactionId)
+  if (queueError) {
+    return { transaction: null, error: queueError }
+  }
+
+  const cancelledAt = new Date().toISOString()
+  const { data: transaction, error: updateError } = await supabaseClient
+    .from('transactions')
+    .update({
+      status: 'cancelled',
+      cancelled_at: cancelledAt,
+      cancelled_by: user.id,
+      cancellation_reason: reason,
+    })
+    .eq('id', transactionId)
+    .eq('status', ACTIVE_TRANSACTION_STATUS)
+    .select()
+    .single()
+
+  if (updateError || !transaction) {
+    return { transaction: null, error: updateError }
+  }
+
+  const { error: eventError } = await insertTransactionEvent(transactionId, 'cancelled', {
+    performedBy: user.id,
+    reason,
+    metadata: {
+      was_paid: transactionRow.is_paid,
+      payment_method: transactionRow.payment_method,
+      total_amount: Number(transactionRow.total_amount),
+      stock_items_restored: items.length,
+    },
+  })
+
+  if (eventError) {
+    return { transaction: transaction as Transaction, error: eventError }
+  }
+
+  return { transaction: transaction as Transaction, error: null }
 }
 
 export const updateTransactionNotes = async (transactionId: string, notes: string | null) => {
@@ -485,12 +652,16 @@ export const updateTransactionItems = async (
   const supabaseClient = supabase()
   const { data: transactionRow, error: transactionError } = await supabaseClient
     .from('transactions')
-    .select('is_paid')
+    .select('is_paid, status')
     .eq('id', transactionId)
     .single()
 
   if (transactionError || !transactionRow) {
     return { transaction: null, error: transactionError ?? { message: useLocaleStore().translate('order.transactionNotFound') } }
+  }
+
+  if (!isActiveTransaction(transactionRow as Pick<Transaction, 'status'>)) {
+    return { transaction: null, error: { message: useLocaleStore().translate('error.transactionAlreadyCancelled') } }
   }
 
   if (transactionRow.is_paid) {

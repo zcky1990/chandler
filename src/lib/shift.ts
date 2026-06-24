@@ -64,6 +64,7 @@ async function getShiftPaidTransactions(shiftId: string) {
     .select('payment_method, total_amount')
     .eq('shift_id', shiftId)
     .eq('is_paid', true)
+    .eq('status', 'active')
 
   return { transactions: (data ?? []) as Pick<Transaction, 'payment_method' | 'total_amount'>[], error }
 }

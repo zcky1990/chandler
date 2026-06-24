@@ -33,7 +33,7 @@ const closeAlertAfterFiveseconds = () => {
 
 <template>
     <div class="grid w-full max-w-xl items-start gap-4 p-4">
-        <Alert :variant="alertVariant" v-if="alertState.show">
+        <Alert class="bg-background" :variant="alertVariant" v-if="alertState.show">
             <component :is="alertIcon" />
             <AlertTitle>{{ alertState.title }}</AlertTitle>
             <AlertDescription>{{ alertState.description }}</AlertDescription>

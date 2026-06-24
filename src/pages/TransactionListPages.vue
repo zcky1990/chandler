@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { Banknote, Eye, List, Pencil, Printer, Users } from '@lucide/vue'
+import { Banknote, Ban, Eye, List, Pencil, Printer, Users } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
+import CancelTransactionDialog from '@/components/transactions/CancelTransactionDialog.vue'
 import CustomerTransactionsDialog from '@/components/transactions/CustomerTransactionsDialog.vue'
 import PaymentMethodDialog from '@/components/transactions/PaymentMethodDialog.vue'
 import PaymentSuccessDialog from '@/components/transactions/PaymentSuccessDialog.vue'
@@ -18,7 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useI18n } from '@/composables/useI18n'
-import { getTransactions, markTransactionAsPaid } from '@/lib/transaction'
+import { getTransactions, isActiveTransaction, markTransactionAsPaid } from '@/lib/transaction'
 import { buildInvoiceFromTransaction, type InvoiceData } from '@/lib/invoice'
 import { printTransactionReceipt } from '@/lib/print-invoice'
 import { formatPrice } from '@/lib/format'
@@ -41,6 +42,7 @@ const editDialogOpen = ref(false)
 const paymentDialogOpen = ref(false)
 const paymentSuccessDialogOpen = ref(false)
 const paymentSuccessInvoice = ref<InvoiceData | null>(null)
+const cancelDialogOpen = ref(false)
 const isPaying = ref(false)
 const selectedCustomer = ref<CustomerTransactionSummary | null>(null)
 const selectedTransaction = ref<TransactionWithDetails | null>(null)
@@ -62,20 +64,41 @@ function formatDateTime(value: string) {
 
 const filteredTransactions = computed(() => {
   if (paymentFilter.value === 'unpaid') {
-    return transactions.value.filter((transaction) => !transaction.is_paid)
+    return transactions.value.filter(
+      (transaction) => isActiveTransaction(transaction) && !transaction.is_paid,
+    )
   }
 
   if (paymentFilter.value === 'paid') {
-    return transactions.value.filter((transaction) => transaction.is_paid)
+    return transactions.value.filter(
+      (transaction) => isActiveTransaction(transaction) && transaction.is_paid,
+    )
   }
 
   return transactions.value
 })
 
+function transactionStatusLabel(transaction: TransactionWithDetails) {
+  if (!isActiveTransaction(transaction)) return t('status.cancelled')
+  return transaction.is_paid ? t('status.paid') : t('status.unpaid')
+}
+
+function transactionStatusClass(transaction: TransactionWithDetails) {
+  if (!isActiveTransaction(transaction)) {
+    return 'bg-destructive/15 text-destructive'
+  }
+
+  return transaction.is_paid
+    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+    : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
+}
+
 const customerSummaries = computed<CustomerTransactionSummary[]>(() => {
   const map = new Map<string, CustomerTransactionSummary>()
 
   for (const transaction of filteredTransactions.value) {
+    if (!isActiveTransaction(transaction)) continue
+
     const customerId = transaction.customer_id
     const rawName = transaction.customers?.name
     const customerName = rawName === WALK_IN_CUSTOMER_NAME
@@ -174,6 +197,30 @@ async function handlePayment(method: PaymentMethod) {
   )
   paymentSuccessDialogOpen.value = true
   await loadTransactions()
+}
+
+function openCancelDialog(transaction: TransactionWithDetails) {
+  selectedTransaction.value = transaction
+  cancelDialogOpen.value = true
+}
+
+function openCancelFromDetail() {
+  detailDialogOpen.value = false
+  cancelDialogOpen.value = true
+}
+
+async function handleTransactionCancelled() {
+  await loadTransactions()
+
+  if (!selectedTransaction.value) return
+
+  const updated = transactions.value.find(
+    (transaction) => transaction.id === selectedTransaction.value!.id,
+  )
+
+  if (updated) {
+    selectedTransaction.value = updated
+  }
 }
 
 function openEditFromDetail() {
@@ -318,11 +365,9 @@ onMounted(loadTransactions)
                 <TableCell>
                   <span
                     class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                    :class="transaction.is_paid
-                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
-                      : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'"
+                    :class="transactionStatusClass(transaction)"
                   >
-                    {{ transaction.is_paid ? t('status.paid') : t('status.unpaid') }}
+                    {{ transactionStatusLabel(transaction) }}
                   </span>
                 </TableCell>
                 <TableCell class="text-right font-medium">
@@ -331,7 +376,7 @@ onMounted(loadTransactions)
                 <TableCell class="text-right">
                   <div class="flex justify-end gap-2">
                     <Button
-                      v-if="transaction.is_paid && transaction.payment_method"
+                      v-if="isActiveTransaction(transaction) && transaction.is_paid && transaction.payment_method"
                       size="icon-sm"
                       variant="outline"
                       :title="t('payment.printInvoice')"
@@ -340,7 +385,7 @@ onMounted(loadTransactions)
                       <Printer class="size-4" />
                     </Button>
                     <Button
-                      v-if="!transaction.is_paid"
+                      v-if="isActiveTransaction(transaction) && !transaction.is_paid"
                       size="sm"
                       :disabled="isPaying"
                       @click="openPaymentDialog(transaction)"
@@ -349,12 +394,21 @@ onMounted(loadTransactions)
                       {{ t('common.pay') }}
                     </Button>
                     <Button
-                      v-if="!transaction.is_paid"
+                      v-if="isActiveTransaction(transaction) && !transaction.is_paid"
                       size="icon-sm"
                       variant="outline"
                       @click="openTransactionEdit(transaction)"
                     >
                       <Pencil class="size-4" />
+                    </Button>
+                    <Button
+                      v-if="isActiveTransaction(transaction)"
+                      size="icon-sm"
+                      variant="outline"
+                      :title="t('transaction.voidCancel')"
+                      @click="openCancelDialog(transaction)"
+                    >
+                      <Ban class="size-4" />
                     </Button>
                     <Button
                       size="icon-sm"
@@ -411,6 +465,7 @@ onMounted(loadTransactions)
         v-model:open="detailDialogOpen"
         :transaction="selectedTransaction"
         @edit="openEditFromDetail"
+        @cancel="openCancelFromDetail"
       />
 
       <TransactionEditDialog
@@ -428,6 +483,12 @@ onMounted(loadTransactions)
       <PaymentSuccessDialog
         v-model:open="paymentSuccessDialogOpen"
         :invoice="paymentSuccessInvoice"
+      />
+
+      <CancelTransactionDialog
+        v-model:open="cancelDialogOpen"
+        :transaction="selectedTransaction"
+        @cancelled="handleTransactionCancelled"
       />
     </div>
   </DashboardLayout>

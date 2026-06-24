@@ -8,6 +8,7 @@ import {
 import { useI18n } from '@/composables/useI18n'
 import { formatItemWithAddons } from '@/lib/addon'
 import { formatPrice } from '@/lib/format'
+import { isActiveTransaction } from '@/lib/transaction'
 import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
 import type { CustomerTransactionSummary } from '@/types/database'
 
@@ -27,7 +28,7 @@ const dateLocale = computed(() => (locale.value === 'en' ? 'en-US' : 'id-ID'))
 
 const unpaidTransactions = computed(() =>
   (props.customer?.transactions ?? [])
-    .filter((transaction) => !transaction.is_paid)
+    .filter((transaction) => isActiveTransaction(transaction) && !transaction.is_paid)
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
 )
 

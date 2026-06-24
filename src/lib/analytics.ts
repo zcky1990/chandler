@@ -84,6 +84,7 @@ async function fetchTransactionsInRange(range: AnalyticsDateRange) {
     `)
     .gte('created_at', range.start)
     .lte('created_at', range.end)
+    .eq('status', 'active')
     .order('created_at', { ascending: false })
 
   return {
@@ -126,6 +127,7 @@ async function fetchOutstandingDebt() {
     .from('transactions')
     .select('total_amount')
     .eq('is_paid', false)
+    .eq('status', 'active')
 
   const total = (data ?? []).reduce((sum, row) => sum + Number(row.total_amount), 0)
   return { total, error }

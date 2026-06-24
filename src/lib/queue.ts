@@ -116,6 +116,18 @@ export const markQueueReady = async (queueId: string) => updateQueueStatus(queue
 
 export const completeQueue = async (queueId: string) => updateQueueStatus(queueId, 'completed')
 
+export const cancelQueueByTransactionId = async (transactionId: string) => {
+  const supabaseClient = supabase()
+  const { data, error } = await supabaseClient
+    .from('order_queues')
+    .update({ status: 'cancelled' })
+    .eq('transaction_id', transactionId)
+    .in('status', ['waiting', 'preparing', 'ready'])
+    .select()
+
+  return { queues: data as OrderQueue[] | null, error }
+}
+
 type QueueRealtimeStatus = 'SUBSCRIBED' | 'CHANNEL_ERROR' | 'TIMED_OUT' | 'CLOSED'
 
 export const subscribeActiveQueues = (

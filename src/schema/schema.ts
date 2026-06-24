@@ -126,6 +126,14 @@ export function transactionItemsUpdateSchema() {
 
 export type TransactionItemsUpdateSchema = z.infer<ReturnType<typeof transactionItemsUpdateSchema>>
 
+export function cancelTransactionSchema() {
+  return z.object({
+    reason: z.string().trim().min(1, { message: t('validation.cancelReasonRequired') }),
+  })
+}
+
+export type CancelTransactionSchema = z.infer<ReturnType<typeof cancelTransactionSchema>>
+
 export function shopConfigSchema() {
   return z.object({
     shop_name: z.string().nullable().optional(),
