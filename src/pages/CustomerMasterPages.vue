@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { Pencil, Plus, Trash2 } from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import CustomerFormDialog from '@/components/masterdata/CustomerFormDialog.vue'
+import TablePagination from '@/components/common/TablePagination.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -21,6 +22,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useI18n } from '@/composables/useI18n'
+import { usePagination } from '@/composables/usePagination'
 import { useRoleStore } from '@/stores/useRoleStore'
 import { deleteCustomer, getCustomers } from '@/lib/customer'
 import { useAlertStore } from '@/stores/useAlertStore'
@@ -66,6 +68,17 @@ const filteredCustomers = computed(() => {
 
   return result
 })
+
+const {
+  paginatedItems: paginatedCustomers,
+  currentPage,
+  pageSize,
+  totalCount,
+  totalPages,
+  paginationFrom,
+  paginationTo,
+  goToPage,
+} = usePagination(filteredCustomers, [searchQuery, statusFilter])
 
 function displayCustomerName(name: string) {
   if (name === WALK_IN_CUSTOMER_NAME) return t('common.walkIn')
@@ -170,7 +183,7 @@ onMounted(loadCustomers)
                 {{ customers.length ? t('master.noCustomerFilterMatch') : t('master.noCustomer') }}
               </TableCell>
             </TableRow>
-            <TableRow v-for="customer in filteredCustomers" :key="customer.id">
+            <TableRow v-for="customer in paginatedCustomers" :key="customer.id">
               <TableCell class="font-medium">{{ displayCustomerName(customer.name) }}</TableCell>
               <TableCell>{{ customer.email || '-' }}</TableCell>
               <TableCell>{{ customer.phone || '-' }}</TableCell>
@@ -189,6 +202,19 @@ onMounted(loadCustomers)
             </TableRow>
           </TableBody>
         </Table>
+
+        <TablePagination
+          v-if="!isLoading && totalCount > 0"
+          :from="paginationFrom"
+          :to="paginationTo"
+          :total="totalCount"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :page-size="pageSize"
+          @update:page-size="pageSize = $event"
+          @previous="goToPage(currentPage - 1)"
+          @next="goToPage(currentPage + 1)"
+        />
       </div>
 
       <CustomerFormDialog

@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { Plus, Shield } from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import UserFormDialog from '@/components/masterdata/UserFormDialog.vue'
+import TablePagination from '@/components/common/TablePagination.vue'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -20,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useI18n } from '@/composables/useI18n'
+import { usePagination } from '@/composables/usePagination'
 import { getRoleLabelKey, getRoles, listProfiles, updateProfileRole } from '@/lib/profile'
 import { getCurrentUser } from '@/lib/auth'
 import { useAlertStore } from '@/stores/useAlertStore'
@@ -40,6 +42,17 @@ const roleRows = computed(() =>
     label: t(getRoleLabelKey(role.code)),
   })),
 )
+
+const {
+  paginatedItems: paginatedProfiles,
+  currentPage,
+  pageSize,
+  totalCount,
+  totalPages,
+  paginationFrom,
+  paginationTo,
+  goToPage,
+} = usePagination(profiles)
 
 async function loadData() {
   isLoading.value = true
@@ -137,7 +150,7 @@ onMounted(loadData)
                 {{ t('role.noUsers') }}
               </TableCell>
             </TableRow>
-            <TableRow v-for="profile in profiles" :key="profile.id">
+            <TableRow v-for="profile in paginatedProfiles" :key="profile.id">
               <TableCell class="font-medium">{{ profile.full_name || '-' }}</TableCell>
               <TableCell>{{ profile.email || '-' }}</TableCell>
               <TableCell>
@@ -163,6 +176,19 @@ onMounted(loadData)
             </TableRow>
           </TableBody>
         </Table>
+
+        <TablePagination
+          v-if="!isLoading && totalCount > 0"
+          :from="paginationFrom"
+          :to="paginationTo"
+          :total="totalCount"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :page-size="pageSize"
+          @update:page-size="pageSize = $event"
+          @previous="goToPage(currentPage - 1)"
+          @next="goToPage(currentPage + 1)"
+        />
       </div>
 
       <UserFormDialog v-model:open="dialogOpen" @saved="loadData" />

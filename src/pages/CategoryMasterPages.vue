@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { Pencil, Plus, Trash2 } from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import CategoryFormDialog from '@/components/masterdata/CategoryFormDialog.vue'
+import TablePagination from '@/components/common/TablePagination.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -21,6 +22,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useI18n } from '@/composables/useI18n'
+import { usePagination } from '@/composables/usePagination'
 import { useRoleStore } from '@/stores/useRoleStore'
 import { deleteCategory, getCategories } from '@/lib/category'
 import { useAlertStore } from '@/stores/useAlertStore'
@@ -58,6 +60,17 @@ const filteredCategories = computed(() => {
 
   return result
 })
+
+const {
+  paginatedItems: paginatedCategories,
+  currentPage,
+  pageSize,
+  totalCount,
+  totalPages,
+  paginationFrom,
+  paginationTo,
+  goToPage,
+} = usePagination(filteredCategories, [searchQuery, statusFilter])
 
 async function loadCategories() {
   isLoading.value = true
@@ -155,7 +168,7 @@ onMounted(loadCategories)
                 {{ categories.length ? t('master.noCategoryFilterMatch') : t('master.noCategory') }}
               </TableCell>
             </TableRow>
-            <TableRow v-for="category in filteredCategories" :key="category.id">
+            <TableRow v-for="category in paginatedCategories" :key="category.id">
               <TableCell class="font-medium">{{ category.name }}</TableCell>
               <TableCell>{{ category.description || '-' }}</TableCell>
               <TableCell>{{ category.is_active ? t('common.active') : t('common.inactive') }}</TableCell>
@@ -172,6 +185,19 @@ onMounted(loadCategories)
             </TableRow>
           </TableBody>
         </Table>
+
+        <TablePagination
+          v-if="!isLoading && totalCount > 0"
+          :from="paginationFrom"
+          :to="paginationTo"
+          :total="totalCount"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :page-size="pageSize"
+          @update:page-size="pageSize = $event"
+          @previous="goToPage(currentPage - 1)"
+          @next="goToPage(currentPage + 1)"
+        />
       </div>
 
       <CategoryFormDialog

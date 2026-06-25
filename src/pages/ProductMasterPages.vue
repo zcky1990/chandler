@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { Pencil, Plus, Trash2 } from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import ProductFormDialog from '@/components/masterdata/ProductFormDialog.vue'
+import TablePagination from '@/components/common/TablePagination.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -21,6 +22,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useI18n } from '@/composables/useI18n'
+import { usePagination } from '@/composables/usePagination'
 import { useRoleStore } from '@/stores/useRoleStore'
 import { getCategories } from '@/lib/category'
 import { deleteProduct, getProducts } from '@/lib/product'
@@ -80,6 +82,17 @@ const filteredProducts = computed(() => {
 
   return result
 })
+
+const {
+  paginatedItems: paginatedProducts,
+  currentPage,
+  pageSize,
+  totalCount,
+  totalPages,
+  paginationFrom,
+  paginationTo,
+  goToPage,
+} = usePagination(filteredProducts, [searchQuery, categoryFilter, statusFilter, addonFilter])
 
 async function loadProducts() {
   isLoading.value = true
@@ -216,7 +229,7 @@ onMounted(loadProducts)
                 {{ products.length ? t('master.noProductFilterMatch') : t('master.noProduct') }}
               </TableCell>
             </TableRow>
-            <TableRow v-for="product in filteredProducts" :key="product.id">
+            <TableRow v-for="product in paginatedProducts" :key="product.id">
               <TableCell class="font-medium">{{ product.name }}</TableCell>
               <TableCell>{{ product.is_addons ? t('common.yes') : t('common.no') }}</TableCell>
               <TableCell>{{ product.product_categories?.name || '-' }}</TableCell>
@@ -238,6 +251,19 @@ onMounted(loadProducts)
             </TableRow>
           </TableBody>
         </Table>
+
+        <TablePagination
+          v-if="!isLoading && totalCount > 0"
+          :from="paginationFrom"
+          :to="paginationTo"
+          :total="totalCount"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :page-size="pageSize"
+          @update:page-size="pageSize = $event"
+          @previous="goToPage(currentPage - 1)"
+          @next="goToPage(currentPage + 1)"
+        />
       </div>
 
       <ProductFormDialog
