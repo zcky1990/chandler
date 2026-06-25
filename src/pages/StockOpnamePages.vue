@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { ClipboardCheck, RefreshCw } from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import StockOpnameFormDialog from '@/components/stock/StockOpnameFormDialog.vue'
+import TablePagination from '@/components/common/TablePagination.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -15,13 +16,13 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useI18n } from '@/composables/useI18n'
+import { usePagination } from '@/composables/usePagination'
 import { getProducts } from '@/lib/product'
 import { getStockMovements } from '@/lib/stock'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { Product, StockMovementWithProduct } from '@/types/database'
 
 const LOW_STOCK_THRESHOLD = 5
-const HISTORY_LIMIT = 30
 
 const { t, locale } = useI18n()
 const alertStore = useAlertStore()
@@ -53,6 +54,17 @@ const filteredProducts = computed(() => {
 
   return result.sort((a, b) => a.name.localeCompare(b.name, dateLocale.value))
 })
+
+const {
+  paginatedItems: paginatedHistory,
+  currentPage,
+  pageSize,
+  totalCount,
+  totalPages,
+  paginationFrom,
+  paginationTo,
+  goToPage,
+} = usePagination(recentMovements)
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat(dateLocale.value, {
@@ -86,7 +98,7 @@ async function loadData() {
 
   const [productsResult, movementsResult] = await Promise.all([
     getProducts(),
-    getStockMovements({ movementType: 'opname', limit: HISTORY_LIMIT }),
+    getStockMovements({ movementType: 'opname' }),
   ])
 
   isLoading.value = false
@@ -207,7 +219,7 @@ onMounted(loadData)
                   {{ t('opname.noHistory') }}
                 </TableCell>
               </TableRow>
-              <TableRow v-for="movement in recentMovements" :key="movement.id">
+              <TableRow v-for="movement in paginatedHistory" :key="movement.id">
                 <TableCell>{{ formatDate(movement.created_at) }}</TableCell>
                 <TableCell>{{ movement.products?.name ?? '-' }}</TableCell>
                 <TableCell class="text-right text-muted-foreground">{{ movement.stock_before }}</TableCell>
@@ -220,6 +232,19 @@ onMounted(loadData)
               </TableRow>
             </TableBody>
           </Table>
+
+          <TablePagination
+            v-if="!isLoading && totalCount > 0"
+            :from="paginationFrom"
+            :to="paginationTo"
+            :total="totalCount"
+            :current-page="currentPage"
+            :total-pages="totalPages"
+            :page-size="pageSize"
+            @update:page-size="pageSize = $event"
+            @previous="goToPage(currentPage - 1)"
+            @next="goToPage(currentPage + 1)"
+          />
         </div>
       </div>
     </div>
