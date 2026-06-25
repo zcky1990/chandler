@@ -8,7 +8,7 @@ const alertStore = useAlertStore()
 const alertState = alertStore.alertState
 
 const alertVariant = computed(() => {
-  return alertState.type === 'success' ? 'success' : 'destructive'
+  return alertState.type === 'success' ? 'default' : 'destructive'
 })
 
 const alertIcon = computed(() => {

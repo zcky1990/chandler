@@ -40,7 +40,6 @@ async function loadUserAvatar() {
 }
 
 const data = computed(() => {
-  locale.value
   return {
   email: userEmail,
   menu: [
