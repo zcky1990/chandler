@@ -183,19 +183,11 @@ async function getTransactionTotalAmount(transactionId: string) {
   return { totalAmount: menuSubtotal + addonSubtotal, error: null }
 }
 
-function getTodayRange() {
-  const now = new Date()
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
-
-  return {
-    start: start.toISOString(),
-    end: end.toISOString(),
-  }
-}
+import { getShopDayUtcRange } from './date'
+import { addExpandedTableNumbers } from './table'
 
 async function findPendingTransactionToday(customerId: string, tableNumber?: string | null) {
-  const { start, end } = getTodayRange()
+  const { start, end } = getShopDayUtcRange()
   const supabaseClient = supabase()
   const walkInCustomer = await getWalkInCustomer()
   const isWalkIn = walkInCustomer?.id === customerId
@@ -1081,7 +1073,7 @@ export const createTransaction = async (
 }
 
 export const getOpenTableTransactions = async () => {
-  const { start, end } = getTodayRange()
+  const { start, end } = getShopDayUtcRange()
   const supabaseClient = supabase()
 
   const { data, error } = await supabaseClient
@@ -1107,7 +1099,7 @@ export const getOpenTableTransactions = async () => {
 }
 
 export const getOccupiedTableNumbers = async () => {
-  const { start, end } = getTodayRange()
+  const { start, end } = getShopDayUtcRange()
   const supabaseClient = supabase()
 
   const [transactionsResult, queuesResult] = await Promise.all([
@@ -1135,17 +1127,11 @@ export const getOccupiedTableNumbers = async () => {
   const occupiedTableNumbers = new Set<string>()
 
   for (const row of transactionsResult.data ?? []) {
-    const tableNumber = row.table_number?.trim()
-    if (tableNumber) {
-      occupiedTableNumbers.add(tableNumber)
-    }
+    addExpandedTableNumbers(occupiedTableNumbers, row.table_number)
   }
 
   for (const row of queuesResult.data ?? []) {
-    const tableNumber = row.table_number?.trim()
-    if (tableNumber) {
-      occupiedTableNumbers.add(tableNumber)
-    }
+    addExpandedTableNumbers(occupiedTableNumbers, row.table_number)
   }
 
   return { occupiedTableNumbers, error: null }

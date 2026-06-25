@@ -302,6 +302,7 @@ Semua skema SQL ada di folder [`DDL/`](DDL/). Nama file diawali angka urutan (`0
 | [`34-pre_orders_booking_id.ddl`](DDL/34-pre_orders_booking_id.ddl) | Kolom `booking_id` di `pre_orders` | Butuh `33` + `15` |
 | [`35-shop_config_booking.ddl`](DDL/35-shop_config_booking.ddl) | Pengaturan reservasi di `shop_config` | Butuh `10` |
 | [`36-table_bookings_realtime.ddl`](DDL/36-table_bookings_realtime.ddl) | Realtime publication untuk `table_bookings` | Butuh `33` |
+| [`37-transactions_realtime.ddl`](DDL/37-transactions_realtime.ddl) | Realtime publication untuk `transactions` (denah meja) | — |
 
 ### 90–94 · Migrasi database lama (opsional)
 
@@ -1048,6 +1049,7 @@ flowchart LR
 | Penjualan gagal "stok batch tidak mencukupi" | Restock dulu atau jalankan [`91-stock_movements_costing.ddl`](DDL/91-stock_movements_costing.ddl) untuk backfill batch |
 | Variable env tidak terbaca | Nama harus `VITE_SUPERBASE_URL` dan `VITE_SUPERBASE_PUBLISH_KEY`; restart `pnpm dev` setelah ubah `.env` |
 | Antrian tidak update otomatis | Jalankan [`13-order_queues_realtime.ddl`](DDL/13-order_queues_realtime.ddl), atau Database → Publications → `supabase_realtime` → tambah `order_queues` |
+| Denah meja tidak update otomatis | Jalankan [`13-order_queues_realtime.ddl`](DDL/13-order_queues_realtime.ddl), [`36-table_bookings_realtime.ddl`](DDL/36-table_bookings_realtime.ddl), dan [`37-transactions_realtime.ddl`](DDL/37-transactions_realtime.ddl) — denah mendengarkan `order_queues`, `transactions`, dan `table_bookings` |
 | Badge Live tidak muncul di Antrian | Pastikan sudah login; cek koneksi WebSocket ke Supabase tidak diblokir firewall |
 
 ---

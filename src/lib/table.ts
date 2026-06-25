@@ -10,6 +10,20 @@ import type {
 } from '@/types/database'
 import type { z } from 'zod'
 
+export function expandTableNumberLabels(raw: string | null | undefined): string[] {
+  if (!raw?.trim()) {
+    return []
+  }
+
+  return [...new Set(raw.split(',').map((part) => part.trim()).filter(Boolean))]
+}
+
+export function addExpandedTableNumbers(target: Set<string>, raw: string | null | undefined) {
+  for (const label of expandTableNumberLabels(raw)) {
+    target.add(label)
+  }
+}
+
 function normalizeDiningTableInput(
   input: z.infer<ReturnType<typeof diningTableSchema>>,
 ): DiningTableInput {

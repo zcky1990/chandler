@@ -10,6 +10,16 @@ export function getShopDateString(date = new Date()) {
   }).format(date)
 }
 
+/** UTC bounds for the current shop calendar day (Asia/Jakarta midnight). */
+export function getShopDayUtcRange(date = new Date()) {
+  const dateStr = getShopDateString(date)
+
+  return {
+    start: new Date(`${dateStr}T00:00:00+07:00`).toISOString(),
+    end: new Date(`${dateStr}T23:59:59.999+07:00`).toISOString(),
+  }
+}
+
 export function buildScheduledAtIso(bookingDate: string, time: string) {
   const [hours = '00', minutes = '00'] = time.trim().split(':')
   const hh = hours.padStart(2, '0').slice(0, 2)

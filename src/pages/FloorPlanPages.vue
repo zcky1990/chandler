@@ -1,27 +1,32 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
-import { Monitor, Pencil, Printer, RefreshCw } from '@lucide/vue'
+import { Monitor, Pencil, Printer, RefreshCw, Radio } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
-import FloorPlanCanvas, { type CanvasTable } from '@/components/floor/FloorPlanCanvas.vue'
+import FloorPlanCanvas from '@/components/floor/FloorPlanCanvas.vue'
 import { Button } from '@/components/ui/button'
+import { useFloorOccupancy } from '@/composables/useFloorOccupancy'
 import { useI18n } from '@/composables/useI18n'
 import { useRoleStore } from '@/stores/useRoleStore'
-import { getFloorTables, getTableOccupancy, subscribeFloorOccupancy } from '@/lib/floor'
 import { printFloorPlan } from '@/lib/print-floor'
 import { useAlertStore } from '@/stores/useAlertStore'
-import type { FloorTable, TableOccupancy } from '@/types/database'
 
 const { t } = useI18n()
 const roleStore = useRoleStore()
 const alertStore = useAlertStore()
 
-const floorTables = ref<FloorTable[]>([])
-const canvasTables = ref<CanvasTable[]>([])
-const occupancyByLabel = ref<Record<string, TableOccupancy>>({})
-const isLoading = ref(true)
-
-let unsubscribe: (() => void) | null = null
+const {
+  floorTables,
+  canvasTables,
+  occupancyByLabel,
+  isLoading,
+  isRealtimeConnected,
+  refresh,
+} = useFloorOccupancy({
+  channelName: 'floor_plan_occupancy',
+  onTablesError: (message) => {
+    alertStore.showAlert(t('alert.error'), message, 'error')
+  },
+})
 
 const legendItems = [
   { status: 'free', class: 'bg-background border-border' },
@@ -32,41 +37,6 @@ const legendItems = [
   { status: 'occupied', class: 'bg-rose-500/20 border-rose-500' },
   { status: 'reserved', class: 'bg-cyan-500/20 border-cyan-500' },
 ] as const
-
-async function loadTables() {
-  isLoading.value = true
-  const { tables, error } = await getFloorTables()
-  isLoading.value = false
-
-  if (error) {
-    alertStore.showAlert(t('alert.error'), error.message, 'error')
-    return
-  }
-
-  floorTables.value = tables ?? []
-  canvasTables.value = (tables ?? []).map((table) => ({
-    id: table.id,
-    label: table.label,
-    shape: table.shape,
-    kind: table.kind,
-    color: table.color,
-    pos_x: table.pos_x,
-    pos_y: table.pos_y,
-    width: table.width,
-    height: table.height,
-    seats: table.seats,
-  }))
-}
-
-async function loadOccupancy() {
-  const { occupancyByLabel: data, error } = await getTableOccupancy()
-  if (error) return
-  occupancyByLabel.value = data
-}
-
-async function refresh() {
-  await Promise.all([loadTables(), loadOccupancy()])
-}
 
 function handlePrint() {
   printFloorPlan(floorTables.value, {
@@ -84,17 +54,6 @@ function legendLabel(status: (typeof legendItems)[number]['status']) {
   if (status === 'reserved') return t('floor.legendReserved')
   return t('floor.legendFree')
 }
-
-onMounted(async () => {
-  await refresh()
-  unsubscribe = subscribeFloorOccupancy(() => {
-    loadOccupancy()
-  }, undefined, 'floor_plan_occupancy')
-})
-
-onUnmounted(() => {
-  unsubscribe?.()
-})
 </script>
 
 <template>
@@ -103,7 +62,16 @@ onUnmounted(() => {
       <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 class="text-2xl font-bold tracking-tight">{{ t('floor.viewTitle') }}</h1>
-          <p class="text-sm text-muted-foreground">{{ t('floor.viewSubtitle') }}</p>
+          <p class="text-sm text-muted-foreground">
+            {{ t('floor.viewSubtitle') }}
+            <span
+              v-if="isRealtimeConnected"
+              class="ml-2 inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-300"
+            >
+              <Radio class="size-3" />
+              {{ t('common.live') }}
+            </span>
+          </p>
         </div>
         <div class="flex gap-2">
           <Button variant="outline" :disabled="isLoading" @click="refresh">

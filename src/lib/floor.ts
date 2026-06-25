@@ -1,23 +1,52 @@
 import { getReservedTableNumbersForToday } from './booking'
+import { getShopDayUtcRange } from './date'
 import { supabase } from './supabase'
 import { getActiveQueues } from './queue'
 import { ACTIVE_TRANSACTION_STATUS } from './transaction'
+import { expandTableNumberLabels } from './table'
 import { floorTableSchema } from '@/schema/schema'
-import type { FloorTable, FloorTableInput, TableOccupancy } from '@/types/database'
+import type {
+  DiningTable,
+  FloorOccupancyStatus,
+  FloorTable,
+  FloorTableInput,
+  TableOccupancy,
+} from '@/types/database'
 
 export const FLOOR_CANVAS_WIDTH = 1000
 export const FLOOR_CANVAS_HEIGHT = 600
 export const FLOOR_GRID_SIZE = 10
 
-function getTodayRange() {
-  const now = new Date()
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+const OCCUPANCY_PRIORITY: Partial<Record<FloorOccupancyStatus, number>> = {
+  serving: 50,
+  ready: 40,
+  preparing: 30,
+  waiting: 20,
+  occupied: 10,
+  reserved: 5,
+}
 
-  return {
-    start: start.toISOString(),
-    end: end.toISOString(),
+function occupancyPriority(status: FloorOccupancyStatus) {
+  return OCCUPANCY_PRIORITY[status] ?? 0
+}
+
+function pickOccupancy(current: TableOccupancy | undefined, candidate: TableOccupancy) {
+  if (!current) {
+    return candidate
   }
+
+  const currentPriority = occupancyPriority(current.status)
+  const candidatePriority = occupancyPriority(candidate.status)
+
+  if (candidatePriority !== currentPriority) {
+    return candidatePriority > currentPriority ? candidate : current
+  }
+
+  if (current.queueNumber != null && candidate.queueNumber != null) {
+    return candidate.queueNumber < current.queueNumber ? candidate : current
+  }
+
+  return current
 }
 
 export const getFloorTables = async () => {
@@ -101,7 +130,7 @@ export const deleteFloorTable = async (id: string) => {
 }
 
 async function getOpenTableNumbersToday() {
-  const { start, end } = getTodayRange()
+  const { start, end } = getShopDayUtcRange()
   const supabaseClient = supabase()
 
   const { data, error } = await supabaseClient
@@ -117,11 +146,14 @@ async function getOpenTableNumbersToday() {
     return { tableNumbers: [] as string[], error }
   }
 
-  const tableNumbers = (data ?? [])
-    .map((row) => row.table_number?.trim())
-    .filter((value): value is string => Boolean(value))
+  const tableNumbers = new Set<string>()
+  for (const row of data ?? []) {
+    for (const label of expandTableNumberLabels(row.table_number)) {
+      tableNumbers.add(label)
+    }
+  }
 
-  return { tableNumbers, error: null }
+  return { tableNumbers: [...tableNumbers], error: null }
 }
 
 export const getTableOccupancy = async () => {
@@ -145,48 +177,79 @@ export const getTableOccupancy = async () => {
   const occupancyByLabel: Record<string, TableOccupancy> = {}
 
   for (const queue of queues ?? []) {
-    const label = queue.table_number?.trim()
-    if (!label) continue
-
-    const existing = occupancyByLabel[label]
-    if (!existing || queue.queue_number < (existing.queueNumber ?? Number.MAX_SAFE_INTEGER)) {
-      occupancyByLabel[label] = {
+    for (const label of expandTableNumberLabels(queue.table_number)) {
+      const candidate: TableOccupancy = {
         label,
         status: queue.status,
         queueNumber: queue.queue_number,
       }
+      occupancyByLabel[label] = pickOccupancy(occupancyByLabel[label], candidate)
     }
   }
 
-  for (const tableNumber of tableNumbers) {
-    if (occupancyByLabel[tableNumber]) {
-      continue
-    }
-
-    occupancyByLabel[tableNumber] = {
-      label: tableNumber,
+  for (const label of tableNumbers) {
+    const candidate: TableOccupancy = {
+      label,
       status: 'occupied',
       queueNumber: null,
     }
+    occupancyByLabel[label] = pickOccupancy(occupancyByLabel[label], candidate)
   }
 
   for (const [label] of Object.entries(reservedByLabel)) {
-    if (occupancyByLabel[label]) {
-      continue
-    }
-
-    occupancyByLabel[label] = {
+    const candidate: TableOccupancy = {
       label,
       status: 'reserved',
       queueNumber: null,
     }
+    occupancyByLabel[label] = pickOccupancy(occupancyByLabel[label], candidate)
   }
 
   return { occupancyByLabel, error: null }
 }
 
+export function resolveFloorOccupancy(
+  floorTables: Pick<FloorTable, 'label' | 'kind' | 'dining_table_id'>[],
+  diningTables: Pick<DiningTable, 'id' | 'table_number'>[],
+  occupancyByTableNumber: Record<string, TableOccupancy>,
+) {
+  const diningById = new Map(diningTables.map((table) => [table.id, table]))
+  const resolved: Record<string, TableOccupancy> = {}
+
+  for (const floorTable of floorTables) {
+    if (floorTable.kind !== 'table') {
+      continue
+    }
+
+    const floorLabel = floorTable.label.trim()
+    const lookupKeys = new Set<string>([floorLabel])
+
+    if (floorTable.dining_table_id) {
+      const dining = diningById.get(floorTable.dining_table_id)
+      for (const key of expandTableNumberLabels(dining?.table_number)) {
+        lookupKeys.add(key)
+      }
+    }
+
+    for (const key of lookupKeys) {
+      const occupancy = occupancyByTableNumber[key]
+      if (!occupancy) {
+        continue
+      }
+
+      resolved[floorLabel] = pickOccupancy(resolved[floorLabel], {
+        ...occupancy,
+        label: floorLabel,
+      })
+    }
+  }
+
+  return resolved
+}
+
 type RealtimeStatus = 'SUBSCRIBED' | 'CHANNEL_ERROR' | 'TIMED_OUT' | 'CLOSED'
 
+/** Requires realtime publication on order_queues, transactions, and table_bookings (DDL 13, 36, 37). */
 export const subscribeFloorOccupancy = (
   onChange: () => void,
   onStatusChange?: (status: RealtimeStatus) => void,
