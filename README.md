@@ -292,6 +292,9 @@ Semua skema SQL ada di folder [`DDL/`](DDL/). Nama file diawali angka urutan (`0
 | [`27-transactions_table_number.ddl`](DDL/27-transactions_table_number.ddl) | Kolom `table_number` di transaksi + index bon terbuka | — |
 | [`28-shop_config_payment_flow.ddl`](DDL/28-shop_config_payment_flow.ddl) | Mode pembayaran dine-in (`payment_flow_mode`) | — |
 | [`29-shop_config_menu_categories.ddl`](DDL/29-shop_config_menu_categories.ddl) | Kategori menu yang tampil di `/order` dan kasir (`menu_category_ids`) | — |
+| [`30-dining_tables.ddl`](DDL/30-dining_tables.ddl) | Master meja (`table_number`, `seats`, `is_active`) | — |
+| [`31-floor_tables_dining_table_fk.ddl`](DDL/31-floor_tables_dining_table_fk.ddl) | FK `dining_table_id` di denah + migrasi label meja lama | Butuh `30` |
+| [`32-dining_tables_owner_policies.ddl`](DDL/32-dining_tables_owner_policies.ddl) | RLS owner-only untuk master meja | Butuh `30` + `20` |
 
 ### 90–94 · Migrasi database lama (opsional)
 
@@ -435,6 +438,7 @@ vue-superbase-project/
 | `/shifts` | Shift kasir (buka/tutup, ringkasan harian) | Laporan |
 | `/master/products` | Master produk | Master Data |
 | `/master/categories` | Master kategori | Master Data |
+| `/master/tables` | Master meja (nomor, kursi, ketersediaan) | Master Data |
 | `/master/customers` | Master pembeli | Master Data |
 | `/master/users` | Pengguna & role (owner only) | Master Data |
 | `/config` | Konfigurasi toko | Pengaturan |
@@ -953,6 +957,28 @@ sequenceDiagram
 | Bon + antrian | `transactions.is_paid = false`, `order_queues.status = waiting` | `/orders/inbox` → Kirim ke Dapur |
 | Selesai makan | `order_queues.status = completed` | `/queue` |
 | Tagihan | `transactions.is_paid = true` | `/transactions/open` → Bayar |
+
+---
+
+## Master Meja & Denah
+
+> **DDL:** Jalankan [`30-dining_tables.ddl`](DDL/30-dining_tables.ddl), [`31-floor_tables_dining_table_fk.ddl`](DDL/31-floor_tables_dining_table_fk.ddl), dan [`32-dining_tables_owner_policies.ddl`](DDL/32-dining_tables_owner_policies.ddl) sebelum menggunakan fitur ini.
+
+Alur yang disarankan:
+
+1. **Master Data → Meja** (`/master/tables`): tambah nomor meja, jumlah kursi, dan status aktif.
+2. **Denah → Edit** (`/floor-plan/edit`): pilih meja dari master lalu letakkan di kanvas.
+3. **Kasir / Order**: pilih meja dari dropdown — hanya meja **tersedia** yang bisa dipilih.
+
+**Ketersediaan (computed):**
+
+| Status | Arti |
+|--------|------|
+| `inactive` | `is_active = false` di master (owner nonaktifkan meja) |
+| `occupied` | Ada bon terbuka hari ini atau antrian aktif dengan nomor meja yang sama |
+| `available` | Meja aktif dan tidak terisi |
+
+Transaksi, antrian, dan pre-order tetap menyimpan `table_number` (teks) agar kompatibel dengan data lama; nilai diisi dari master saat dipilih dropdown.
 
 ---
 

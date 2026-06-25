@@ -7,8 +7,7 @@ import FloorPlanCanvas, { type CanvasTable } from '@/components/floor/FloorPlanC
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/composables/useI18n'
 import { useRoleStore } from '@/stores/useRoleStore'
-import { getFloorTables, getTableOccupancy } from '@/lib/floor'
-import { subscribeActiveQueues } from '@/lib/queue'
+import { getFloorTables, getTableOccupancy, subscribeFloorOccupancy } from '@/lib/floor'
 import { printFloorPlan } from '@/lib/print-floor'
 import { useAlertStore } from '@/stores/useAlertStore'
 import type { FloorTable, TableOccupancy } from '@/types/database'
@@ -30,6 +29,7 @@ const legendItems = [
   { status: 'preparing', class: 'bg-blue-500/20 border-blue-500' },
   { status: 'ready', class: 'bg-emerald-500/20 border-emerald-500' },
   { status: 'serving', class: 'bg-violet-500/20 border-violet-500' },
+  { status: 'occupied', class: 'bg-rose-500/20 border-rose-500' },
 ] as const
 
 async function loadTables() {
@@ -79,12 +79,13 @@ function legendLabel(status: (typeof legendItems)[number]['status']) {
   if (status === 'preparing') return t('status.preparing')
   if (status === 'ready') return t('status.ready')
   if (status === 'serving') return t('status.serving')
+  if (status === 'occupied') return t('floor.legendOccupied')
   return t('floor.legendFree')
 }
 
 onMounted(async () => {
   await refresh()
-  unsubscribe = subscribeActiveQueues(() => {
+  unsubscribe = subscribeFloorOccupancy(() => {
     loadOccupancy()
   }, undefined, 'floor_plan_occupancy')
 })

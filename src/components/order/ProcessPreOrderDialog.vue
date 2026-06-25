@@ -13,11 +13,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Field, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
+import TableSelect from '@/components/tables/TableSelect.vue'
 import { Switch } from '@/components/ui/switch'
 import { useI18n } from '@/composables/useI18n'
 import { formatPreOrderItemWithAddons } from '@/lib/addon'
 import { formatPrice } from '@/lib/format'
+import { isDiningTableAvailable } from '@/lib/table'
 import { buildInvoiceFromTransaction, type InvoiceData } from '@/lib/invoice'
 import {
   confirmPreOrderPayment,
@@ -95,6 +96,20 @@ function getErrorMessage(error: unknown) {
 
 async function finishProcessEatFirst() {
   if (!props.preOrder) return
+
+  const normalizedTableNumber = tableNumber.value.trim()
+  if (normalizedTableNumber) {
+    const { available, error: tableError } = await isDiningTableAvailable(normalizedTableNumber)
+    if (tableError) {
+      alertStore.showAlert(t('alert.error'), getErrorMessage(tableError), 'error')
+      return
+    }
+
+    if (!available) {
+      alertStore.showAlert(t('alert.error'), t('master.diningTableUnavailable'), 'error')
+      return
+    }
+  }
 
   isSubmitting.value = true
   const { transaction, queueNumber, error } = await processPreOrder(props.preOrder.id, {
@@ -245,7 +260,7 @@ function handleProcessClick() {
         <template v-else>
           <Field>
             <FieldLabel for="process-table-number">{{ t('order.processTable') }}</FieldLabel>
-            <Input
+            <TableSelect
               id="process-table-number"
               v-model="tableNumber"
               :placeholder="t('common.optional')"

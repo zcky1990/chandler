@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Field, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
+import TableSelect from '@/components/tables/TableSelect.vue'
 import { useI18n } from '@/composables/useI18n'
 
 const props = defineProps<{
@@ -55,11 +55,10 @@ function handleConfirm() {
 
       <Field>
         <FieldLabel for="table-number">{{ t('table.labelOptional') }}</FieldLabel>
-        <Input
+        <TableSelect
           id="table-number"
           v-model="tableNumber"
-          :placeholder="t('table.placeholder')"
-          @keyup.enter="handleConfirm"
+          :placeholder="t('master.selectDiningTable')"
         />
       </Field>
 

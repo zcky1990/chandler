@@ -236,6 +236,14 @@ onUnmounted(() => {
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            <SidebarMenuItem v-if="canShow('/master/tables')">
+              <SidebarMenuButton as-child>
+                <RouterLink to="/master/tables">
+                  <UtensilsCrossed />
+                  <span>{{ t('nav.diningTables') }}</span>
+                </RouterLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
             <SidebarMenuItem v-if="canShow('/master/customers')">
               <SidebarMenuButton as-child>
                 <RouterLink to="/master/customers">

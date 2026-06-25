@@ -9,6 +9,23 @@ export type ProductCategory = {
 
 export type ProductCategoryInput = Omit<ProductCategory, 'id' | 'created_at' | 'updated_at'>
 
+export type TableAvailabilityStatus = 'available' | 'occupied' | 'inactive'
+
+export type DiningTable = {
+  id: string
+  table_number: string
+  seats: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type DiningTableInput = Omit<DiningTable, 'id' | 'created_at' | 'updated_at'>
+
+export type DiningTableWithAvailability = DiningTable & {
+  availability_status: TableAvailabilityStatus
+}
+
 export type ProductCategorySummary = {
   id: string
   name: string
@@ -245,6 +262,7 @@ export type FloorTable = {
   height: number
   seats: number | null
   area: string | null
+  dining_table_id: string | null
   sort_order: number
   created_at: string
   updated_at: string
@@ -262,14 +280,17 @@ export type FloorTableInput = {
   height: number
   seats?: number | null
   area?: string | null
+  dining_table_id?: string | null
   sort_order: number
 }
 
 export type TableOccupancy = {
   label: string
-  status: QueueStatus
-  queueNumber: number
+  status: FloorOccupancyStatus
+  queueNumber?: number | null
 }
+
+export type FloorOccupancyStatus = QueueStatus | 'occupied'
 
 export type QueueStatus = 'waiting' | 'preparing' | 'ready' | 'serving' | 'completed' | 'cancelled'
 

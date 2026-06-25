@@ -69,6 +69,16 @@ export function categorySchema() {
 }
 
 export type CategorySchema = z.infer<ReturnType<typeof categorySchema>>
+
+export function diningTableSchema() {
+  return z.object({
+    table_number: z.string().trim().min(1, { message: t('validation.tableNumberRequired') }),
+    seats: z.coerce.number().int().min(1, { message: t('validation.tableSeatsMin') }),
+    is_active: z.boolean(),
+  })
+}
+
+export type DiningTableSchema = z.infer<ReturnType<typeof diningTableSchema>>
 export type ProductSchema = z.infer<ReturnType<typeof productSchema>>
 export type CustomerSchema = z.infer<ReturnType<typeof customerSchema>>
 
@@ -184,6 +194,7 @@ export function floorTableSchema() {
     height: z.coerce.number().int().min(1, { message: t('validation.tableSizeInvalid') }),
     seats: z.coerce.number().int().min(0).nullable().optional(),
     area: z.string().trim().nullable().optional(),
+    dining_table_id: z.string().uuid().nullable().optional(),
     sort_order: z.coerce.number().int().default(0),
   })
 }
@@ -197,6 +208,14 @@ export function preOrderSubmitSchema() {
     notes: z.string().nullable().optional(),
     payment_choice: z.enum(['pay_later', 'pay_now']),
     items: z.array(transactionItemSchema()).min(1, { message: t('validation.minOneProduct') }),
+  }).superRefine((data, ctx) => {
+    if (data.payment_choice === 'pay_later' && !data.table_number?.trim()) {
+      ctx.addIssue({
+        code: 'custom',
+        message: t('validation.tableNumberRequired'),
+        path: ['table_number'],
+      })
+    }
   })
 }
 

@@ -6,7 +6,7 @@ import {
   FLOOR_GRID_SIZE,
 } from '@/lib/floor'
 import { useI18n } from '@/composables/useI18n'
-import type { FloorElementKind, QueueStatus, TableOccupancy, TableShape } from '@/types/database'
+import type { FloorElementKind, FloorOccupancyStatus, TableOccupancy, TableShape } from '@/types/database'
 
 export type CanvasTable = {
   id: string
@@ -19,6 +19,7 @@ export type CanvasTable = {
   width: number
   height: number
   seats?: number | null
+  dining_table_id?: string | null
 }
 
 const props = withDefaults(
@@ -44,11 +45,12 @@ const { t } = useI18n()
 
 const canvasRef = ref<HTMLElement | null>(null)
 
-const statusClass: Record<QueueStatus, string> = {
+const statusClass: Record<FloorOccupancyStatus, string> = {
   waiting: 'bg-amber-500/20 border-amber-500 text-amber-700 dark:text-amber-300',
   preparing: 'bg-blue-500/20 border-blue-500 text-blue-700 dark:text-blue-300',
   ready: 'bg-emerald-500/20 border-emerald-500 text-emerald-700 dark:text-emerald-300',
   serving: 'bg-violet-500/20 border-violet-500 text-violet-700 dark:text-violet-300',
+  occupied: 'bg-rose-500/20 border-rose-500 text-rose-700 dark:text-rose-300',
   completed: 'bg-muted border-border text-muted-foreground',
   cancelled: 'bg-muted border-border text-muted-foreground',
 }
@@ -57,6 +59,21 @@ const showOccupancy = computed(() => props.occupancyByLabel !== undefined)
 
 function occupancyFor(table: CanvasTable): TableOccupancy | undefined {
   return props.occupancyByLabel?.[table.label.trim()]
+}
+
+function occupancyLabel(table: CanvasTable) {
+  const occupancy = occupancyFor(table)
+  if (!occupancy) return ''
+
+  if (occupancy.status === 'occupied') {
+    return t('floor.statusOccupied')
+  }
+
+  if (occupancy.queueNumber != null) {
+    return `#${occupancy.queueNumber}`
+  }
+
+  return ''
 }
 
 function isZone(table: CanvasTable) {
@@ -220,10 +237,10 @@ defineExpose({ canvasRef })
             {{ t('floor.seatsShort', { count: table.seats }) }}
           </span>
           <span
-            v-if="showOccupancy && occupancyFor(table)"
+            v-if="showOccupancy && occupancyLabel(table)"
             class="text-[10px] font-medium leading-tight"
           >
-            #{{ occupancyFor(table)!.queueNumber }}
+            {{ occupancyLabel(table) }}
           </span>
         </template>
       </div>

@@ -16,13 +16,16 @@ import {
 } from '@/components/ui/select'
 import { useI18n } from '@/composables/useI18n'
 import { getFloorTables, saveFloorTables } from '@/lib/floor'
+import { getUnassignedDiningTables } from '@/lib/table'
 import { useAlertStore } from '@/stores/useAlertStore'
-import type { FloorTableInput, TableShape } from '@/types/database'
+import type { DiningTable, FloorTableInput, TableShape } from '@/types/database'
 
 const { t } = useI18n()
 const alertStore = useAlertStore()
 
 const tables = ref<CanvasTable[]>([])
+const unassignedTables = ref<DiningTable[]>([])
+const selectedMasterTableId = ref('')
 const selectedId = ref<string | null>(null)
 const isLoading = ref(true)
 const isSaving = ref(false)
@@ -31,16 +34,27 @@ const selectedTable = computed(() =>
   tables.value.find((table) => table.id === selectedId.value) ?? null,
 )
 
-function nextLabel() {
-  const numbers = tables.value
-    .map((table) => Number.parseInt(table.label, 10))
-    .filter((value) => !Number.isNaN(value))
+const selectedMasterTable = computed(() =>
+  unassignedTables.value.find((table) => table.id === selectedMasterTableId.value) ?? null,
+)
 
-  if (numbers.length) {
-    return String(Math.max(...numbers) + 1)
+async function loadUnassignedTables() {
+  const { tables: data, error } = await getUnassignedDiningTables()
+  if (error) {
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
+    return
   }
 
-  return String(tables.value.length + 1)
+  const usedIds = new Set(
+    tables.value
+      .filter((table) => table.kind === 'table' && table.dining_table_id)
+      .map((table) => table.dining_table_id as string),
+  )
+
+  unassignedTables.value = (data ?? []).filter((table) => !usedIds.has(table.id))
+  if (!unassignedTables.value.some((table) => table.id === selectedMasterTableId.value)) {
+    selectedMasterTableId.value = unassignedTables.value[0]?.id ?? ''
+  }
 }
 
 async function loadTables() {
@@ -64,20 +78,29 @@ async function loadTables() {
     width: table.width,
     height: table.height,
     seats: table.seats,
+    dining_table_id: table.dining_table_id,
   }))
+
+  await loadUnassignedTables()
 }
 
 function handleUpdateTables(updated: CanvasTable[]) {
   tables.value = updated
 }
 
-function addTable() {
+function addTableFromMaster() {
+  const masterTable = selectedMasterTable.value
+  if (!masterTable) {
+    alertStore.showAlert(t('alert.warning'), t('floor.createTableInMasterFirst'), 'error')
+    return
+  }
+
   const id = crypto.randomUUID()
   tables.value = [
     ...tables.value,
     {
       id,
-      label: nextLabel(),
+      label: masterTable.table_number,
       shape: 'square',
       kind: 'table',
       color: null,
@@ -85,10 +108,13 @@ function addTable() {
       pos_y: 20,
       width: 80,
       height: 80,
-      seats: 4,
+      seats: masterTable.seats,
+      dining_table_id: masterTable.id,
     },
   ]
   selectedId.value = id
+  selectedMasterTableId.value = ''
+  void loadUnassignedTables()
 }
 
 function addZone() {
@@ -106,6 +132,7 @@ function addZone() {
       width: 160,
       height: 100,
       seats: null,
+      dining_table_id: null,
     },
   ]
   selectedId.value = id
@@ -115,6 +142,7 @@ function deleteSelected() {
   if (!selectedTable.value) return
   tables.value = tables.value.filter((table) => table.id !== selectedId.value)
   selectedId.value = null
+  void loadUnassignedTables()
 }
 
 function updateSelected<K extends keyof CanvasTable>(key: K, value: CanvasTable[K]) {
@@ -137,6 +165,7 @@ async function handleSave() {
     width: table.width,
     height: table.height,
     seats: table.seats ?? null,
+    dining_table_id: table.kind === 'table' ? (table.dining_table_id ?? null) : null,
     sort_order: index,
   }))
 
@@ -182,10 +211,31 @@ onMounted(loadTables)
 
       <div class="flex flex-col gap-4 lg:flex-row">
         <div class="flex-1 space-y-3">
-          <div class="flex flex-wrap items-center gap-2">
-            <Button size="sm" @click="addTable">
+          <div class="flex flex-wrap items-end gap-2">
+            <Field class="min-w-[200px] flex-1 sm:max-w-xs">
+              <FieldLabel>{{ t('floor.pickMasterTable') }}</FieldLabel>
+              <Select v-model="selectedMasterTableId">
+                <SelectTrigger>
+                  <SelectValue :placeholder="t('master.selectDiningTable')" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="table in unassignedTables"
+                    :key="table.id"
+                    :value="table.id"
+                  >
+                    {{ table.table_number }} · {{ t('master.diningTableSeatsCount', { count: table.seats }) }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Button
+              size="sm"
+              :disabled="!selectedMasterTableId"
+              @click="addTableFromMaster"
+            >
               <Plus class="size-4" />
-              {{ t('floor.addTable') }}
+              {{ t('floor.addTableFromMaster') }}
             </Button>
             <Button size="sm" variant="outline" @click="addZone">
               <Square class="size-4" />
@@ -193,6 +243,9 @@ onMounted(loadTables)
             </Button>
             <span class="text-sm text-muted-foreground">{{ t('floor.dragHint') }}</span>
           </div>
+          <p v-if="!isLoading && !unassignedTables.length" class="text-sm text-muted-foreground">
+            {{ t('floor.noUnassignedTable') }}
+          </p>
 
           <FloorPlanCanvas
             :tables="tables"
@@ -211,15 +264,39 @@ onMounted(loadTables)
           </p>
 
           <FieldGroup v-else class="gap-3">
-            <Field>
-              <FieldLabel>
-                {{ selectedTable.kind === 'zone' ? t('floor.zoneName') : t('floor.tableLabel') }}
-              </FieldLabel>
-              <Input
-                :model-value="selectedTable.label"
-                @update:model-value="updateSelected('label', String($event))"
-              />
-            </Field>
+            <template v-if="selectedTable.kind === 'table' && selectedTable.dining_table_id">
+              <Field>
+                <FieldLabel>{{ t('floor.tableLabel') }}</FieldLabel>
+                <Input :model-value="selectedTable.label" disabled />
+              </Field>
+              <Field>
+                <FieldLabel>{{ t('floor.seats') }}</FieldLabel>
+                <Input :model-value="selectedTable.seats ?? 0" disabled />
+              </Field>
+              <p class="text-xs text-muted-foreground">{{ t('floor.masterTableReadonly') }}</p>
+            </template>
+
+            <template v-else>
+              <Field>
+                <FieldLabel>
+                  {{ selectedTable.kind === 'zone' ? t('floor.zoneName') : t('floor.tableLabel') }}
+                </FieldLabel>
+                <Input
+                  :model-value="selectedTable.label"
+                  @update:model-value="updateSelected('label', String($event))"
+                />
+              </Field>
+
+              <Field v-if="selectedTable.kind === 'table'">
+                <FieldLabel>{{ t('floor.seats') }}</FieldLabel>
+                <Input
+                  type="number"
+                  min="0"
+                  :model-value="selectedTable.seats ?? 0"
+                  @update:model-value="updateSelected('seats', Number($event))"
+                />
+              </Field>
+            </template>
 
             <Field>
               <FieldLabel>{{ t('floor.shape') }}</FieldLabel>
@@ -252,16 +329,6 @@ onMounted(loadTables)
                   @update:model-value="updateSelected('color', String($event))"
                 />
               </div>
-            </Field>
-
-            <Field v-if="selectedTable.kind === 'table'">
-              <FieldLabel>{{ t('floor.seats') }}</FieldLabel>
-              <Input
-                type="number"
-                min="0"
-                :model-value="selectedTable.seats ?? 0"
-                @update:model-value="updateSelected('seats', Number($event))"
-              />
             </Field>
 
             <div class="grid grid-cols-2 gap-2">

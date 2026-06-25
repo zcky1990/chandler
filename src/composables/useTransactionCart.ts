@@ -6,6 +6,7 @@ import { getProducts, getProductAddonsMap } from '@/lib/product'
 import { createQueueEntry } from '@/lib/queue'
 import { isWalkInCustomer } from '@/lib/customer'
 import { createTransaction, getCustomersForTransaction, getPendingTransactionForCustomer } from '@/lib/transaction'
+import { isDiningTableAvailable } from '@/lib/table'
 import { canEatFirst, canPayFirst, getShopConfig, requiresTableForEatFirst } from '@/lib/config'
 import {
   buildMenuCategories,
@@ -427,6 +428,19 @@ const requiresImmediatePayment = computed(() => {
     ) {
       alertStore.showAlert(t('alert.warning'), t('transaction.tableRequired'), 'error')
       return
+    }
+
+    if (effectiveTableNumber) {
+      const { available, error: tableError } = await isDiningTableAvailable(effectiveTableNumber)
+      if (tableError) {
+        alertStore.showAlert(t('alert.error'), tableError.message, 'error')
+        return
+      }
+
+      if (!available) {
+        alertStore.showAlert(t('alert.warning'), t('master.diningTableUnavailable'), 'error')
+        return
+      }
     }
 
     isSubmitting.value = true

@@ -2,6 +2,7 @@
 import { Plus } from '@lucide/vue'
 import MenuCategoryFilter from '@/components/menu/MenuCategoryFilter.vue'
 import ProductSearchSelect from '@/components/products/ProductSearchSelect.vue'
+import TableSelect from '@/components/tables/TableSelect.vue'
 import { Button } from '@/components/ui/button'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -83,10 +84,10 @@ function displayCustomerName(name: string) {
 
         <Field v-if="allowEatFirst">
           <FieldLabel for="table-number">{{ t('common.table') }}</FieldLabel>
-          <Input
+          <TableSelect
             id="table-number"
             v-model="tableNumber"
-            :placeholder="requireTableForEatFirst ? t('transaction.tableRequired') : t('common.optional')"
+            :placeholder="requireTableForEatFirst ? t('master.selectDiningTable') : t('common.optional')"
           />
         </Field>
 

@@ -1,3 +1,4 @@
+import { getShopDateString } from './date'
 import { supabase } from './supabase'
 import { cancelTransactionSchema, transactionItemsUpdateSchema, transactionSchema } from '@/schema/schema'
 import { useLocaleStore } from '@/stores/useLocaleStore'
@@ -1103,4 +1104,49 @@ export const getOpenTableTransactions = async () => {
     .order('created_at', { ascending: false })
 
   return { transactions: data as OpenTableTransaction[] | null, error }
+}
+
+export const getOccupiedTableNumbers = async () => {
+  const { start, end } = getTodayRange()
+  const supabaseClient = supabase()
+
+  const [transactionsResult, queuesResult] = await Promise.all([
+    supabaseClient
+      .from('transactions')
+      .select('table_number')
+      .eq('is_paid', false)
+      .eq('status', ACTIVE_TRANSACTION_STATUS)
+      .gte('created_at', start)
+      .lte('created_at', end)
+      .not('table_number', 'is', null),
+    supabaseClient
+      .from('order_queues')
+      .select('table_number')
+      .eq('queue_date', getShopDateString())
+      .in('status', ['waiting', 'preparing', 'ready', 'serving'])
+      .not('table_number', 'is', null),
+  ])
+
+  const error = transactionsResult.error ?? queuesResult.error
+  if (error) {
+    return { occupiedTableNumbers: new Set<string>(), error }
+  }
+
+  const occupiedTableNumbers = new Set<string>()
+
+  for (const row of transactionsResult.data ?? []) {
+    const tableNumber = row.table_number?.trim()
+    if (tableNumber) {
+      occupiedTableNumbers.add(tableNumber)
+    }
+  }
+
+  for (const row of queuesResult.data ?? []) {
+    const tableNumber = row.table_number?.trim()
+    if (tableNumber) {
+      occupiedTableNumbers.add(tableNumber)
+    }
+  }
+
+  return { occupiedTableNumbers, error: null }
 }

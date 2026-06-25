@@ -10,6 +10,7 @@ import NotFoundView from '@/pages/NotFoundPages.vue'
 import ProductMasterPages from '@/pages/ProductMasterPages.vue'
 import CustomerMasterPages from '@/pages/CustomerMasterPages.vue'
 import CategoryMasterPages from '@/pages/CategoryMasterPages.vue'
+import TableMasterPages from '@/pages/TableMasterPages.vue'
 import TransactionPages from '@/pages/TransactionPages.vue'
 import TransactionListPages from '@/pages/TransactionListPages.vue'
 import OpenTablesPages from '@/pages/OpenTablesPages.vue'
@@ -95,6 +96,11 @@ const router = createRouter({
       path: '/master/categories',
       name: 'master-categories',
       component: CategoryMasterPages,
+    },
+    {
+      path: '/master/tables',
+      name: 'master-tables',
+      component: TableMasterPages,
     },
     {
       path: '/transactions',

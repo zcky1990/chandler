@@ -19,6 +19,7 @@ import {
 } from '@/lib/menu-categories'
 import { saveOrderSuccessPayload } from '@/lib/order-success'
 import { getProducts, getProductAddonsMap } from '@/lib/product'
+import { isDiningTableAvailable } from '@/lib/table'
 import { useAlertStore } from '@/stores/useAlertStore'
 import { useI18n } from '@/composables/useI18n'
 import type { PreOrderPaymentChoice, Product, ShopConfig } from '@/types/database'
@@ -329,9 +330,23 @@ export function usePreOrderCart() {
   async function submitOrder() {
     if (!validateCart()) return
 
-    if (paymentChoice.value === 'pay_later' && requireTableForEatFirst.value && !tableNumber.value.trim()) {
+    if (paymentChoice.value === 'pay_later' && !tableNumber.value.trim()) {
       alertStore.showAlert(t('alert.error'), t('transaction.tableRequired'), 'error')
       return
+    }
+
+    const normalizedTableNumber = tableNumber.value.trim()
+    if (normalizedTableNumber) {
+      const { available, error: tableError } = await isDiningTableAvailable(normalizedTableNumber)
+      if (tableError) {
+        alertStore.showAlert(t('alert.error'), tableError.message, 'error')
+        return
+      }
+
+      if (!available) {
+        alertStore.showAlert(t('alert.error'), t('master.diningTableUnavailable'), 'error')
+        return
+      }
     }
 
     isSubmitting.value = true

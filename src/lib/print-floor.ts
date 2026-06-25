@@ -1,26 +1,28 @@
 import { FLOOR_CANVAS_HEIGHT, FLOOR_CANVAS_WIDTH } from './floor'
 import { useLocaleStore } from '@/stores/useLocaleStore'
-import type { FloorTable, QueueStatus, TableOccupancy } from '@/types/database'
+import type { FloorTable, FloorOccupancyStatus, TableOccupancy } from '@/types/database'
 
 type PrintFloorOptions = {
   title?: string
   occupancyByLabel?: Record<string, TableOccupancy>
 }
 
-const OCCUPANCY_FILL: Record<QueueStatus, string> = {
+const OCCUPANCY_FILL: Record<FloorOccupancyStatus, string> = {
   waiting: '#fde68a',
   preparing: '#bfdbfe',
   ready: '#bbf7d0',
   serving: '#ddd6fe',
+  occupied: '#fecdd3',
   completed: '#f3f4f6',
   cancelled: '#f3f4f6',
 }
 
-const OCCUPANCY_STROKE: Record<QueueStatus, string> = {
+const OCCUPANCY_STROKE: Record<FloorOccupancyStatus, string> = {
   waiting: '#d97706',
   preparing: '#2563eb',
   ready: '#16a34a',
   serving: '#7c3aed',
+  occupied: '#e11d48',
   completed: '#9ca3af',
   cancelled: '#9ca3af',
 }
@@ -33,7 +35,7 @@ function escapeHtml(value: string) {
     .replace(/"/g, '&quot;')
 }
 
-function buildTableSvg(table: FloorTable, occupancy?: TableOccupancy) {
+function buildTableSvg(table: FloorTable, occupancy: TableOccupancy | undefined, translate: (key: string) => string) {
   const cx = table.pos_x + table.width / 2
   const cy = table.pos_y + table.height / 2
 
@@ -60,9 +62,11 @@ function buildTableSvg(table: FloorTable, occupancy?: TableOccupancy) {
     ? `<text x="${cx}" y="${cy + 16}" text-anchor="middle" font-size="11" fill="#475569">${escapeHtml(String(table.seats))} seat</text>`
     : ''
 
-  const queue = occupancy
+  const queue = occupancy?.queueNumber != null
     ? `<text x="${cx}" y="${cy + 30}" text-anchor="middle" font-size="11" font-weight="bold" fill="${stroke}">#${occupancy.queueNumber}</text>`
-    : ''
+    : occupancy?.status === 'occupied'
+      ? `<text x="${cx}" y="${cy + 30}" text-anchor="middle" font-size="10" font-weight="bold" fill="${stroke}">${escapeHtml(translate('floor.statusOccupied'))}</text>`
+      : ''
 
   return `
     ${shape}
@@ -89,6 +93,7 @@ function buildFloorHtml(tables: FloorTable[], options?: PrintFloorOptions) {
       buildTableSvg(
         table,
         table.kind === 'zone' ? undefined : options?.occupancyByLabel?.[table.label.trim()],
+        t,
       ),
     )
     .join('')
@@ -100,6 +105,7 @@ function buildFloorHtml(tables: FloorTable[], options?: PrintFloorOptions) {
         <span><i style="background:${OCCUPANCY_FILL.preparing};border-color:${OCCUPANCY_STROKE.preparing}"></i>${escapeHtml(t('status.preparing'))}</span>
         <span><i style="background:${OCCUPANCY_FILL.ready};border-color:${OCCUPANCY_STROKE.ready}"></i>${escapeHtml(t('status.ready'))}</span>
         <span><i style="background:${OCCUPANCY_FILL.serving};border-color:${OCCUPANCY_STROKE.serving}"></i>${escapeHtml(t('status.serving'))}</span>
+        <span><i style="background:${OCCUPANCY_FILL.occupied};border-color:${OCCUPANCY_STROKE.occupied}"></i>${escapeHtml(t('floor.legendOccupied'))}</span>
         <span><i style="background:#eef2ff;border-color:#6366f1"></i>${escapeHtml(t('floor.legendFree'))}</span>
       </div>
     `

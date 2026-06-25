@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Minus, Plus, Trash2 } from '@lucide/vue'
 import OrderCustomerForm from '@/components/order/OrderCustomerForm.vue'
 import { Button } from '@/components/ui/button'
@@ -26,6 +27,9 @@ const tableNumber = defineModel<string>('tableNumber', { required: true })
 const notes = defineModel<string>('notes', { required: true })
 const paymentChoice = defineModel<PreOrderPaymentChoice>('paymentChoice', { required: true })
 
+const tableRequired = computed(() => paymentChoice.value === 'pay_later')
+const canSubmit = computed(() => !tableRequired.value || !!tableNumber.value.trim())
+
 const emit = defineEmits<{
   updateQuantity: [lineKey: string, quantity: number]
   remove: [lineKey: string]
@@ -46,6 +50,7 @@ const emit = defineEmits<{
           v-model:customer-name="customerName"
           v-model:table-number="tableNumber"
           v-model:notes="notes"
+          :table-required="tableRequired"
         />
 
         <Separator />
@@ -181,7 +186,7 @@ const emit = defineEmits<{
 
         <Button
           class="h-11 w-full text-base"
-          :disabled="isSubmitting || !cart.length"
+          :disabled="isSubmitting || !cart.length || !canSubmit"
           @click="emit('submit')"
         >
           {{ isSubmitting ? t('order.submitting') : t('order.submit') }}
