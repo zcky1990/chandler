@@ -2,6 +2,7 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { Inbox, Radio } from '@lucide/vue'
 import PreOrderCard from '@/components/order/PreOrderCard.vue'
+import PreOrderEditDialog from '@/components/order/PreOrderEditDialog.vue'
 import ProcessPreOrderDialog from '@/components/order/ProcessPreOrderDialog.vue'
 import { Button } from '@/components/ui/button'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
@@ -17,6 +18,7 @@ const preOrders = ref<PreOrderWithDetails[]>([])
 const isLoading = ref(true)
 const isRealtimeConnected = ref(false)
 const processDialogOpen = ref(false)
+const editDialogOpen = ref(false)
 const selectedPreOrder = ref<PreOrderWithDetails | null>(null)
 
 let unsubscribeRealtime: (() => void) | null = null
@@ -80,6 +82,24 @@ function openProcessDialog(preOrder: PreOrderWithDetails) {
   unlockNotificationSound()
   selectedPreOrder.value = preOrder
   processDialogOpen.value = true
+}
+
+function openEditDialog(preOrder: PreOrderWithDetails) {
+  selectedPreOrder.value = preOrder
+  editDialogOpen.value = true
+}
+
+function handlePreOrderEdited(preOrder: PreOrderWithDetails) {
+  const index = preOrders.value.findIndex((order) => order.id === preOrder.id)
+  if (index >= 0) {
+    preOrders.value[index] = preOrder
+  }
+  selectedPreOrder.value = preOrder
+}
+
+function handleEditFromProcess() {
+  if (!selectedPreOrder.value) return
+  editDialogOpen.value = true
 }
 
 async function handleCancel(preOrderId: string) {
@@ -153,16 +173,24 @@ onUnmounted(() => {
           v-for="preOrder in preOrders"
           :key="preOrder.id"
           :pre-order="preOrder"
+          @edit="openEditDialog(preOrder)"
           @process="openProcessDialog(preOrder)"
           @cancel="handleCancel(preOrder.id)"
         />
       </div>
+
+      <PreOrderEditDialog
+        v-model:open="editDialogOpen"
+        :pre-order="selectedPreOrder"
+        @saved="handlePreOrderEdited"
+      />
 
       <ProcessPreOrderDialog
         v-model:open="processDialogOpen"
         :pre-order="selectedPreOrder"
         @processed="loadPreOrders({ silent: true })"
         @payment-confirmed="handlePaymentConfirmed"
+        @edit="handleEditFromProcess"
       />
     </div>
   </DashboardLayout>

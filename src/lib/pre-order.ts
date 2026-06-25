@@ -9,11 +9,12 @@ import {
 import { createQueueEntry } from './queue'
 import { canEatFirst, canPayFirst, getShopConfig, requiresTableForEatFirst } from './config'
 import { createTransaction, getWalkInCustomer } from './transaction'
-import { preOrderSubmitSchema } from '@/schema/schema'
+import { preOrderItemsUpdateSchema, preOrderSubmitSchema } from '@/schema/schema'
 import type {
   PaymentMethod,
   PreOrder,
   PreOrderInput,
+  PreOrderItemInput,
   PreOrderPaymentStatus,
   PreOrderWithDetails,
   ProcessPreOrderOptions,
@@ -83,6 +84,75 @@ function validateStock(
   }
 
   return { ok: true, message: null }
+}
+
+export type PreOrderStockIssue = {
+  itemId: string
+  label: string
+  message: string
+}
+
+export async function getPreOrderStockIssues(preOrder: PreOrderWithDetails) {
+  const items = preOrder.pre_order_items.map((item) => ({
+    product_id: item.product_id,
+    quantity: item.quantity,
+    unit_price: Number(item.unit_price),
+    addons: (item.pre_order_item_addons ?? []).map((addon) => ({
+      addon_product_id: addon.addon_product_id,
+      quantity: addon.quantity,
+      unit_price: Number(addon.unit_price),
+    })),
+  }))
+
+  const productIds = [
+    ...items.map((item) => item.product_id),
+    ...items.flatMap((item) => (item.addons ?? []).map((addon) => addon.addon_product_id)),
+  ]
+  const { stockById, error } = await getProductsStockMap([...new Set(productIds)])
+
+  if (error) {
+    return { issues: [] as PreOrderStockIssue[], error }
+  }
+
+  const translate = useLocaleStore().translate
+  const issues: PreOrderStockIssue[] = []
+
+  for (const item of preOrder.pre_order_items) {
+    const label = item.products?.name ?? translate('common.unknownProduct')
+    const product = stockById.get(item.product_id)
+
+    if (!product || !product.is_active) {
+      issues.push({
+        itemId: item.id,
+        label,
+        message: translate('error.productUnavailable'),
+      })
+      continue
+    }
+
+    if (item.quantity > product.stock_quantity) {
+      issues.push({
+        itemId: item.id,
+        label,
+        message: translate('error.stockInsufficientProduct', { name: label }),
+      })
+    }
+
+    for (const addon of item.pre_order_item_addons ?? []) {
+      const addonProduct = stockById.get(addon.addon_product_id)
+      const required = addon.quantity * item.quantity
+
+      if (!addonProduct || !addonProduct.is_active || required > addonProduct.stock_quantity) {
+      issues.push({
+        itemId: item.id,
+        label,
+        message: translate('error.addonStockInsufficient'),
+      })
+      }
+    }
+  }
+
+  return { issues, error: null }
 }
 
 function buildPaymentStatus(paymentChoice: PreOrderInput['payment_choice']): PreOrderPaymentStatus {
@@ -160,43 +230,10 @@ export const createPreOrder = async (input: PreOrderInput) => {
     return { preOrder: null, error: insertError }
   }
 
-  for (const item of items) {
-    const subtotal = item.quantity * item.unit_price
-    const { data: insertedItem, error: itemError } = await supabaseClient
-      .from('pre_order_items')
-      .insert({
-        pre_order_id: preOrder.id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        subtotal,
-      })
-      .select()
-      .single()
-
-    if (itemError || !insertedItem) {
-      await supabaseClient.from('pre_orders').delete().eq('id', preOrder.id)
-      return { preOrder: null, error: itemError }
-    }
-
-    if (item.addons?.length) {
-      const addonRows = item.addons.map((addon) => ({
-        pre_order_item_id: insertedItem.id,
-        addon_product_id: addon.addon_product_id,
-        quantity: addon.quantity,
-        unit_price: addon.unit_price,
-        subtotal: addon.quantity * addon.unit_price * item.quantity,
-      }))
-
-      const { error: addonError } = await supabaseClient
-        .from('pre_order_item_addons')
-        .insert(addonRows)
-
-      if (addonError) {
-        await supabaseClient.from('pre_orders').delete().eq('id', preOrder.id)
-        return { preOrder: null, error: addonError }
-      }
-    }
+  const { error: itemsError } = await insertPreOrderItems(preOrder.id, items)
+  if (itemsError) {
+    await supabaseClient.from('pre_orders').delete().eq('id', preOrder.id)
+    return { preOrder: null, error: itemsError }
   }
 
   return { preOrder: preOrder as PreOrder, error: null }
@@ -251,6 +288,144 @@ export const cancelPreOrder = async (preOrderId: string) => {
     .single()
 
   return { preOrder: data as PreOrder | null, error }
+}
+
+async function insertPreOrderItems(
+  preOrderId: string,
+  items: ReturnType<typeof expandItemsForSubmit>,
+) {
+  const supabaseClient = supabase()
+
+  for (const item of items) {
+    const subtotal = item.quantity * item.unit_price
+    const { data: insertedItem, error: itemError } = await supabaseClient
+      .from('pre_order_items')
+      .insert({
+        pre_order_id: preOrderId,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        subtotal,
+      })
+      .select()
+      .single()
+
+    if (itemError || !insertedItem) {
+      return { error: itemError }
+    }
+
+    if (item.addons?.length) {
+      const addonRows = item.addons.map((addon) => ({
+        pre_order_item_id: insertedItem.id,
+        addon_product_id: addon.addon_product_id,
+        quantity: addon.quantity,
+        unit_price: addon.unit_price,
+        subtotal: addon.quantity * addon.unit_price * item.quantity,
+      }))
+
+      const { error: addonError } = await supabaseClient
+        .from('pre_order_item_addons')
+        .insert(addonRows)
+
+      if (addonError) {
+        return { error: addonError }
+      }
+    }
+  }
+
+  return { error: null }
+}
+
+export const updatePreOrderItems = async (
+  preOrderId: string,
+  input: {
+    notes?: string | null
+    items: {
+      product_id: string
+      quantity: number
+      unit_price: number
+      addons?: PreOrderItemInput['addons']
+    }[]
+  },
+) => {
+  const validated = preOrderItemsUpdateSchema().safeParse(input)
+  if (!validated.success) {
+    return { preOrder: null, error: validated.error.flatten().fieldErrors }
+  }
+
+  const supabaseClient = supabase()
+  const { data: preOrder, error: fetchError } = await supabaseClient
+    .from('pre_orders')
+    .select('id, status')
+    .eq('id', preOrderId)
+    .single()
+
+  if (fetchError || !preOrder) {
+    return {
+      preOrder: null,
+      error: fetchError ?? { message: useLocaleStore().translate('order.orderNotFound') },
+    }
+  }
+
+  if (preOrder.status !== 'pending') {
+    return { preOrder: null, error: { message: useLocaleStore().translate('order.alreadyProcessed') } }
+  }
+
+  const items = expandItemsForSubmit(validated.data.items)
+  const productIds = [
+    ...items.map((item) => item.product_id),
+    ...items.flatMap((item) => (item.addons ?? []).map((addon) => addon.addon_product_id)),
+  ]
+  const { stockById, error: stockError } = await getProductsStockMap([...new Set(productIds)])
+
+  if (stockError) {
+    return { preOrder: null, error: stockError }
+  }
+
+  const stockCheck = validateStock(items, stockById)
+  if (!stockCheck.ok) {
+    return { preOrder: null, error: { message: stockCheck.message! } }
+  }
+
+  const totalAmount = items.reduce(
+    (sum, item) => sum + getLineSubtotal(item.quantity, item.unit_price, item.addons),
+    0,
+  )
+
+  const { error: deleteError } = await supabaseClient
+    .from('pre_order_items')
+    .delete()
+    .eq('pre_order_id', preOrderId)
+
+  if (deleteError) {
+    return { preOrder: null, error: deleteError }
+  }
+
+  const { error: insertError } = await insertPreOrderItems(preOrderId, items)
+  if (insertError) {
+    return { preOrder: null, error: insertError }
+  }
+
+  const { data: updatedPreOrder, error: updateError } = await supabaseClient
+    .from('pre_orders')
+    .update({
+      notes: validated.data.notes?.trim() || null,
+      total_amount: totalAmount,
+    })
+    .eq('id', preOrderId)
+    .eq('status', 'pending')
+    .select(`
+      *,
+      pre_order_items (
+        ${PRE_ORDER_ITEMS_WITH_ADDONS_SELECT}
+      )
+    `)
+    .single()
+
+  return {
+    preOrder: updatedPreOrder as PreOrderWithDetails | null,
+    error: updateError,
+  }
 }
 
 export const processPreOrder = async (preOrderId: string, options: ProcessPreOrderOptions) => {

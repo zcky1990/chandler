@@ -227,6 +227,15 @@ export function preOrderSubmitSchema() {
 
 export type PreOrderSubmitSchema = z.infer<ReturnType<typeof preOrderSubmitSchema>>
 
+export function preOrderItemsUpdateSchema() {
+  return z.object({
+    notes: z.string().nullable().optional(),
+    items: z.array(transactionItemSchema()).min(1, { message: t('validation.minOneProduct') }),
+  })
+}
+
+export type PreOrderItemsUpdateSchema = z.infer<ReturnType<typeof preOrderItemsUpdateSchema>>
+
 export function tableBookingCreateSchema() {
   return z.object({
     dining_table_ids: z

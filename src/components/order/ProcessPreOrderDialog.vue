@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { Pencil } from '@lucide/vue'
 import PaymentMethodDialog from '@/components/transactions/PaymentMethodDialog.vue'
 import PaymentSuccessDialog from '@/components/transactions/PaymentSuccessDialog.vue'
 import { Button } from '@/components/ui/button'
@@ -24,8 +25,10 @@ import {
   confirmPreOrderPayment,
   formatPreOrderNumber,
   getPreOrderPaymentLabel,
+  getPreOrderStockIssues,
   needsPreOrderPaymentConfirmation,
   processPreOrder,
+  type PreOrderStockIssue,
 } from '@/lib/pre-order'
 import { getTransactionById } from '@/lib/transaction'
 import { useAlertStore } from '@/stores/useAlertStore'
@@ -40,6 +43,7 @@ const emit = defineEmits<{
   'update:open': [value: boolean]
   processed: []
   paymentConfirmed: []
+  edit: []
 }>()
 
 const { t } = useI18n()
@@ -52,8 +56,16 @@ const paymentDialogMode = ref<'confirm' | 'process'>('process')
 const paymentSuccessDialogOpen = ref(false)
 const paymentSuccessInvoice = ref<InvoiceData | null>(null)
 const dialogStep = ref<'confirm' | 'process'>('process')
+const stockIssues = ref<PreOrderStockIssue[]>([])
+const isCheckingStock = ref(false)
 
 const items = computed(() => props.preOrder?.pre_order_items ?? [])
+
+const stockIssueByItemId = computed(() =>
+  Object.fromEntries(stockIssues.value.map((issue) => [issue.itemId, issue.message])),
+)
+
+const hasStockIssues = computed(() => stockIssues.value.length > 0)
 
 const isConfirmStep = computed(
   () => dialogStep.value === 'confirm' && props.preOrder && needsPreOrderPaymentConfirmation(props.preOrder),
@@ -65,24 +77,41 @@ const dialogTitle = computed(() =>
 
 watch(
   () => props.open,
-  (isOpen) => {
-    if (!isOpen) return
+  async (isOpen) => {
+    if (!isOpen) {
+      stockIssues.value = []
+      return
+    }
+
     addToQueue.value = true
     tableNumber.value = props.preOrder?.table_number ?? ''
     dialogStep.value =
       props.preOrder && needsPreOrderPaymentConfirmation(props.preOrder) ? 'confirm' : 'process'
+
+    if (props.preOrder) {
+      isCheckingStock.value = true
+      const { issues } = await getPreOrderStockIssues(props.preOrder)
+      stockIssues.value = issues
+      isCheckingStock.value = false
+    }
   },
 )
 
 watch(
   () => props.preOrder,
-  (preOrder) => {
+  async (preOrder) => {
     if (!props.open || !preOrder) return
+
     if (needsPreOrderPaymentConfirmation(preOrder)) {
       dialogStep.value = 'confirm'
-      return
+    } else {
+      dialogStep.value = 'process'
     }
-    dialogStep.value = 'process'
+
+    isCheckingStock.value = true
+    const { issues } = await getPreOrderStockIssues(preOrder)
+    stockIssues.value = issues
+    isCheckingStock.value = false
   },
 )
 
@@ -202,6 +231,11 @@ async function handlePayment(method: PaymentMethod) {
   await finishProcess(method)
 }
 
+function handleEditClick() {
+  emit('update:open', false)
+  emit('edit')
+}
+
 function openConfirmPaymentDialog() {
   paymentDialogMode.value = 'confirm'
   paymentDialogOpen.value = true
@@ -235,14 +269,38 @@ function handleProcessClick() {
       </DialogHeader>
 
       <div v-if="preOrder" class="space-y-4">
+        <div
+          v-if="hasStockIssues"
+          class="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-3 text-sm"
+        >
+          <p class="font-medium text-destructive">{{ t('order.stockIssueTitle') }}</p>
+          <p class="mt-1 text-muted-foreground">{{ t('order.stockIssueHint') }}</p>
+          <Button
+            class="mt-3"
+            size="sm"
+            variant="outline"
+            @click="handleEditClick"
+          >
+            <Pencil class="size-4" />
+            {{ t('common.edit') }}
+          </Button>
+        </div>
+
         <div class="space-y-2">
           <p
             v-for="item in items"
             :key="item.id"
             class="rounded-lg border px-3 py-2 text-sm"
+            :class="stockIssueByItemId[item.id] ? 'border-destructive/50 bg-destructive/5' : ''"
           >
             {{ formatPreOrderItemWithAddons(item) }}
             <span class="text-muted-foreground"> — {{ formatPrice(item.subtotal) }}</span>
+            <span
+              v-if="stockIssueByItemId[item.id]"
+              class="mt-1 block text-xs text-destructive"
+            >
+              {{ stockIssueByItemId[item.id] }}
+            </span>
           </p>
         </div>
 
@@ -285,30 +343,41 @@ function handleProcessClick() {
         </template>
       </div>
 
-      <DialogFooter>
-        <DialogClose as-child>
-          <Button type="button" variant="outline">{{ t('common.cancel') }}</Button>
-        </DialogClose>
+      <DialogFooter class="gap-2 sm:justify-between">
         <Button
-          v-if="isConfirmStep"
-          :disabled="isSubmitting || !preOrder"
-          @click="openConfirmPaymentDialog"
+          v-if="!isConfirmStep && preOrder"
+          type="button"
+          variant="outline"
+          @click="handleEditClick"
         >
-          {{ isSubmitting ? t('order.processing') : t('order.confirmPayButton') }}
+          <Pencil class="size-4" />
+          {{ t('common.edit') }}
         </Button>
-        <Button
-          v-else
-          :disabled="isSubmitting || !preOrder"
-          @click="handleProcessClick"
-        >
-          {{
-            isSubmitting
-              ? t('order.processing')
-              : preOrder?.payment_choice === 'pay_now'
-                ? t('order.processQueueButton')
-                : t('order.processToKitchen')
-          }}
-        </Button>
+        <div class="flex gap-2 sm:ml-auto">
+          <DialogClose as-child>
+            <Button type="button" variant="outline">{{ t('common.cancel') }}</Button>
+          </DialogClose>
+          <Button
+            v-if="isConfirmStep"
+            :disabled="isSubmitting || !preOrder"
+            @click="openConfirmPaymentDialog"
+          >
+            {{ isSubmitting ? t('order.processing') : t('order.confirmPayButton') }}
+          </Button>
+          <Button
+            v-else
+            :disabled="isSubmitting || !preOrder || hasStockIssues || isCheckingStock"
+            @click="handleProcessClick"
+          >
+            {{
+              isSubmitting
+                ? t('order.processing')
+                : preOrder?.payment_choice === 'pay_now'
+                  ? t('order.processQueueButton')
+                  : t('order.processToKitchen')
+            }}
+          </Button>
+        </div>
       </DialogFooter>
     </DialogContent>
   </Dialog>

@@ -303,6 +303,7 @@ Semua skema SQL ada di folder [`DDL/`](DDL/). Nama file diawali angka urutan (`0
 | [`35-shop_config_booking.ddl`](DDL/35-shop_config_booking.ddl) | Pengaturan reservasi di `shop_config` | Butuh `10` |
 | [`36-table_bookings_realtime.ddl`](DDL/36-table_bookings_realtime.ddl) | Realtime publication untuk `table_bookings` | Butuh `33` |
 | [`37-transactions_realtime.ddl`](DDL/37-transactions_realtime.ddl) | Realtime publication untuk `transactions` (denah meja) | — |
+| [`38-pre_order_items_staff_policies.ddl`](DDL/38-pre_order_items_staff_policies.ddl) | Staff dapat ubah item pre-order di inbox | Butuh `15` |
 
 ### 90–94 · Migrasi database lama (opsional)
 

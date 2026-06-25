@@ -15,6 +15,7 @@ const { t } = useI18n()
 const emit = defineEmits<{
   process: []
   cancel: []
+  edit: []
 }>()
 
 const itemsSummary = computed(() =>
@@ -60,7 +61,14 @@ const needsPaymentConfirm = computed(() => needsPreOrderPaymentConfirmation(prop
 
     <div class="mt-4 flex items-center justify-between gap-3">
       <p class="font-semibold">{{ formatPrice(preOrder.total_amount) }}</p>
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
+        <button
+          type="button"
+          class="inline-flex h-8 items-center justify-center rounded-md border px-3 text-sm font-medium hover:bg-muted"
+          @click="emit('edit')"
+        >
+          {{ t('common.edit') }}
+        </button>
         <button
           type="button"
           class="inline-flex h-8 items-center justify-center rounded-md border px-3 text-sm font-medium hover:bg-muted"
