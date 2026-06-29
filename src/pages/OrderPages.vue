@@ -45,7 +45,7 @@ const {
 </script>
 
 <template>
-  <ApplicationLayout>
+  <ApplicationLayout show-staff-button>
     <div class="w-full max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
       <div class="mb-6 flex items-center justify-between gap-4">
         <div>

@@ -4,7 +4,7 @@ import HomeSearchFeature from '@/components/home/HomeSearchFeature.vue'
 </script>
 
 <template>
-  <ApplicationLayout>
+  <ApplicationLayout show-staff-button>
     <HomeSearchFeature />
   </ApplicationLayout>
 </template>
