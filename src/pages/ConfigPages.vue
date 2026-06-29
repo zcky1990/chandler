@@ -73,6 +73,7 @@ const loyaltyForm = ref({
   loyalty_enabled: false,
   loyalty_points_per_transaction: 0,
   loyalty_point_redeem_value: 0,
+  loyalty_minimum_transaction_amount: 0,
 })
 const activeCategories = ref<ProductCategory[]>([])
 
@@ -105,6 +106,7 @@ function applyConfig(config: ShopConfig | null) {
     loyalty_enabled: config?.loyalty_enabled ?? false,
     loyalty_points_per_transaction: config?.loyalty_points_per_transaction ?? 0,
     loyalty_point_redeem_value: Number(config?.loyalty_point_redeem_value ?? 0),
+    loyalty_minimum_transaction_amount: Number(config?.loyalty_minimum_transaction_amount ?? 0),
   }
 }
 
@@ -520,6 +522,21 @@ onMounted(loadConfig)
                   step="100"
                   :disabled="!loyaltyForm.loyalty_enabled"
                 />
+              </Field>
+
+              <Field>
+                <FieldLabel for="loyalty-minimum-amount">{{ t('config.loyaltyMinimumTransactionAmount') }}</FieldLabel>
+                <Input
+                  id="loyalty-minimum-amount"
+                  v-model.number="loyaltyForm.loyalty_minimum_transaction_amount"
+                  type="number"
+                  min="0"
+                  step="1000"
+                  :disabled="!loyaltyForm.loyalty_enabled"
+                />
+                <p class="mt-1 text-xs text-muted-foreground">
+                  {{ t('config.loyaltyMinimumTransactionAmountDesc') }}
+                </p>
               </Field>
 
               <Button type="submit" :disabled="isSavingLoyalty">

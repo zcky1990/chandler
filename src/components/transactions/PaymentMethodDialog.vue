@@ -12,7 +12,7 @@ import {
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/composables/useI18n'
-import { getShopConfig, isLoyaltyEnabled } from '@/lib/config'
+import { getShopConfig, isLoyaltyEnabled, qualifiesForLoyaltyEarn } from '@/lib/config'
 import { getCustomerById } from '@/lib/customer'
 import { formatPrice } from '@/lib/format'
 import {
@@ -74,6 +74,18 @@ const maxRedeemPoints = computed(() => {
 
 const showLoyaltySection = computed(() =>
   isLoyaltyEnabled(shopConfig.value) && isLoyaltyEligibleCustomer(loyaltyCustomer.value),
+)
+
+const earnsPointsOnPayment = computed(() =>
+  showLoyaltySection.value
+  && qualifiesForLoyaltyEarn(grossAmount.value, shopConfig.value)
+  && (loyaltyPreview.value?.pointsEarned ?? 0) > 0,
+)
+
+const belowMinimumForEarn = computed(() =>
+  showLoyaltySection.value
+  && !qualifiesForLoyaltyEarn(grossAmount.value, shopConfig.value)
+  && Number(shopConfig.value?.loyalty_minimum_transaction_amount ?? 0) > 0,
 )
 
 function resetState() {
@@ -179,8 +191,13 @@ watch(
         <p v-if="loyaltyPreview?.discountAmount" class="text-sm text-emerald-700 dark:text-emerald-300">
           {{ t('loyalty.discount') }}: -{{ formatPrice(loyaltyPreview.discountAmount) }}
         </p>
-        <p v-if="loyaltyPreview?.pointsEarned" class="text-xs text-muted-foreground">
-          {{ t('loyalty.earnOnPayment', { count: loyaltyPreview.pointsEarned }) }}
+        <p v-if="earnsPointsOnPayment" class="text-xs text-muted-foreground">
+          {{ t('loyalty.earnOnPayment', { count: loyaltyPreview?.pointsEarned ?? 0 }) }}
+        </p>
+        <p v-else-if="belowMinimumForEarn" class="text-xs text-amber-700 dark:text-amber-300">
+          {{ t('loyalty.belowMinimumEarn', {
+            amount: formatPrice(shopConfig?.loyalty_minimum_transaction_amount ?? 0),
+          }) }}
         </p>
       </div>
 

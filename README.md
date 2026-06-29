@@ -309,6 +309,7 @@ Semua skema SQL ada di folder [`DDL/`](DDL/). Nama file diawali angka urutan (`0
 | [`40-shop_config_loyalty.ddl`](DDL/40-shop_config_loyalty.ddl) | Pengaturan program loyalitas di `shop_config` | Butuh `10` |
 | [`41-customer_loyalty_ledger.ddl`](DDL/41-customer_loyalty_ledger.ddl) | Riwayat perubahan poin (`customer_point_ledger`) | Butuh `39` |
 | [`42-transactions_loyalty.ddl`](DDL/42-transactions_loyalty.ddl) | Kolom diskon & poin di `transactions` (`gross_amount`, dll.) | — |
+| [`43-shop_config_loyalty_minimum.ddl`](DDL/43-shop_config_loyalty_minimum.ddl) | Minimal nominal transaksi untuk dapat poin | Butuh `10` |
 
 ### 90–94 · Migrasi database lama (opsional)
 
@@ -1072,6 +1073,7 @@ flowchart TD
 | `loyalty_enabled` | Aktif/nonaktif program |
 | `loyalty_points_per_transaction` | Poin yang didapat setiap transaksi **lunas** (tetap per transaksi, bukan per nominal) |
 | `loyalty_point_redeem_value` | Nilai Rupiah potongan per 1 poin yang ditukar (mis. `1000` = 1 poin = Rp 1.000) |
+| `loyalty_minimum_transaction_amount` | Minimal **total transaksi (gross)** agar member mendapat poin; `0` = tanpa minimum |
 
 ### Syarat peserta
 
@@ -1086,7 +1088,7 @@ flowchart TD
 1. Pilih pelanggan **member** di `/transactions` — saldo poin tampil di form.
 2. Saat **Bayar** (pay now) atau **Bayar** dari bon terbuka / daftar transaksi, dialog pembayaran menampilkan input **Tukar poin**.
 3. Total bayar = `gross_amount − (poin_ditukar × loyalty_point_redeem_value)`.
-4. Setelah lunas, member mendapat `loyalty_points_per_transaction` poin (jika program aktif).
+4. Setelah lunas, member mendapat `loyalty_points_per_transaction` poin jika `gross_amount ≥ loyalty_minimum_transaction_amount`.
 5. Riwayat poin bisa dilihat di **Master Pembeli** (ikon riwayat pada baris member).
 
 ### Data yang tersimpan

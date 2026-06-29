@@ -4,6 +4,7 @@ import {
   getLoyaltyPointRedeemValue,
   getShopConfig,
   isLoyaltyEnabled,
+  qualifiesForLoyaltyEarn,
 } from './config'
 import { getCustomerById, isWalkInCustomer } from './customer'
 import { supabase } from './supabase'
@@ -62,7 +63,9 @@ export function buildLoyaltyPaymentPreview(
   )
   const discountAmount = calculateRedeemDiscount(pointsRedeemed, config)
   const finalTotal = Math.max(0, grossAmount - discountAmount)
-  const pointsEarned = getLoyaltyEarnPoints(config)
+  const pointsEarned = qualifiesForLoyaltyEarn(grossAmount, config)
+    ? getLoyaltyEarnPoints(config)
+    : 0
 
   return {
     pointsRedeemed,

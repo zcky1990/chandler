@@ -269,6 +269,7 @@ export type ShopConfig = {
   loyalty_enabled: boolean
   loyalty_points_per_transaction: number
   loyalty_point_redeem_value: number
+  loyalty_minimum_transaction_amount: number
   created_at: string
   updated_at: string
 }
@@ -292,6 +293,7 @@ export type ShopConfigInput = {
   loyalty_enabled?: boolean
   loyalty_points_per_transaction?: number
   loyalty_point_redeem_value?: number
+  loyalty_minimum_transaction_amount?: number
 }
 
 export type TableBookingStatus =

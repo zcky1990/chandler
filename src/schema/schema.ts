@@ -165,6 +165,7 @@ export function shopConfigSchema() {
     loyalty_enabled: z.boolean().optional(),
     loyalty_points_per_transaction: z.coerce.number().int().min(0).max(10000).optional(),
     loyalty_point_redeem_value: z.coerce.number().min(0).max(1000000).optional(),
+    loyalty_minimum_transaction_amount: z.coerce.number().min(0).max(100000000).optional(),
   })
 }
 

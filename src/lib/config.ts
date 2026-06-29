@@ -82,6 +82,9 @@ export const updateShopConfig = async (input: ShopConfigInput) => {
   if (input.loyalty_point_redeem_value !== undefined) {
     payload.loyalty_point_redeem_value = validated.data.loyalty_point_redeem_value
   }
+  if (input.loyalty_minimum_transaction_amount !== undefined) {
+    payload.loyalty_minimum_transaction_amount = validated.data.loyalty_minimum_transaction_amount
+  }
 
   const supabaseClient = supabase()
   const { data, error } = await supabaseClient
@@ -193,4 +196,13 @@ export function getLoyaltyEarnPoints(config: ShopConfig | null) {
 
 export function getLoyaltyPointRedeemValue(config: ShopConfig | null) {
   return Number(config?.loyalty_point_redeem_value ?? 0)
+}
+
+export function getLoyaltyMinimumTransactionAmount(config: ShopConfig | null) {
+  return Number(config?.loyalty_minimum_transaction_amount ?? 0)
+}
+
+export function qualifiesForLoyaltyEarn(grossAmount: number, config: ShopConfig | null) {
+  const minimum = getLoyaltyMinimumTransactionAmount(config)
+  return grossAmount >= minimum
 }
