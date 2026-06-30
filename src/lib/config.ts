@@ -73,6 +73,18 @@ export const updateShopConfig = async (input: ShopConfigInput) => {
   if (input.booking_auto_confirm !== undefined) {
     payload.booking_auto_confirm = validated.data.booking_auto_confirm
   }
+  if (input.loyalty_enabled !== undefined) {
+    payload.loyalty_enabled = validated.data.loyalty_enabled
+  }
+  if (input.loyalty_points_per_transaction !== undefined) {
+    payload.loyalty_points_per_transaction = validated.data.loyalty_points_per_transaction
+  }
+  if (input.loyalty_point_redeem_value !== undefined) {
+    payload.loyalty_point_redeem_value = validated.data.loyalty_point_redeem_value
+  }
+  if (input.loyalty_minimum_transaction_amount !== undefined) {
+    payload.loyalty_minimum_transaction_amount = validated.data.loyalty_minimum_transaction_amount
+  }
 
   const supabaseClient = supabase()
   const { data, error } = await supabaseClient
@@ -172,4 +184,25 @@ export function getBookingDefaults(config: ShopConfig | null) {
     closeTime: config?.booking_close_time ?? '22:00',
     autoConfirm: config?.booking_auto_confirm ?? true,
   }
+}
+
+export function isLoyaltyEnabled(config: ShopConfig | null) {
+  return config?.loyalty_enabled === true
+}
+
+export function getLoyaltyEarnPoints(config: ShopConfig | null) {
+  return config?.loyalty_points_per_transaction ?? 0
+}
+
+export function getLoyaltyPointRedeemValue(config: ShopConfig | null) {
+  return Number(config?.loyalty_point_redeem_value ?? 0)
+}
+
+export function getLoyaltyMinimumTransactionAmount(config: ShopConfig | null) {
+  return Number(config?.loyalty_minimum_transaction_amount ?? 0)
+}
+
+export function qualifiesForLoyaltyEarn(grossAmount: number, config: ShopConfig | null) {
+  const minimum = getLoyaltyMinimumTransactionAmount(config)
+  return grossAmount >= minimum
 }
