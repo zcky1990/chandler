@@ -282,6 +282,39 @@ export type ShopConfig = {
   invoice_show_item_prices: boolean
   invoice_show_qty: boolean
   landing_template: string
+  landing_hero_image_url: string | null
+  landing_hero_title: string | null
+  landing_hero_subtitle: string | null
+  landing_primary_color: string
+  landing_carousel_enabled: boolean
+  landing_carousel_max_items: number
+  landing_carousel_title: string | null
+  landing_carousel_bg_color: string
+  landing_testimonials_enabled: boolean
+  landing_testimonials_title: string | null
+  landing_testimonials_data: LandingTestimonial[] | null
+  landing_testimonials_bg_color: string
+  landing_services_enabled: boolean
+  landing_services_title: string | null
+  landing_services_subtitle: string | null
+  landing_services_whatsapp: string | null
+  landing_services_data: LandingServiceItem[] | null
+  landing_services_bg_color: string
+  landing_gallery_enabled: boolean
+  landing_gallery_title: string | null
+  landing_gallery_subtitle: string | null
+  landing_gallery_images: string[] | null
+  landing_gallery_bg_color: string
+  landing_contact_enabled: boolean
+  landing_contact_title: string | null
+  landing_contact_subtitle: string | null
+  landing_contact_address: string | null
+  landing_contact_phone: string | null
+  landing_contact_email: string | null
+  landing_contact_map_lat: number
+  landing_contact_map_lng: number
+  landing_contact_map_zoom: number
+  landing_contact_bg_color: string
   created_at: string
   updated_at: string
 }
@@ -318,9 +351,100 @@ export type ShopConfigInput = {
   invoice_show_item_prices?: boolean
   invoice_show_qty?: boolean
   landing_template?: string
+  landing_hero_image_url?: string | null
+  landing_hero_title?: string | null
+  landing_hero_subtitle?: string | null
+  landing_primary_color?: string
+  landing_carousel_enabled?: boolean
+  landing_carousel_max_items?: number
+  landing_carousel_title?: string | null
+  landing_carousel_bg_color?: string
+  landing_testimonials_enabled?: boolean
+  landing_testimonials_title?: string | null
+  landing_testimonials_data?: LandingTestimonial[] | null
+  landing_testimonials_bg_color?: string
+  landing_services_enabled?: boolean
+  landing_services_title?: string | null
+  landing_services_subtitle?: string | null
+  landing_services_whatsapp?: string | null
+  landing_services_data?: LandingServiceItem[] | null
+  landing_services_bg_color?: string
+  landing_gallery_enabled?: boolean
+  landing_gallery_title?: string | null
+  landing_gallery_subtitle?: string | null
+  landing_gallery_images?: string[] | null
+  landing_gallery_bg_color?: string
+  landing_contact_enabled?: boolean
+  landing_contact_title?: string | null
+  landing_contact_subtitle?: string | null
+  landing_contact_address?: string | null
+  landing_contact_phone?: string | null
+  landing_contact_email?: string | null
+  landing_contact_map_lat?: number
+  landing_contact_map_lng?: number
+  landing_contact_map_zoom?: number
+  landing_contact_bg_color?: string
 }
 
 export type LandingTemplate = 'default' | 'sarab' | 'spicehaven' | 'yummy'
+
+export type LandingTestimonial = {
+  name: string
+  role: string
+  text: string
+  rating: number
+  avatar_url: string | null
+}
+
+export type LandingServiceItem = {
+  title: string
+  price: string
+  description: string
+  image_url: string | null
+}
+
+export type LandingTemplateConfig = {
+  template: LandingTemplate
+  heroImageUrl: string | null
+  heroTitle: string | null
+  heroSubtitle: string | null
+  primaryColor: string
+  carouselEnabled: boolean
+  carouselMaxItems: number
+  carouselTitle: string | null
+  carouselBgColor: string
+  testimonialsEnabled: boolean
+  testimonialsTitle: string | null
+  testimonialsData: LandingTestimonial[] | null
+  testimonialsBgColor: string
+  servicesEnabled: boolean
+  servicesTitle: string | null
+  servicesSubtitle: string | null
+  servicesWhatsapp: string | null
+  servicesData: LandingServiceItem[] | null
+  servicesBgColor: string
+  galleryEnabled: boolean
+  galleryTitle: string | null
+  gallerySubtitle: string | null
+  galleryImages: string[] | null
+  galleryBgColor: string
+  contactEnabled: boolean
+  contactTitle: string | null
+  contactSubtitle: string | null
+  contactAddress: string | null
+  contactPhone: string | null
+  contactEmail: string | null
+  contactMapLat: number
+  contactMapLng: number
+  contactMapZoom: number
+  contactBgColor: string
+}
+
+export type LandingTemplatePreset = {
+  label: string
+  thumbnail: string
+  defaults: Omit<LandingTemplateConfig, 'template'>
+}
 
 export type TableBookingStatus =
   | 'pending'

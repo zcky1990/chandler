@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
-import { ImageIcon, Landmark, LayoutGrid, LayoutTemplate, Printer, QrCode, ReceiptText, Trash2, Upload, Wallet, CalendarDays, Gift } from '@lucide/vue'
+import { onMounted, ref, computed, watch } from 'vue'
+import { ImageIcon, Landmark, LayoutGrid, LayoutTemplate, MapPin, MessageCircle, Palette, Pencil, Plus, Printer, QrCode, ReceiptText, Trash2, Upload, User, Wallet, CalendarDays, Gift, ImagePlus, Star, Mail, Phone } from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import MenuCategoryConfigList from '@/components/config/MenuCategoryConfigList.vue'
 import satabThumb from '@/assets/satab-thumbnail.webp'
 import spiceThumb from '@/assets/spice-thumbnail.webp'
 import yummyThumb from '@/assets/yummy-thumbnail.webp'
+import defaultThumb from '@/assets/default-thumbnail.webp'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -25,11 +26,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useI18n } from '@/composables/useI18n'
-import { getShopConfig, removeInvoiceLogo, removeQrisImage, updateShopConfig, uploadInvoiceLogo, uploadQrisImage } from '@/lib/config'
+import { getShopConfig, removeInvoiceLogo, removeLandingHeroImage, removeQrisImage, removeServiceImage, removeTestimonialAvatar, updateShopConfig, uploadInvoiceLogo, uploadLandingHeroImage, uploadQrisImage, uploadServiceImage, uploadTestimonialAvatar } from '@/lib/config'
+import { LANDING_TEMPLATE_PRESETS, extractLandingOverrides } from '@/lib/landing'
 import { getActiveCategories } from '@/lib/category'
 import { usesCustomMenuCategories } from '@/lib/menu-categories'
 import { useAlertStore } from '@/stores/useAlertStore'
-import type { PaymentFlowMode, ProductCategory, ShopConfig } from '@/types/database'
+import type { PaymentFlowMode, ProductCategory, ShopConfig, LandingTemplate, LandingTestimonial, LandingServiceItem } from '@/types/database'
 
 const { t, locale } = useI18n()
 const alertStore = useAlertStore()
@@ -97,7 +99,43 @@ const invoiceForm = ref({
   invoice_show_qty: true,
 })
 const landingTemplate = ref('default')
+const landingHeroImage = ref<string | null>(null)
+const landingHeroTitle = ref('')
+const landingHeroSubtitle = ref('')
+const landingPrimaryColor = ref('#0f172a')
 const isSavingLanding = ref(false)
+const isUploadingLandingHero = ref(false)
+const isRemovingLandingHero = ref(false)
+const landingHeroPreview = ref<string | null>(null)
+const landingCarouselEnabled = ref(true)
+const landingCarouselMaxItems = ref(8)
+const landingCarouselTitle = ref('')
+const landingCarouselBgColor = ref('#f1f5f9')
+const landingTestimonialsEnabled = ref(false)
+const landingTestimonialsTitle = ref('')
+const landingTestimonialsData = ref<LandingTestimonial[]>([])
+const landingTestimonialsBgColor = ref('#ffffff')
+const landingServicesEnabled = ref(false)
+const landingServicesTitle = ref('')
+const landingServicesSubtitle = ref('')
+const landingServicesWhatsapp = ref('')
+const landingServicesData = ref<LandingServiceItem[]>([])
+const landingServicesBgColor = ref('#f8fafc')
+const landingGalleryEnabled = ref(false)
+const landingGalleryTitle = ref('')
+const landingGallerySubtitle = ref('')
+const landingGalleryImages = ref<string[]>([])
+const landingGalleryBgColor = ref('#ffffff')
+const landingContactEnabled = ref(false)
+const landingContactTitle = ref('')
+const landingContactSubtitle = ref('')
+const landingContactAddress = ref('')
+const landingContactPhone = ref('')
+const landingContactEmail = ref('')
+const landingContactMapLat = ref(-6.2088)
+const landingContactMapLng = ref(106.8456)
+const landingContactMapZoom = ref(15)
+const landingContactBgColor = ref('#f8fafc')
 const activeTab = ref('store')
 
 const tabs = computed(() => [
@@ -108,7 +146,7 @@ const tabs = computed(() => [
 ])
 
 const templateOptions = computed(() => [
-  { id: 'default', name: t('config.landingDefault'), desc: t('config.landingDefaultDesc'), thumb: null as string | null, color: 'bg-blue-500' as string | null },
+  { id: 'default', name: t('config.landingDefault'), desc: t('config.landingDefaultDesc'), thumb: defaultThumb, color: null },
   { id: 'sarab', name: t('config.landingSarab'), desc: t('config.landingSarabDesc'), thumb: satabThumb, color: null },
   { id: 'spicehaven', name: t('config.landingSpiceHaven'), desc: t('config.landingSpiceHavenDesc'), thumb: spiceThumb, color: null },
   { id: 'yummy', name: t('config.landingYummy'), desc: t('config.landingYummyDesc'), thumb: yummyThumb, color: null },
@@ -162,6 +200,46 @@ function applyConfig(config: ShopConfig | null) {
     invoice_show_qty: config?.invoice_show_qty ?? true,
   }
   landingTemplate.value = config?.landing_template || 'default'
+  landingHeroImage.value = config?.landing_hero_image_url ?? null
+  landingHeroPreview.value = config?.landing_hero_image_url ?? null
+  landingHeroTitle.value = config?.landing_hero_title ?? ''
+  landingHeroSubtitle.value = config?.landing_hero_subtitle ?? ''
+  landingPrimaryColor.value = config?.landing_primary_color
+    || LANDING_TEMPLATE_PRESETS[(config?.landing_template || 'default') as LandingTemplate].defaults.primaryColor
+  landingCarouselEnabled.value = config?.landing_carousel_enabled ?? true
+  landingCarouselMaxItems.value = config?.landing_carousel_max_items ?? 8
+  landingCarouselTitle.value = config?.landing_carousel_title ?? ''
+  landingCarouselBgColor.value = config?.landing_carousel_bg_color
+    || LANDING_TEMPLATE_PRESETS[(config?.landing_template || 'default') as LandingTemplate].defaults.carouselBgColor
+  landingTestimonialsEnabled.value = config?.landing_testimonials_enabled ?? false
+  landingTestimonialsTitle.value = config?.landing_testimonials_title ?? ''
+  landingTestimonialsData.value = config?.landing_testimonials_data ?? []
+  landingTestimonialsBgColor.value = config?.landing_testimonials_bg_color
+    || LANDING_TEMPLATE_PRESETS[(config?.landing_template || 'default') as LandingTemplate].defaults.testimonialsBgColor
+  landingServicesEnabled.value = config?.landing_services_enabled ?? false
+  landingServicesTitle.value = config?.landing_services_title ?? ''
+  landingServicesSubtitle.value = config?.landing_services_subtitle ?? ''
+  landingServicesWhatsapp.value = config?.landing_services_whatsapp ?? ''
+  landingServicesData.value = config?.landing_services_data ?? []
+  landingServicesBgColor.value = config?.landing_services_bg_color
+    || LANDING_TEMPLATE_PRESETS[(config?.landing_template || 'default') as LandingTemplate].defaults.servicesBgColor
+  landingGalleryEnabled.value = config?.landing_gallery_enabled ?? false
+  landingGalleryTitle.value = config?.landing_gallery_title ?? ''
+  landingGallerySubtitle.value = config?.landing_gallery_subtitle ?? ''
+  landingGalleryImages.value = config?.landing_gallery_images ?? []
+  landingGalleryBgColor.value = config?.landing_gallery_bg_color
+    || LANDING_TEMPLATE_PRESETS[(config?.landing_template || 'default') as LandingTemplate].defaults.galleryBgColor
+  landingContactEnabled.value = config?.landing_contact_enabled ?? false
+  landingContactTitle.value = config?.landing_contact_title ?? ''
+  landingContactSubtitle.value = config?.landing_contact_subtitle ?? ''
+  landingContactAddress.value = config?.landing_contact_address ?? ''
+  landingContactPhone.value = config?.landing_contact_phone ?? ''
+  landingContactEmail.value = config?.landing_contact_email ?? ''
+  landingContactMapLat.value = config?.landing_contact_map_lat ?? -6.2088
+  landingContactMapLng.value = config?.landing_contact_map_lng ?? 106.8456
+  landingContactMapZoom.value = config?.landing_contact_map_zoom ?? 15
+  landingContactBgColor.value = config?.landing_contact_bg_color
+    || LANDING_TEMPLATE_PRESETS[(config?.landing_template || 'default') as LandingTemplate].defaults.contactBgColor
 }
 
 async function loadConfig() {
@@ -335,7 +413,42 @@ async function handleSaveInvoice() {
 
 async function handleSaveLanding() {
   isSavingLanding.value = true
-  const { error } = await updateShopConfig({ landing_template: landingTemplate.value })
+  const { error } = await updateShopConfig({
+    landing_template: landingTemplate.value,
+    landing_hero_image_url: landingHeroImage.value || null,
+    landing_hero_title: landingHeroTitle.value.trim() || null,
+    landing_hero_subtitle: landingHeroSubtitle.value.trim() || null,
+    landing_primary_color: landingPrimaryColor.value,
+    landing_carousel_enabled: landingCarouselEnabled.value,
+    landing_carousel_max_items: landingCarouselMaxItems.value,
+    landing_carousel_title: landingCarouselTitle.value.trim() || null,
+    landing_carousel_bg_color: landingCarouselBgColor.value,
+    landing_testimonials_enabled: landingTestimonialsEnabled.value,
+    landing_testimonials_title: landingTestimonialsTitle.value.trim() || null,
+    landing_testimonials_data: landingTestimonialsData.value.length > 0 ? landingTestimonialsData.value : null,
+    landing_testimonials_bg_color: landingTestimonialsBgColor.value,
+    landing_services_enabled: landingServicesEnabled.value,
+    landing_services_title: landingServicesTitle.value.trim() || null,
+    landing_services_subtitle: landingServicesSubtitle.value.trim() || null,
+    landing_services_whatsapp: landingServicesWhatsapp.value.trim() || null,
+    landing_services_data: landingServicesData.value.length > 0 ? landingServicesData.value : null,
+    landing_services_bg_color: landingServicesBgColor.value,
+    landing_gallery_enabled: landingGalleryEnabled.value,
+    landing_gallery_title: landingGalleryTitle.value.trim() || null,
+    landing_gallery_subtitle: landingGallerySubtitle.value.trim() || null,
+    landing_gallery_images: landingGalleryImages.value.length > 0 ? landingGalleryImages.value : null,
+    landing_gallery_bg_color: landingGalleryBgColor.value,
+    landing_contact_enabled: landingContactEnabled.value,
+    landing_contact_title: landingContactTitle.value.trim() || null,
+    landing_contact_subtitle: landingContactSubtitle.value.trim() || null,
+    landing_contact_address: landingContactAddress.value.trim() || null,
+    landing_contact_phone: landingContactPhone.value.trim() || null,
+    landing_contact_email: landingContactEmail.value.trim() || null,
+    landing_contact_map_lat: landingContactMapLat.value,
+    landing_contact_map_lng: landingContactMapLng.value,
+    landing_contact_map_zoom: landingContactMapZoom.value,
+    landing_contact_bg_color: landingContactBgColor.value,
+  })
   isSavingLanding.value = false
 
   if (error) {
@@ -347,6 +460,191 @@ async function handleSaveLanding() {
   }
 
   alertStore.showAlert(t('alert.success'), t('config.landingSaved'), 'success')
+}
+
+async function handleLandingHeroUpload(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+
+  if (!file) return
+
+  if (!file.type.startsWith('image/webp')) {
+    alertStore.showAlert(t('alert.error'), t('config.imageMustBeWebp'), 'error')
+    return
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    alertStore.showAlert(t('alert.error'), t('config.imageMaxSize'), 'error')
+    return
+  }
+
+  isUploadingLandingHero.value = true
+  const { url, error } = await uploadLandingHeroImage(file)
+  isUploadingLandingHero.value = false
+
+  if (error) {
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
+    return
+  }
+
+  landingHeroPreview.value = url
+  landingHeroImage.value = url
+  alertStore.showAlert(t('alert.success'), t('config.landingHeroUploaded'), 'success')
+}
+
+async function handleRemoveLandingHero() {
+  if (!confirm(t('config.landingHeroDeleteConfirm'))) return
+
+  isRemovingLandingHero.value = true
+  const { error } = await removeLandingHeroImage()
+  isRemovingLandingHero.value = false
+
+  if (error) {
+    const message = typeof error === 'object' && 'message' in error
+      ? String(error.message)
+      : t('config.landingHeroDeleteFailed')
+    alertStore.showAlert(t('alert.error'), message, 'error')
+    return
+  }
+
+  landingHeroPreview.value = null
+  landingHeroImage.value = null
+  alertStore.showAlert(t('alert.success'), t('config.landingHeroDeleted'), 'success')
+}
+
+function addTestimonial() {
+  landingTestimonialsData.value.push({
+    name: '',
+    role: '',
+    text: '',
+    rating: 5,
+    avatar_url: null,
+  })
+}
+
+function removeTestimonial(index: number) {
+  landingTestimonialsData.value.splice(index, 1)
+}
+
+async function handleTestimonialAvatarUpload(event: Event, index: number) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+
+  if (!file) return
+
+  if (!file.type.startsWith('image/webp')) {
+    alertStore.showAlert(t('alert.error'), t('config.imageMustBeWebp'), 'error')
+    return
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    alertStore.showAlert(t('alert.error'), t('config.imageMaxSize'), 'error')
+    return
+  }
+
+  const { url, error } = await uploadTestimonialAvatar(file, index)
+  if (error) {
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
+    return
+  }
+
+  landingTestimonialsData.value[index].avatar_url = url
+  alertStore.showAlert(t('alert.success'), t('config.landingTestimonialAvatarUploaded'), 'success')
+}
+
+async function handleTestimonialAvatarRemove(index: number) {
+  await removeTestimonialAvatar(index)
+  landingTestimonialsData.value[index].avatar_url = null
+  alertStore.showAlert(t('alert.success'), t('config.landingTestimonialAvatarDeleted'), 'success')
+}
+
+function addServiceItem() {
+  landingServicesData.value.push({
+    title: '',
+    price: '',
+    description: '',
+    image_url: null,
+  })
+}
+
+function removeServiceItem(index: number) {
+  landingServicesData.value.splice(index, 1)
+}
+
+async function handleServiceImageUpload(event: Event, index: number) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+
+  if (!file) return
+
+  if (!file.type.startsWith('image/webp')) {
+    alertStore.showAlert(t('alert.error'), t('config.imageMustBeWebp'), 'error')
+    return
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    alertStore.showAlert(t('alert.error'), t('config.imageMaxSize'), 'error')
+    return
+  }
+
+  const { url, error } = await uploadServiceImage(file, index)
+  if (error) {
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
+    return
+  }
+
+  landingServicesData.value[index].image_url = url
+  alertStore.showAlert(t('alert.success'), t('config.landingServiceImageUploaded'), 'success')
+}
+
+async function handleServiceImageRemove(index: number) {
+  await removeServiceImage(index)
+  landingServicesData.value[index].image_url = null
+  alertStore.showAlert(t('alert.success'), t('config.landingServiceImageDeleted'), 'success')
+}
+
+function addGalleryImage() {
+  landingGalleryImages.value.push('')
+}
+
+function removeGalleryImage(index: number) {
+  landingGalleryImages.value.splice(index, 1)
+}
+
+async function handleGalleryImageUpload(event: Event, index: number) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+
+  if (!file) return
+
+  if (!file.type.startsWith('image/webp')) {
+    alertStore.showAlert(t('alert.error'), t('config.imageMustBeWebp'), 'error')
+    return
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    alertStore.showAlert(t('alert.error'), t('config.imageMaxSize'), 'error')
+    return
+  }
+
+  const { url, error } = await uploadGalleryImage(file, index)
+  if (error) {
+    alertStore.showAlert(t('alert.error'), error.message, 'error')
+    return
+  }
+
+  landingGalleryImages.value.splice(index, 1, url)
+  alertStore.showAlert(t('alert.success'), t('config.landingGalleryImageUploaded'), 'success')
+}
+
+async function handleGalleryImageRemove(index: number) {
+  await removeGalleryImage(index)
+  landingGalleryImages.value.splice(index, 1, '')
+  alertStore.showAlert(t('alert.success'), t('config.landingGalleryImageDeleted'), 'success')
 }
 
 async function handleLogoUpload(event: Event) {
@@ -493,6 +791,17 @@ const invoicePreviewHtml = computed(() => {
 })
 
 onMounted(loadConfig)
+
+watch(landingTemplate, (newTemplate) => {
+  const preset = LANDING_TEMPLATE_PRESETS[newTemplate as LandingTemplate]
+  if (!preset) return
+  landingPrimaryColor.value = preset.defaults.primaryColor
+  landingCarouselBgColor.value = preset.defaults.carouselBgColor
+  landingTestimonialsBgColor.value = preset.defaults.testimonialsBgColor
+  landingServicesBgColor.value = preset.defaults.servicesBgColor
+  landingGalleryBgColor.value = preset.defaults.galleryBgColor
+  landingContactBgColor.value = preset.defaults.contactBgColor
+})
 </script>
 
 <template>
@@ -571,6 +880,520 @@ onMounted(loadConfig)
                     <p class="text-xs text-muted-foreground">{{ tpl.desc }}</p>
                   </label>
                 </div>
+
+                <div class="rounded-lg border bg-muted/30 p-4 space-y-4">
+                  <div class="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <ImagePlus class="size-4" />
+                    {{ t('config.landingCustomize') }}
+                  </div>
+
+                  <div>
+                    <FieldLabel>{{ t('config.landingHeroImage') }}</FieldLabel>
+                    <div
+                      class="mt-1 flex min-h-[120px] items-center justify-center rounded-xl border border-dashed bg-muted/30 p-4"
+                    >
+                      <img
+                        v-if="landingHeroPreview"
+                        :src="landingHeroPreview"
+                        alt="Hero"
+                        class="max-h-48 max-w-full rounded-lg object-cover"
+                      >
+                      <div v-else class="text-center text-sm text-muted-foreground">
+                        <ImageIcon class="mx-auto mb-2 size-8 opacity-50" />
+                        {{ t('config.landingHeroImagePlaceholder') }}
+                      </div>
+                    </div>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                      <Button as-child :disabled="isUploadingLandingHero">
+                        <label class="cursor-pointer">
+                          <Upload class="size-4" />
+                          {{ isUploadingLandingHero ? t('config.uploading') : t('config.uploadImage') }}
+                          <input
+                            type="file"
+                            accept="image/webp"
+                            class="hidden"
+                            :disabled="isUploadingLandingHero"
+                            @change="handleLandingHeroUpload"
+                          >
+                        </label>
+                      </Button>
+                      <Button
+                        v-if="landingHeroPreview"
+                        variant="outline"
+                        :disabled="isRemovingLandingHero"
+                        @click="handleRemoveLandingHero"
+                      >
+                        <Trash2 class="size-4" />
+                        {{ t('common.delete') }}
+                      </Button>
+                    </div>
+                    <p class="mt-1 text-xs text-muted-foreground">{{ t('config.imageMustBeWebp') }}</p>
+                  </div>
+
+                  <Field>
+                    <FieldLabel for="landing-hero-title">{{ t('config.landingHeroTitle') }}</FieldLabel>
+                    <Input
+                      id="landing-hero-title"
+                      v-model="landingHeroTitle"
+                      :placeholder="t('config.landingHeroTitleHint')"
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel for="landing-hero-subtitle">{{ t('config.landingHeroSubtitle') }}</FieldLabel>
+                    <Input
+                      id="landing-hero-subtitle"
+                      v-model="landingHeroSubtitle"
+                      :placeholder="t('config.landingHeroSubtitleHint')"
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel for="landing-primary-color">{{ t('config.landingPrimaryColor') }}</FieldLabel>
+                    <div class="flex items-center gap-3">
+                      <Input
+                        id="landing-primary-color"
+                        v-model="landingPrimaryColor"
+                        type="color"
+                        class="size-10 cursor-pointer border-0 p-1"
+                      />
+                      <span class="text-sm text-muted-foreground">{{ landingPrimaryColor }}</span>
+                    </div>
+                  </Field>
+
+                  <div class="rounded-lg border bg-background p-4 space-y-4">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-sm font-medium">{{ t('config.landingCarouselEnable') }}</p>
+                        <p class="text-xs text-muted-foreground">{{ t('config.landingCarouselEnableDesc') }}</p>
+                      </div>
+                      <Switch v-model="landingCarouselEnabled" />
+                    </div>
+
+                    <template v-if="landingCarouselEnabled">
+                      <Field>
+                        <FieldLabel for="landing-carousel-title">{{ t('config.landingCarouselTitle') }}</FieldLabel>
+                        <Input
+                          id="landing-carousel-title"
+                          v-model="landingCarouselTitle"
+                          :placeholder="t('config.landingCarouselTitleHint')"
+                        />
+                      </Field>
+
+                      <Field>
+                        <FieldLabel for="landing-carousel-max">{{ t('config.landingCarouselMaxItems') }}</FieldLabel>
+                        <Input
+                          id="landing-carousel-max"
+                          v-model.number="landingCarouselMaxItems"
+                          type="number"
+                          min="4"
+                          max="20"
+                        />
+                        <p class="mt-1 text-xs text-muted-foreground">{{ t('config.landingCarouselMaxItemsDesc') }}</p>
+                      </Field>
+
+                      <Field>
+                        <FieldLabel for="landing-carousel-bg">{{ t('config.landingCarouselBgColor') }}</FieldLabel>
+                        <div class="flex items-center gap-3">
+                          <Input
+                            id="landing-carousel-bg"
+                            v-model="landingCarouselBgColor"
+                            type="color"
+                            class="size-10 cursor-pointer border-0 p-1"
+                          />
+                          <span class="text-sm text-muted-foreground">{{ landingCarouselBgColor }}</span>
+                        </div>
+                      </Field>
+                    </template>
+                  </div>
+
+                  <div class="rounded-lg border bg-background p-4 space-y-4">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-sm font-medium">{{ t('config.landingTestimonialsEnable') }}</p>
+                        <p class="text-xs text-muted-foreground">{{ t('config.landingTestimonialsEnableDesc') }}</p>
+                      </div>
+                      <Switch v-model="landingTestimonialsEnabled" />
+                    </div>
+
+                    <template v-if="landingTestimonialsEnabled">
+                      <Field>
+                        <FieldLabel for="landing-testimonials-title">{{ t('config.landingTestimonialsTitle') }}</FieldLabel>
+                        <Input
+                          id="landing-testimonials-title"
+                          v-model="landingTestimonialsTitle"
+                          :placeholder="t('config.landingTestimonialsTitleHint')"
+                        />
+                      </Field>
+
+                      <Field>
+                        <FieldLabel for="landing-testimonials-bg">{{ t('config.landingTestimonialsBgColor') }}</FieldLabel>
+                        <div class="flex items-center gap-3">
+                          <Input
+                            id="landing-testimonials-bg"
+                            v-model="landingTestimonialsBgColor"
+                            type="color"
+                            class="size-10 cursor-pointer border-0 p-1"
+                          />
+                          <span class="text-sm text-muted-foreground">{{ landingTestimonialsBgColor }}</span>
+                        </div>
+                      </Field>
+
+                      <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                          <p class="text-sm font-medium">{{ t('config.landingTestimonialsItems') }}</p>
+                          <Button size="sm" variant="outline" type="button" @click="addTestimonial">
+                            <Plus class="size-4" />
+                            {{ t('common.add') }}
+                          </Button>
+                        </div>
+
+                        <div
+                          v-for="(item, idx) in landingTestimonialsData"
+                          :key="idx"
+                          class="rounded-lg border p-3 space-y-3"
+                        >
+                          <div class="flex items-center justify-between">
+                            <span class="text-xs font-medium text-muted-foreground">
+                              {{ t('config.landingTestimonialItem', { n: idx + 1 }) }}
+                            </span>
+                            <Button size="icon" variant="ghost" class="size-8" type="button" @click="removeTestimonial(idx)">
+                              <Trash2 class="size-4 text-red-500" />
+                            </Button>
+                          </div>
+
+                          <div class="flex items-center gap-3">
+                            <div
+                              class="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted"
+                            >
+                              <img
+                                v-if="item.avatar_url"
+                                :src="item.avatar_url"
+                                alt="Avatar"
+                                class="size-10 rounded-full object-cover"
+                              >
+                              <User v-else class="size-5 text-muted-foreground" />
+                            </div>
+                            <div class="flex gap-1.5">
+                              <Button as-child size="sm" variant="outline" type="button">
+                                <label class="cursor-pointer">
+                                  <Upload class="size-3.5" />
+                                  <span class="ml-1 text-xs">{{ t('config.uploadImage') }}</span>
+                                  <input
+                                    type="file"
+                                    accept="image/webp"
+                                    class="hidden"
+                                    @change="handleTestimonialAvatarUpload($event, idx)"
+                                  >
+                                </label>
+                              </Button>
+                              <Button
+                                v-if="item.avatar_url"
+                                size="sm"
+                                variant="ghost"
+                                type="button"
+                                @click="handleTestimonialAvatarRemove(idx)"
+                              >
+                                <Trash2 class="size-3.5 text-red-500" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          <Field>
+                            <FieldLabel class="text-xs">{{ t('config.landingTestimonialName') }}</FieldLabel>
+                            <Input v-model="item.name" :placeholder="t('config.landingTestimonialNamePh')" class="h-8 text-sm" />
+                          </Field>
+
+                          <Field>
+                            <FieldLabel class="text-xs">{{ t('config.landingTestimonialRole') }}</FieldLabel>
+                            <Input v-model="item.role" :placeholder="t('config.landingTestimonialRolePh')" class="h-8 text-sm" />
+                          </Field>
+
+                          <Field>
+                            <FieldLabel class="text-xs">{{ t('config.landingTestimonialText') }}</FieldLabel>
+                            <textarea
+                              v-model="item.text"
+                              class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                              rows="3"
+                              :placeholder="t('config.landingTestimonialTextPh')"
+                            />
+                          </Field>
+
+                          <Field>
+                            <FieldLabel class="text-xs">{{ t('config.landingTestimonialRating') }}</FieldLabel>
+                            <div class="flex gap-1">
+                              <button
+                                v-for="i in 5"
+                                :key="i"
+                                type="button"
+                                class="size-6"
+                                @click="item.rating = i"
+                              >
+                                <Star
+                                  class="size-5 transition-colors"
+                                  :class="i <= item.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'"
+                                />
+                              </button>
+                            </div>
+                          </Field>
+                        </div>
+
+                        <p v-if="landingTestimonialsData.length === 0" class="text-xs text-muted-foreground py-2 text-center">
+                          {{ t('config.landingTestimonialsEmptyHint') }}
+                        </p>
+                      </div>
+                    </template>
+                  </div>
+
+                  <div class="rounded-lg border bg-background p-4 space-y-4">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-sm font-medium">{{ t('config.landingServicesEnable') }}</p>
+                        <p class="text-xs text-muted-foreground">{{ t('config.landingServicesEnableDesc') }}</p>
+                      </div>
+                      <Switch v-model="landingServicesEnabled" />
+                    </div>
+
+                    <template v-if="landingServicesEnabled">
+                      <Field>
+                        <FieldLabel for="landing-services-title">{{ t('config.landingServicesTitle') }}</FieldLabel>
+                        <Input
+                          id="landing-services-title"
+                          v-model="landingServicesTitle"
+                          :placeholder="t('config.landingServicesTitleHint')"
+                        />
+                      </Field>
+
+                      <Field>
+                        <FieldLabel for="landing-services-subtitle">{{ t('config.landingServicesSubtitle') }}</FieldLabel>
+                        <Input
+                          id="landing-services-subtitle"
+                          v-model="landingServicesSubtitle"
+                          :placeholder="t('config.landingServicesSubtitleHint')"
+                        />
+                      </Field>
+
+                      <Field>
+                        <FieldLabel for="landing-services-wa">{{ t('config.landingServicesWhatsapp') }}</FieldLabel>
+                        <Input
+                          id="landing-services-wa"
+                          v-model="landingServicesWhatsapp"
+                          placeholder="6281234567890"
+                        />
+                        <p class="mt-1 text-xs text-muted-foreground">{{ t('config.landingServicesWhatsappHint') }}</p>
+                      </Field>
+
+                      <Field>
+                        <FieldLabel for="landing-services-bg">{{ t('config.landingServicesBgColor') }}</FieldLabel>
+                        <div class="flex items-center gap-3">
+                          <Input
+                            id="landing-services-bg"
+                            v-model="landingServicesBgColor"
+                            type="color"
+                            class="size-10 cursor-pointer border-0 p-1"
+                          />
+                          <span class="text-sm text-muted-foreground">{{ landingServicesBgColor }}</span>
+                        </div>
+                      </Field>
+
+                      <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                          <p class="text-sm font-medium">{{ t('config.landingServicesItems') }}</p>
+                          <Button size="sm" variant="outline" type="button" @click="addServiceItem">
+                            <Plus class="size-4" />
+                            {{ t('common.add') }}
+                          </Button>
+                        </div>
+
+                        <div
+                          v-for="(item, idx) in landingServicesData"
+                          :key="idx"
+                          class="rounded-lg border p-3 space-y-3"
+                        >
+                          <div class="flex items-center justify-between">
+                            <span class="text-xs font-medium text-muted-foreground">
+                              {{ t('config.landingServiceItem', { n: idx + 1 }) }}
+                            </span>
+                            <Button size="icon" variant="ghost" class="size-8" type="button" @click="removeServiceItem(idx)">
+                              <Trash2 class="size-4 text-red-500" />
+                            </Button>
+                          </div>
+
+                          <div class="flex gap-3">
+                            <div
+                              class="flex size-16 shrink-0 items-center justify-center rounded-lg bg-muted overflow-hidden"
+                            >
+                              <img
+                                v-if="item.image_url"
+                                :src="item.image_url"
+                                alt="Service"
+                                class="size-full object-cover"
+                              >
+                              <ImageIcon v-else class="size-6 text-muted-foreground" />
+                            </div>
+                            <div class="flex flex-col justify-center gap-1.5">
+                              <Button as-child size="sm" variant="outline" type="button">
+                                <label class="cursor-pointer">
+                                  <Upload class="size-3.5" />
+                                  <span class="ml-1 text-xs">{{ t('config.uploadImage') }}</span>
+                                  <input
+                                    type="file"
+                                    accept="image/webp"
+                                    class="hidden"
+                                    @change="handleServiceImageUpload($event, idx)"
+                                  >
+                                </label>
+                              </Button>
+                              <Button
+                                v-if="item.image_url"
+                                size="sm"
+                                variant="ghost"
+                                type="button"
+                                @click="handleServiceImageRemove(idx)"
+                              >
+                                <Trash2 class="size-3.5 text-red-500" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          <Field>
+                            <FieldLabel class="text-xs">{{ t('config.landingServiceItemTitle') }}</FieldLabel>
+                            <Input v-model="item.title" :placeholder="t('config.landingServiceItemTitlePh')" class="h-8 text-sm" />
+                          </Field>
+
+                          <Field>
+                            <FieldLabel class="text-xs">{{ t('config.landingServiceItemPrice') }}</FieldLabel>
+                            <Input v-model="item.price" placeholder="$99" class="h-8 text-sm" />
+                          </Field>
+
+                          <Field>
+                            <FieldLabel class="text-xs">{{ t('config.landingServiceItemDesc') }}</FieldLabel>
+                            <textarea
+                              v-model="item.description"
+                              class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                              rows="2"
+                              :placeholder="t('config.landingServiceItemDescPh')"
+                            />
+                          </Field>
+                        </div>
+
+                        <p v-if="landingServicesData.length === 0" class="text-xs text-muted-foreground py-2 text-center">
+                          {{ t('config.landingServicesEmptyHint') }}
+                        </p>
+                      </div>
+                    </template>
+                  </div>
+
+                  <div class="rounded-lg border bg-background p-4 space-y-4">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-sm font-medium">{{ t('config.landingGalleryEnable') }}</p>
+                        <p class="text-xs text-muted-foreground">{{ t('config.landingGalleryEnableDesc') }}</p>
+                      </div>
+                      <Switch v-model="landingGalleryEnabled" />
+                    </div>
+
+                    <template v-if="landingGalleryEnabled">
+                      <Field>
+                        <FieldLabel for="landing-gallery-title">{{ t('config.landingGalleryTitle') }}</FieldLabel>
+                        <Input id="landing-gallery-title" v-model="landingGalleryTitle" :placeholder="t('config.landingGalleryTitleHint')" />
+                      </Field>
+                      <Field>
+                        <FieldLabel for="landing-gallery-subtitle">{{ t('config.landingGallerySubtitle') }}</FieldLabel>
+                        <Input id="landing-gallery-subtitle" v-model="landingGallerySubtitle" :placeholder="t('config.landingGallerySubtitleHint')" />
+                      </Field>
+                      <Field>
+                        <FieldLabel for="landing-gallery-bg">{{ t('config.landingGalleryBgColor') }}</FieldLabel>
+                        <div class="flex items-center gap-3">
+                          <Input id="landing-gallery-bg" v-model="landingGalleryBgColor" type="color" class="size-10 cursor-pointer border-0 p-1" />
+                          <span class="text-sm text-muted-foreground">{{ landingGalleryBgColor }}</span>
+                        </div>
+                      </Field>
+
+                      <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                          <p class="text-sm font-medium">{{ t('config.landingGalleryImages') }}</p>
+                          <Button size="sm" variant="outline" type="button" @click="addGalleryImage">
+                            <Plus class="size-4" /> {{ t('common.add') }}
+                          </Button>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2">
+                          <div v-for="(_, idx) in landingGalleryImages" :key="idx" class="relative aspect-square rounded-lg border bg-muted overflow-hidden">
+                            <img v-if="landingGalleryImages[idx]" :src="landingGalleryImages[idx]" alt="Gallery" class="size-full object-cover">
+                            <ImageIcon v-else class="absolute inset-0 m-auto size-6 text-muted-foreground" />
+                            <div class="absolute right-1 top-1 flex gap-0.5">
+                              <Button as-child size="sm" variant="secondary" type="button" class="size-6 p-0">
+                                <label class="cursor-pointer">
+                                  <Upload class="size-3" />
+                                  <input type="file" accept="image/webp" class="hidden" @change="handleGalleryImageUpload($event, idx)">
+                                </label>
+                              </Button>
+                              <Button size="sm" variant="secondary" type="button" class="size-6 p-0" @click="handleGalleryImageRemove(idx)">
+                                <Trash2 class="size-3 text-red-500" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                        <p v-if="landingGalleryImages.length === 0" class="text-xs text-muted-foreground py-2 text-center">{{ t('config.landingGalleryEmptyHint') }}</p>
+                      </div>
+                    </template>
+                  </div>
+
+                  <div class="rounded-lg border bg-background p-4 space-y-4">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-sm font-medium">{{ t('config.landingContactEnable') }}</p>
+                        <p class="text-xs text-muted-foreground">{{ t('config.landingContactEnableDesc') }}</p>
+                      </div>
+                      <Switch v-model="landingContactEnabled" />
+                    </div>
+
+                    <template v-if="landingContactEnabled">
+                      <Field>
+                        <FieldLabel for="landing-contact-title">{{ t('config.landingContactTitle') }}</FieldLabel>
+                        <Input id="landing-contact-title" v-model="landingContactTitle" :placeholder="t('config.landingContactTitleHint')" />
+                      </Field>
+                      <Field>
+                        <FieldLabel for="landing-contact-subtitle">{{ t('config.landingContactSubtitle') }}</FieldLabel>
+                        <Input id="landing-contact-subtitle" v-model="landingContactSubtitle" :placeholder="t('config.landingContactSubtitleHint')" />
+                      </Field>
+                      <Field>
+                        <FieldLabel for="landing-contact-address">{{ t('config.landingContactAddress') }}</FieldLabel>
+                        <Input id="landing-contact-address" v-model="landingContactAddress" placeholder="Jl. Contoh No. 123, Jakarta" />
+                      </Field>
+                      <Field>
+                        <FieldLabel for="landing-contact-phone">{{ t('config.landingContactPhone') }}</FieldLabel>
+                        <Input id="landing-contact-phone" v-model="landingContactPhone" placeholder="+62 812 3456 7890" />
+                      </Field>
+                      <Field>
+                        <FieldLabel for="landing-contact-email">{{ t('config.landingContactEmail') }}</FieldLabel>
+                        <Input id="landing-contact-email" v-model="landingContactEmail" placeholder="hello@example.com" />
+                      </Field>
+                      <div class="grid gap-4 sm:grid-cols-3">
+                        <Field>
+                          <FieldLabel for="landing-contact-lat">Latitude</FieldLabel>
+                          <Input id="landing-contact-lat" v-model.number="landingContactMapLat" type="number" step="0.000001" />
+                        </Field>
+                        <Field>
+                          <FieldLabel for="landing-contact-lng">Longitude</FieldLabel>
+                          <Input id="landing-contact-lng" v-model.number="landingContactMapLng" type="number" step="0.000001" />
+                        </Field>
+                        <Field>
+                          <FieldLabel for="landing-contact-zoom">Zoom (1-18)</FieldLabel>
+                          <Input id="landing-contact-zoom" v-model.number="landingContactMapZoom" type="number" min="1" max="18" />
+                        </Field>
+                      </div>
+                      <Field>
+                        <FieldLabel for="landing-contact-bg">{{ t('config.landingContactBgColor') }}</FieldLabel>
+                        <div class="flex items-center gap-3">
+                          <Input id="landing-contact-bg" v-model="landingContactBgColor" type="color" class="size-10 cursor-pointer border-0 p-1" />
+                          <span class="text-sm text-muted-foreground">{{ landingContactBgColor }}</span>
+                        </div>
+                      </Field>
+                    </template>
+                  </div>
+                </div>
+
                 <Button type="submit" :disabled="isSavingLanding">
                   {{ isSavingLanding ? t('common.saving') : t('config.saveLanding') }}
                 </Button>
