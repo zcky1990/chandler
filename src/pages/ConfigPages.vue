@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { ChevronDown, ImageIcon, Landmark, LayoutGrid, LayoutTemplate, MapPin, MessageCircle, Palette, Pencil, Plus, Printer, QrCode, ReceiptText, Trash2, Upload, User, Wallet, CalendarDays, Gift, ImagePlus, Star, Mail, Phone } from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import MenuCategoryConfigList from '@/components/config/MenuCategoryConfigList.vue'
@@ -28,11 +29,19 @@ import {
 } from '@/components/ui/select'
 import { useI18n } from '@/composables/useI18n'
 import { getShopConfig, removeInvoiceLogo, removeLandingAboutImage, removeLandingHeroImage, removeQrisImage, removeServiceImage, removeTestimonialAvatar, updateShopConfig, uploadInvoiceLogo, uploadLandingAboutImage, uploadLandingHeroImage, uploadQrisImage, uploadServiceImage, uploadTestimonialAvatar } from '@/lib/config'
-import { LANDING_TEMPLATE_PRESETS, extractLandingOverrides } from '@/lib/landing'
+import { LANDING_TEMPLATE_PRESETS, extractLandingOverrides, getLandingConfig } from '@/lib/landing'
+import {
+  saveLandingPageCache,
+  landingConfigToPageState,
+  filterLandingProducts,
+} from '@/lib/landing-cache'
+import { getProducts } from '@/lib/product'
 import { getActiveCategories } from '@/lib/category'
 import { usesCustomMenuCategories } from '@/lib/menu-categories'
 import { useAlertStore } from '@/stores/useAlertStore'
-import type { PaymentFlowMode, ProductCategory, ShopConfig, LandingTemplate, LandingTestimonial, LandingServiceItem, LandingFeatureItem, LandingStatItem } from '@/types/database'
+import type { PaymentFlowMode, ProductCategory, ShopConfig, LandingTemplate, LandingTestimonial, LandingServiceItem, LandingFeatureItem, LandingStatItem, LandingTemplateConfig } from '@/types/database'
+
+const router = useRouter()
 
 const { t, locale } = useI18n()
 const alertStore = useAlertStore()
@@ -486,6 +495,75 @@ async function handleSaveInvoice() {
   alertStore.showAlert(t('alert.success'), t('config.invoiceSaved'), 'success')
 }
 
+function buildLandingFormOverrides(): Partial<LandingTemplateConfig> {
+  return {
+    heroImageUrl: landingHeroImage.value || null,
+    heroTitle: landingHeroTitle.value.trim() || null,
+    heroSubtitle: landingHeroSubtitle.value.trim() || null,
+    primaryColor: landingPrimaryColor.value,
+    heroBgColor: landingHeroBgColor.value,
+    heroBgImage: landingHeroBgImage.value.trim() || null,
+    carouselEnabled: landingCarouselEnabled.value,
+    carouselMaxItems: landingCarouselMaxItems.value,
+    carouselTitle: landingCarouselTitle.value.trim() || null,
+    carouselBgColor: landingCarouselBgColor.value,
+    carouselBgImage: landingCarouselBgImage.value.trim() || null,
+    testimonialsEnabled: landingTestimonialsEnabled.value,
+    testimonialsTitle: landingTestimonialsTitle.value.trim() || null,
+    testimonialsData: landingTestimonialsData.value.length > 0 ? landingTestimonialsData.value : null,
+    testimonialsBgColor: landingTestimonialsBgColor.value,
+    testimonialsBgImage: landingTestimonialsBgImage.value.trim() || null,
+    servicesEnabled: landingServicesEnabled.value,
+    servicesTitle: landingServicesTitle.value.trim() || null,
+    servicesSubtitle: landingServicesSubtitle.value.trim() || null,
+    servicesWhatsapp: landingServicesWhatsapp.value.trim() || null,
+    servicesData: landingServicesData.value.length > 0 ? landingServicesData.value : null,
+    servicesBgColor: landingServicesBgColor.value,
+    servicesBgImage: landingServicesBgImage.value.trim() || null,
+    galleryEnabled: landingGalleryEnabled.value,
+    galleryTitle: landingGalleryTitle.value.trim() || null,
+    gallerySubtitle: landingGallerySubtitle.value.trim() || null,
+    galleryImages: landingGalleryImages.value.length > 0 ? landingGalleryImages.value : null,
+    galleryBgColor: landingGalleryBgColor.value,
+    galleryBgImage: landingGalleryBgImage.value.trim() || null,
+    contactEnabled: landingContactEnabled.value,
+    contactTitle: landingContactTitle.value.trim() || null,
+    contactSubtitle: landingContactSubtitle.value.trim() || null,
+    contactAddress: landingContactAddress.value.trim() || null,
+    contactPhone: landingContactPhone.value.trim() || null,
+    contactEmail: landingContactEmail.value.trim() || null,
+    contactMapLat: landingContactMapLat.value,
+    contactMapLng: landingContactMapLng.value,
+    contactMapZoom: landingContactMapZoom.value,
+    contactBgColor: landingContactBgColor.value,
+    contactBgImage: landingContactBgImage.value.trim() || null,
+    aboutEnabled: landingAboutEnabled.value,
+    aboutLabel: landingAboutLabel.value.trim() || null,
+    aboutTitle: landingAboutTitle.value.trim() || null,
+    aboutDescription: landingAboutDescription.value.trim() || null,
+    aboutImageUrl: landingAboutImage.value || null,
+    aboutBullets: landingAboutBullets.value.filter((b) => b.trim()).length > 0
+      ? landingAboutBullets.value.filter((b) => b.trim())
+      : null,
+    aboutBgColor: landingAboutBgColor.value,
+    aboutBgImage: landingAboutBgImage.value.trim() || null,
+    whyEnabled: landingWhyEnabled.value,
+    whyLabel: landingWhyLabel.value.trim() || null,
+    whyTitle: landingWhyTitle.value.trim() || null,
+    whyDescription: landingWhyDescription.value.trim() || null,
+    whyFeatures: landingWhyFeatures.value.filter((f) => f.title.trim()).length > 0
+      ? landingWhyFeatures.value
+      : null,
+    whyStats: landingWhyStats.value.filter((s) => s.label.trim()).length > 0
+      ? landingWhyStats.value
+      : null,
+    whyBgColor: landingWhyBgColor.value,
+    whyBgImage: landingWhyBgImage.value.trim() || null,
+    bookBgColor: landingBookBgColor.value.trim() || null,
+    bookBgImage: landingBookBgImage.value.trim() || null,
+  }
+}
+
 async function handleSaveLanding() {
   isSavingLanding.value = true
   const { error } = await updateShopConfig({
@@ -565,7 +643,22 @@ async function handleSaveLanding() {
     return
   }
 
+  const tpl = landingTemplate.value as LandingTemplate
+  const cfg = getLandingConfig(tpl, buildLandingFormOverrides())
+  const { products } = await getProducts()
+  const filteredProducts = products ? filterLandingProducts(products) : []
+
+  saveLandingPageCache({
+    shopName: receiptForm.value.shop_name.trim() || 'Bistro',
+    shopAddress: receiptForm.value.shop_address.trim() || '',
+    shopPhone: landingContactPhone.value.trim() || '',
+    template: tpl,
+    landing: landingConfigToPageState(cfg),
+    products: filteredProducts,
+  })
+
   alertStore.showAlert(t('alert.success'), t('config.landingSaved'), 'success')
+  await router.push('/')
 }
 
 async function handleLandingHeroUpload(event: Event) {
