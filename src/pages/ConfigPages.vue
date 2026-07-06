@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, watch } from 'vue'
-import { ImageIcon, Landmark, LayoutGrid, LayoutTemplate, MapPin, MessageCircle, Palette, Pencil, Plus, Printer, QrCode, ReceiptText, Trash2, Upload, User, Wallet, CalendarDays, Gift, ImagePlus, Star, Mail, Phone } from '@lucide/vue'
+import { ChevronDown, ImageIcon, Landmark, LayoutGrid, LayoutTemplate, MapPin, MessageCircle, Palette, Pencil, Plus, Printer, QrCode, ReceiptText, Trash2, Upload, User, Wallet, CalendarDays, Gift, ImagePlus, Star, Mail, Phone } from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import MenuCategoryConfigList from '@/components/config/MenuCategoryConfigList.vue'
 import LandingSectionBgFields from '@/components/config/LandingSectionBgFields.vue'
@@ -144,6 +144,23 @@ const landingContactMapLng = ref(106.8456)
 const landingContactMapZoom = ref(15)
 const landingContactBgColor = ref('#f8fafc')
 const landingContactBgImage = ref('')
+
+const landingAccordion = ref<Record<string, boolean>>({
+  hero: false,
+  about: false,
+  why: false,
+  carousel: false,
+  testimonials: false,
+  services: false,
+  gallery: false,
+  contact: false,
+  book: false,
+})
+
+function toggleAccordion(key: string) {
+  landingAccordion.value[key] = !landingAccordion.value[key]
+}
+
 const landingAboutEnabled = ref(false)
 const landingAboutLabel = ref('')
 const landingAboutTitle = ref('')
@@ -1050,139 +1067,83 @@ watch(landingTemplate, (newTemplate) => {
                   </label>
                 </div>
 
-                <div class="rounded-lg border bg-muted/30 p-4 space-y-4">
-                  <div class="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                    <ImagePlus class="size-4" />
-                    {{ t('config.landingCustomize') }}
-                  </div>
-
-                  <div>
-                    <FieldLabel>{{ t('config.landingHeroImage') }}</FieldLabel>
-                    <div
-                      class="mt-1 flex min-h-[120px] items-center justify-center rounded-xl border border-dashed bg-muted/30 p-4"
-                    >
-                      <img
-                        v-if="landingHeroPreview"
-                        :src="landingHeroPreview"
-                        alt="Hero"
-                        class="max-h-48 max-w-full rounded-lg object-cover"
-                      >
-                      <div v-else class="text-center text-sm text-muted-foreground">
-                        <ImageIcon class="mx-auto mb-2 size-8 opacity-50" />
-                        {{ t('config.landingHeroImagePlaceholder') }}
+                <div class="rounded-lg border bg-background">
+                  <button type="button" class="flex w-full items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors" @click="toggleAccordion('hero')">
+                    <span class="flex items-center gap-3">
+                      <span class="text-sm font-medium">{{ t('config.landingHeroSection') }}</span>
+                    </span>
+                    <ChevronDown class="size-4 shrink-0 text-muted-foreground transition-transform" :class="{ 'rotate-180': landingAccordion.hero }" />
+                  </button>
+                  <div v-show="landingAccordion.hero" class="space-y-4 px-4 pb-4">
+                    <p class="text-xs text-muted-foreground">{{ t('config.landingHeroSectionDesc') }}</p>
+                    <div>
+                      <FieldLabel>{{ t('config.landingHeroImage') }}</FieldLabel>
+                      <div class="mt-1 flex min-h-[120px] items-center justify-center rounded-xl border border-dashed bg-muted/30 p-4">
+                        <img v-if="landingHeroPreview" :src="landingHeroPreview" alt="Hero" class="max-h-48 max-w-full rounded-lg object-cover">
+                        <div v-else class="text-center text-sm text-muted-foreground">
+                          <ImageIcon class="mx-auto mb-2 size-8 opacity-50" />
+                          {{ t('config.landingHeroImagePlaceholder') }}
+                        </div>
                       </div>
-                    </div>
-                    <div class="mt-3 flex flex-wrap gap-2">
-                      <Button as-child :disabled="isUploadingLandingHero">
-                        <label class="cursor-pointer">
-                          <Upload class="size-4" />
-                          {{ isUploadingLandingHero ? t('config.uploading') : t('config.uploadImage') }}
-                          <input
-                            type="file"
-                            accept="image/webp"
-                            class="hidden"
-                            :disabled="isUploadingLandingHero"
-                            @change="handleLandingHeroUpload"
-                          >
-                        </label>
-                      </Button>
-                      <Button
-                        v-if="landingHeroPreview"
-                        variant="outline"
-                        :disabled="isRemovingLandingHero"
-                        @click="handleRemoveLandingHero"
-                      >
-                        <Trash2 class="size-4" />
-                        {{ t('common.delete') }}
-                      </Button>
-                    </div>
-                    <p class="mt-1 text-xs text-muted-foreground">{{ t('config.imageMustBeWebp') }}</p>
-                  </div>
-
-                  <Field>
-                    <FieldLabel for="landing-hero-title">{{ t('config.landingHeroTitle') }}</FieldLabel>
-                    <Input
-                      id="landing-hero-title"
-                      v-model="landingHeroTitle"
-                      :placeholder="t('config.landingHeroTitleHint')"
-                    />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel for="landing-hero-subtitle">{{ t('config.landingHeroSubtitle') }}</FieldLabel>
-                    <Input
-                      id="landing-hero-subtitle"
-                      v-model="landingHeroSubtitle"
-                      :placeholder="t('config.landingHeroSubtitleHint')"
-                    />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel for="landing-primary-color">{{ t('config.landingPrimaryColor') }}</FieldLabel>
-                    <div class="flex items-center gap-3">
-                      <Input
-                        id="landing-primary-color"
-                        v-model="landingPrimaryColor"
-                        type="color"
-                        class="size-10 cursor-pointer border-0 p-1"
-                      />
-                      <span class="text-sm text-muted-foreground">{{ landingPrimaryColor }}</span>
-                    </div>
-                  </Field>
-
-                  <LandingSectionBgFields
-                    v-model:bg-color="landingHeroBgColor"
-                    v-model:bg-image="landingHeroBgImage"
-                    color-id="landing-hero-bg-color"
-                    image-id="landing-hero-bg-image"
-                    :color-label="t('config.landingHeroBgColor')"
-                  />
-
-                  <div class="rounded-lg border bg-background p-4 space-y-4">
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <p class="text-sm font-medium">{{ t('config.landingAboutEnable') }}</p>
-                        <p class="text-xs text-muted-foreground">{{ t('config.landingAboutEnableDesc') }}</p>
+                      <div class="mt-3 flex flex-wrap gap-2">
+                        <Button as-child :disabled="isUploadingLandingHero">
+                          <label class="cursor-pointer">
+                            <Upload class="size-4" />
+                            {{ isUploadingLandingHero ? t('config.uploading') : t('config.uploadImage') }}
+                            <input type="file" accept="image/webp" class="hidden" :disabled="isUploadingLandingHero" @change="handleLandingHeroUpload">
+                          </label>
+                        </Button>
+                        <Button v-if="landingHeroPreview" variant="outline" :disabled="isRemovingLandingHero" @click="handleRemoveLandingHero">
+                          <Trash2 class="size-4" /> {{ t('common.delete') }}
+                        </Button>
                       </div>
-                      <Switch v-model="landingAboutEnabled" />
+                      <p class="mt-1 text-xs text-muted-foreground">{{ t('config.imageMustBeWebp') }}</p>
                     </div>
+                    <Field>
+                      <FieldLabel for="landing-hero-title">{{ t('config.landingHeroTitle') }}</FieldLabel>
+                      <Input id="landing-hero-title" v-model="landingHeroTitle" :placeholder="t('config.landingHeroTitleHint')" />
+                    </Field>
+                    <Field>
+                      <FieldLabel for="landing-hero-subtitle">{{ t('config.landingHeroSubtitle') }}</FieldLabel>
+                      <Input id="landing-hero-subtitle" v-model="landingHeroSubtitle" :placeholder="t('config.landingHeroSubtitleHint')" />
+                    </Field>
+                    <Field>
+                      <FieldLabel for="landing-primary-color">{{ t('config.landingPrimaryColor') }}</FieldLabel>
+                      <div class="flex items-center gap-3">
+                        <Input id="landing-primary-color" v-model="landingPrimaryColor" type="color" class="size-10 cursor-pointer border-0 p-1" />
+                        <span class="text-sm text-muted-foreground">{{ landingPrimaryColor }}</span>
+                      </div>
+                    </Field>
+                    <LandingSectionBgFields v-model:bg-color="landingHeroBgColor" v-model:bg-image="landingHeroBgImage" color-id="landing-hero-bg-color" image-id="landing-hero-bg-image" :color-label="t('config.landingHeroBgColor')" section-key="hero" />
+                  </div>
+                </div>
 
+                <div class="rounded-lg border bg-background">
+                  <button type="button" class="flex w-full items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors" @click="toggleAccordion('about')">
+                    <span class="flex items-center gap-3">
+                      <span class="text-sm font-medium">{{ t('config.landingAboutEnable') }}</span>
+                      <Switch v-model="landingAboutEnabled" @click.stop />
+                    </span>
+                    <ChevronDown class="size-4 shrink-0 text-muted-foreground transition-transform" :class="{ 'rotate-180': landingAccordion.about }" />
+                  </button>
+                  <div v-show="landingAccordion.about" class="space-y-4 px-4 pb-4">
                     <template v-if="landingAboutEnabled">
                       <Field>
                         <FieldLabel for="landing-about-label">{{ t('config.landingAboutLabel') }}</FieldLabel>
-                        <Input
-                          id="landing-about-label"
-                          v-model="landingAboutLabel"
-                          :placeholder="t('config.landingYummyAbout')"
-                        />
+                        <Input id="landing-about-label" v-model="landingAboutLabel" :placeholder="t('config.landingYummyAbout')" />
                       </Field>
-
                       <Field>
                         <FieldLabel for="landing-about-title">{{ t('config.landingAboutTitle') }}</FieldLabel>
-                        <Input
-                          id="landing-about-title"
-                          v-model="landingAboutTitle"
-                          :placeholder="t('config.landingYummyAboutTitle')"
-                        />
+                        <Input id="landing-about-title" v-model="landingAboutTitle" :placeholder="t('config.landingYummyAboutTitle')" />
                       </Field>
-
                       <Field>
                         <FieldLabel for="landing-about-description">{{ t('config.landingAboutDescription') }}</FieldLabel>
-                        <textarea
-                          id="landing-about-description"
-                          v-model="landingAboutDescription"
-                          class="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                          :placeholder="t('config.landingYummyAboutDesc')"
-                        />
+                        <textarea id="landing-about-description" v-model="landingAboutDescription" class="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" :placeholder="t('config.landingYummyAboutDesc')" />
                       </Field>
-
                       <Field>
                         <FieldLabel>{{ t('config.landingAboutImage') }}</FieldLabel>
                         <div class="flex flex-wrap items-center gap-3">
-                          <div
-                            v-if="landingAboutPreview"
-                            class="relative size-24 overflow-hidden rounded-lg border"
-                          >
+                          <div v-if="landingAboutPreview" class="relative size-24 overflow-hidden rounded-lg border">
                             <img :src="landingAboutPreview" alt="About" class="size-full object-cover">
                           </div>
                           <div v-else class="flex size-24 items-center justify-center rounded-lg border bg-muted">
@@ -1191,474 +1152,250 @@ watch(landingTemplate, (newTemplate) => {
                           <Button as-child :disabled="isUploadingLandingAbout">
                             <label class="cursor-pointer">
                               {{ isUploadingLandingAbout ? t('config.uploading') : t('config.uploadImage') }}
-                              <input
-                                type="file"
-                                accept="image/webp"
-                                class="hidden"
-                                :disabled="isUploadingLandingAbout"
-                                @change="handleLandingAboutUpload"
-                              >
+                              <input type="file" accept="image/webp" class="hidden" :disabled="isUploadingLandingAbout" @change="handleLandingAboutUpload">
                             </label>
                           </Button>
-                          <Button
-                            v-if="landingAboutPreview"
-                            variant="outline"
-                            type="button"
-                            :disabled="isRemovingLandingAbout"
-                            @click="handleRemoveLandingAbout"
-                          >
+                          <Button v-if="landingAboutPreview" variant="outline" type="button" :disabled="isRemovingLandingAbout" @click="handleRemoveLandingAbout">
                             {{ t('common.delete') }}
                           </Button>
                         </div>
                       </Field>
-
                       <div class="space-y-3">
                         <div class="flex items-center justify-between">
                           <p class="text-sm font-medium">{{ t('config.landingAboutBullets') }}</p>
-                          <Button size="sm" variant="outline" type="button" @click="addAboutBullet">
-                            <Plus class="size-4" />
-                            {{ t('common.add') }}
-                          </Button>
+                          <Button size="sm" variant="outline" type="button" @click="addAboutBullet"><Plus class="size-4" /> {{ t('common.add') }}</Button>
                         </div>
-                        <div
-                          v-for="(bullet, idx) in landingAboutBullets"
-                          :key="idx"
-                          class="flex items-center gap-2"
-                        >
+                        <div v-for="(bullet, idx) in landingAboutBullets" :key="idx" class="flex items-center gap-2">
                           <Input v-model="landingAboutBullets[idx]" :placeholder="t('config.landingAboutBulletsHint')" />
-                          <Button size="icon" variant="ghost" type="button" @click="removeAboutBullet(idx)">
-                            <Trash2 class="size-4 text-red-500" />
-                          </Button>
+                          <Button size="icon" variant="ghost" type="button" @click="removeAboutBullet(idx)"><Trash2 class="size-4 text-red-500" /></Button>
                         </div>
                       </div>
-
-                      <LandingSectionBgFields
-                        v-model:bg-color="landingAboutBgColor"
-                        v-model:bg-image="landingAboutBgImage"
-                        color-id="landing-about-bg"
-                        image-id="landing-about-bg-image"
-                        :color-label="t('config.landingAboutBgColor')"
-                      />
+                      <LandingSectionBgFields v-model:bg-color="landingAboutBgColor" v-model:bg-image="landingAboutBgImage" color-id="landing-about-bg" image-id="landing-about-bg-image" :color-label="t('config.landingAboutBgColor')" section-key="about" />
                     </template>
                   </div>
+                </div>
 
-                  <div class="rounded-lg border bg-background p-4 space-y-4">
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <p class="text-sm font-medium">{{ t('config.landingWhyEnable') }}</p>
-                        <p class="text-xs text-muted-foreground">{{ t('config.landingWhyEnableDesc') }}</p>
-                      </div>
-                      <Switch v-model="landingWhyEnabled" />
-                    </div>
-
+                <div class="rounded-lg border bg-background">
+                  <button type="button" class="flex w-full items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors" @click="toggleAccordion('why')">
+                    <span class="flex items-center gap-3">
+                      <span class="text-sm font-medium">{{ t('config.landingWhyEnable') }}</span>
+                      <Switch v-model="landingWhyEnabled" @click.stop />
+                    </span>
+                    <ChevronDown class="size-4 shrink-0 text-muted-foreground transition-transform" :class="{ 'rotate-180': landingAccordion.why }" />
+                  </button>
+                  <div v-show="landingAccordion.why" class="space-y-4 px-4 pb-4">
                     <template v-if="landingWhyEnabled">
                       <Field>
                         <FieldLabel for="landing-why-label">{{ t('config.landingWhyLabel') }}</FieldLabel>
-                        <Input
-                          id="landing-why-label"
-                          v-model="landingWhyLabel"
-                          :placeholder="t('config.landingYummyWhyChoose')"
-                        />
+                        <Input id="landing-why-label" v-model="landingWhyLabel" :placeholder="t('config.landingYummyWhyChoose')" />
                       </Field>
-
                       <Field>
                         <FieldLabel for="landing-why-title">{{ t('config.landingWhyTitle') }}</FieldLabel>
-                        <Input
-                          id="landing-why-title"
-                          v-model="landingWhyTitle"
-                          :placeholder="t('config.landingYummyWhyChoose')"
-                        />
+                        <Input id="landing-why-title" v-model="landingWhyTitle" :placeholder="t('config.landingYummyWhyChoose')" />
                       </Field>
-
                       <Field>
                         <FieldLabel for="landing-why-description">{{ t('config.landingWhyDescription') }}</FieldLabel>
-                        <textarea
-                          id="landing-why-description"
-                          v-model="landingWhyDescription"
-                          class="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                          :placeholder="t('config.landingYummyWhyChooseDesc')"
-                        />
+                        <textarea id="landing-why-description" v-model="landingWhyDescription" class="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" :placeholder="t('config.landingYummyWhyChooseDesc')" />
                       </Field>
-
                       <div class="space-y-4">
                         <div class="flex items-center justify-between">
                           <p class="text-sm font-medium">{{ t('config.landingWhyFeatures') }}</p>
-                          <Button size="sm" variant="outline" type="button" @click="addWhyFeature">
-                            <Plus class="size-4" />
-                            {{ t('common.add') }}
-                          </Button>
+                          <Button size="sm" variant="outline" type="button" @click="addWhyFeature"><Plus class="size-4" /> {{ t('common.add') }}</Button>
                         </div>
-                        <div
-                          v-for="(feature, idx) in landingWhyFeatures"
-                          :key="idx"
-                          class="rounded-lg border p-3 space-y-3"
-                        >
+                        <div v-for="(feature, idx) in landingWhyFeatures" :key="idx" class="rounded-lg border p-3 space-y-3">
                           <div class="flex items-center justify-between">
-                            <span class="text-xs font-medium text-muted-foreground">
-                              {{ t('config.landingWhyFeatureItem', { n: idx + 1 }) }}
-                            </span>
-                            <Button size="icon" variant="ghost" type="button" @click="removeWhyFeature(idx)">
-                              <Trash2 class="size-4 text-red-500" />
-                            </Button>
+                            <span class="text-xs font-medium text-muted-foreground">{{ t('config.landingWhyFeatureItem', { n: idx + 1 }) }}</span>
+                            <Button size="icon" variant="ghost" type="button" @click="removeWhyFeature(idx)"><Trash2 class="size-4 text-red-500" /></Button>
                           </div>
                           <Input v-model="feature.title" :placeholder="t('config.landingYummyFeat1Title')" />
-                          <textarea
-                            v-model="feature.description"
-                            class="flex min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                            :placeholder="t('config.landingYummyFeat1Desc')"
-                          />
+                          <textarea v-model="feature.description" class="flex min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" :placeholder="t('config.landingYummyFeat1Desc')" />
                         </div>
                       </div>
-
                       <div class="space-y-4">
                         <div class="flex items-center justify-between">
                           <p class="text-sm font-medium">{{ t('config.landingWhyStats') }}</p>
-                          <Button size="sm" variant="outline" type="button" @click="addWhyStat">
-                            <Plus class="size-4" />
-                            {{ t('common.add') }}
-                          </Button>
+                          <Button size="sm" variant="outline" type="button" @click="addWhyStat"><Plus class="size-4" /> {{ t('common.add') }}</Button>
                         </div>
                         <p class="text-xs text-muted-foreground">{{ t('config.landingWhyStatsHint') }}</p>
-                        <div
-                          v-for="(stat, idx) in landingWhyStats"
-                          :key="idx"
-                          class="grid gap-2 rounded-lg border p-3 sm:grid-cols-[1fr_1fr_auto]"
-                        >
+                        <div v-for="(stat, idx) in landingWhyStats" :key="idx" class="grid gap-2 rounded-lg border p-3 sm:grid-cols-[1fr_1fr_auto]">
                           <Input v-model="stat.value" :placeholder="t('config.landingWhyStatValue')" />
                           <Input v-model="stat.label" :placeholder="t('config.landingWhyStatLabel')" />
-                          <Button size="icon" variant="ghost" type="button" @click="removeWhyStat(idx)">
-                            <Trash2 class="size-4 text-red-500" />
-                          </Button>
+                          <Button size="icon" variant="ghost" type="button" @click="removeWhyStat(idx)"><Trash2 class="size-4 text-red-500" /></Button>
                         </div>
                       </div>
-
-                      <LandingSectionBgFields
-                        v-model:bg-color="landingWhyBgColor"
-                        v-model:bg-image="landingWhyBgImage"
-                        color-id="landing-why-bg"
-                        image-id="landing-why-bg-image"
-                        :color-label="t('config.landingWhyBgColor')"
-                      />
+                      <LandingSectionBgFields v-model:bg-color="landingWhyBgColor" v-model:bg-image="landingWhyBgImage" color-id="landing-why-bg" image-id="landing-why-bg-image" :color-label="t('config.landingWhyBgColor')" section-key="why" />
                     </template>
                   </div>
+                </div>
 
-                  <div class="rounded-lg border bg-background p-4 space-y-4">
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <p class="text-sm font-medium">{{ t('config.landingCarouselEnable') }}</p>
-                        <p class="text-xs text-muted-foreground">{{ t('config.landingCarouselEnableDesc') }}</p>
-                      </div>
-                      <Switch v-model="landingCarouselEnabled" />
-                    </div>
-
+                <div class="rounded-lg border bg-background">
+                  <button type="button" class="flex w-full items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors" @click="toggleAccordion('carousel')">
+                    <span class="flex items-center gap-3">
+                      <span class="text-sm font-medium">{{ t('config.landingCarouselEnable') }}</span>
+                      <Switch v-model="landingCarouselEnabled" @click.stop />
+                    </span>
+                    <ChevronDown class="size-4 shrink-0 text-muted-foreground transition-transform" :class="{ 'rotate-180': landingAccordion.carousel }" />
+                  </button>
+                  <div v-show="landingAccordion.carousel" class="space-y-4 px-4 pb-4">
                     <template v-if="landingCarouselEnabled">
                       <Field>
                         <FieldLabel for="landing-carousel-title">{{ t('config.landingCarouselTitle') }}</FieldLabel>
-                        <Input
-                          id="landing-carousel-title"
-                          v-model="landingCarouselTitle"
-                          :placeholder="t('config.landingCarouselTitleHint')"
-                        />
+                        <Input id="landing-carousel-title" v-model="landingCarouselTitle" :placeholder="t('config.landingCarouselTitleHint')" />
                       </Field>
-
                       <Field>
                         <FieldLabel for="landing-carousel-max">{{ t('config.landingCarouselMaxItems') }}</FieldLabel>
-                        <Input
-                          id="landing-carousel-max"
-                          v-model.number="landingCarouselMaxItems"
-                          type="number"
-                          min="4"
-                          max="20"
-                        />
+                        <Input id="landing-carousel-max" v-model.number="landingCarouselMaxItems" type="number" min="4" max="20" />
                         <p class="mt-1 text-xs text-muted-foreground">{{ t('config.landingCarouselMaxItemsDesc') }}</p>
                       </Field>
-
-                      <LandingSectionBgFields
-                        v-model:bg-color="landingCarouselBgColor"
-                        v-model:bg-image="landingCarouselBgImage"
-                        color-id="landing-carousel-bg"
-                        image-id="landing-carousel-bg-image"
-                        :color-label="t('config.landingCarouselBgColor')"
-                      />
+                      <LandingSectionBgFields v-model:bg-color="landingCarouselBgColor" v-model:bg-image="landingCarouselBgImage" color-id="landing-carousel-bg" image-id="landing-carousel-bg-image" :color-label="t('config.landingCarouselBgColor')" section-key="carousel" />
                     </template>
                   </div>
+                </div>
 
-                  <div class="rounded-lg border bg-background p-4 space-y-4">
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <p class="text-sm font-medium">{{ t('config.landingTestimonialsEnable') }}</p>
-                        <p class="text-xs text-muted-foreground">{{ t('config.landingTestimonialsEnableDesc') }}</p>
-                      </div>
-                      <Switch v-model="landingTestimonialsEnabled" />
-                    </div>
-
+                <div class="rounded-lg border bg-background">
+                  <button type="button" class="flex w-full items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors" @click="toggleAccordion('testimonials')">
+                    <span class="flex items-center gap-3">
+                      <span class="text-sm font-medium">{{ t('config.landingTestimonialsEnable') }}</span>
+                      <Switch v-model="landingTestimonialsEnabled" @click.stop />
+                    </span>
+                    <ChevronDown class="size-4 shrink-0 text-muted-foreground transition-transform" :class="{ 'rotate-180': landingAccordion.testimonials }" />
+                  </button>
+                  <div v-show="landingAccordion.testimonials" class="space-y-4 px-4 pb-4">
                     <template v-if="landingTestimonialsEnabled">
                       <Field>
                         <FieldLabel for="landing-testimonials-title">{{ t('config.landingTestimonialsTitle') }}</FieldLabel>
-                        <Input
-                          id="landing-testimonials-title"
-                          v-model="landingTestimonialsTitle"
-                          :placeholder="t('config.landingTestimonialsTitleHint')"
-                        />
+                        <Input id="landing-testimonials-title" v-model="landingTestimonialsTitle" :placeholder="t('config.landingTestimonialsTitleHint')" />
                       </Field>
-
-                      <LandingSectionBgFields
-                        v-model:bg-color="landingTestimonialsBgColor"
-                        v-model:bg-image="landingTestimonialsBgImage"
-                        color-id="landing-testimonials-bg"
-                        image-id="landing-testimonials-bg-image"
-                        :color-label="t('config.landingTestimonialsBgColor')"
-                      />
-
+                      <LandingSectionBgFields v-model:bg-color="landingTestimonialsBgColor" v-model:bg-image="landingTestimonialsBgImage" color-id="landing-testimonials-bg" image-id="landing-testimonials-bg-image" :color-label="t('config.landingTestimonialsBgColor')" section-key="testimonials" />
                       <div class="space-y-4">
                         <div class="flex items-center justify-between">
                           <p class="text-sm font-medium">{{ t('config.landingTestimonialsItems') }}</p>
-                          <Button size="sm" variant="outline" type="button" @click="addTestimonial">
-                            <Plus class="size-4" />
-                            {{ t('common.add') }}
-                          </Button>
+                          <Button size="sm" variant="outline" type="button" @click="addTestimonial"><Plus class="size-4" /> {{ t('common.add') }}</Button>
                         </div>
-
-                        <div
-                          v-for="(item, idx) in landingTestimonialsData"
-                          :key="idx"
-                          class="rounded-lg border p-3 space-y-3"
-                        >
+                        <div v-for="(item, idx) in landingTestimonialsData" :key="idx" class="rounded-lg border p-3 space-y-3">
                           <div class="flex items-center justify-between">
-                            <span class="text-xs font-medium text-muted-foreground">
-                              {{ t('config.landingTestimonialItem', { n: idx + 1 }) }}
-                            </span>
-                            <Button size="icon" variant="ghost" class="size-8" type="button" @click="removeTestimonial(idx)">
-                              <Trash2 class="size-4 text-red-500" />
-                            </Button>
+                            <span class="text-xs font-medium text-muted-foreground">{{ t('config.landingTestimonialItem', { n: idx + 1 }) }}</span>
+                            <Button size="icon" variant="ghost" class="size-8" type="button" @click="removeTestimonial(idx)"><Trash2 class="size-4 text-red-500" /></Button>
                           </div>
-
                           <div class="flex items-center gap-3">
-                            <div
-                              class="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted"
-                            >
-                              <img
-                                v-if="item.avatar_url"
-                                :src="item.avatar_url"
-                                alt="Avatar"
-                                class="size-10 rounded-full object-cover"
-                              >
+                            <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                              <img v-if="item.avatar_url" :src="item.avatar_url" alt="Avatar" class="size-10 rounded-full object-cover">
                               <User v-else class="size-5 text-muted-foreground" />
                             </div>
                             <div class="flex gap-1.5">
                               <Button as-child size="sm" variant="outline" type="button">
                                 <label class="cursor-pointer">
-                                  <Upload class="size-3.5" />
-                                  <span class="ml-1 text-xs">{{ t('config.uploadImage') }}</span>
-                                  <input
-                                    type="file"
-                                    accept="image/webp"
-                                    class="hidden"
-                                    @change="handleTestimonialAvatarUpload($event, idx)"
-                                  >
+                                  <Upload class="size-3.5" /><span class="ml-1 text-xs">{{ t('config.uploadImage') }}</span>
+                                  <input type="file" accept="image/webp" class="hidden" @change="handleTestimonialAvatarUpload($event, idx)">
                                 </label>
                               </Button>
-                              <Button
-                                v-if="item.avatar_url"
-                                size="sm"
-                                variant="ghost"
-                                type="button"
-                                @click="handleTestimonialAvatarRemove(idx)"
-                              >
-                                <Trash2 class="size-3.5 text-red-500" />
-                              </Button>
+                              <Button v-if="item.avatar_url" size="sm" variant="ghost" type="button" @click="handleTestimonialAvatarRemove(idx)"><Trash2 class="size-3.5 text-red-500" /></Button>
                             </div>
                           </div>
-
                           <Field>
                             <FieldLabel class="text-xs">{{ t('config.landingTestimonialName') }}</FieldLabel>
                             <Input v-model="item.name" :placeholder="t('config.landingTestimonialNamePh')" class="h-8 text-sm" />
                           </Field>
-
                           <Field>
                             <FieldLabel class="text-xs">{{ t('config.landingTestimonialRole') }}</FieldLabel>
                             <Input v-model="item.role" :placeholder="t('config.landingTestimonialRolePh')" class="h-8 text-sm" />
                           </Field>
-
                           <Field>
                             <FieldLabel class="text-xs">{{ t('config.landingTestimonialText') }}</FieldLabel>
-                            <textarea
-                              v-model="item.text"
-                              class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                              rows="3"
-                              :placeholder="t('config.landingTestimonialTextPh')"
-                            />
+                            <textarea v-model="item.text" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" rows="3" :placeholder="t('config.landingTestimonialTextPh')" />
                           </Field>
-
                           <Field>
                             <FieldLabel class="text-xs">{{ t('config.landingTestimonialRating') }}</FieldLabel>
                             <div class="flex gap-1">
-                              <button
-                                v-for="i in 5"
-                                :key="i"
-                                type="button"
-                                class="size-6"
-                                @click="item.rating = i"
-                              >
-                                <Star
-                                  class="size-5 transition-colors"
-                                  :class="i <= item.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'"
-                                />
+                              <button v-for="i in 5" :key="i" type="button" class="size-6" @click="item.rating = i">
+                                <Star class="size-5 transition-colors" :class="i <= item.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'" />
                               </button>
                             </div>
                           </Field>
                         </div>
-
-                        <p v-if="landingTestimonialsData.length === 0" class="text-xs text-muted-foreground py-2 text-center">
-                          {{ t('config.landingTestimonialsEmptyHint') }}
-                        </p>
+                        <p v-if="landingTestimonialsData.length === 0" class="text-xs text-muted-foreground py-2 text-center">{{ t('config.landingTestimonialsEmptyHint') }}</p>
                       </div>
                     </template>
                   </div>
+                </div>
 
-                  <div class="rounded-lg border bg-background p-4 space-y-4">
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <p class="text-sm font-medium">{{ t('config.landingServicesEnable') }}</p>
-                        <p class="text-xs text-muted-foreground">{{ t('config.landingServicesEnableDesc') }}</p>
-                      </div>
-                      <Switch v-model="landingServicesEnabled" />
-                    </div>
-
+                <div class="rounded-lg border bg-background">
+                  <button type="button" class="flex w-full items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors" @click="toggleAccordion('services')">
+                    <span class="flex items-center gap-3">
+                      <span class="text-sm font-medium">{{ t('config.landingServicesEnable') }}</span>
+                      <Switch v-model="landingServicesEnabled" @click.stop />
+                    </span>
+                    <ChevronDown class="size-4 shrink-0 text-muted-foreground transition-transform" :class="{ 'rotate-180': landingAccordion.services }" />
+                  </button>
+                  <div v-show="landingAccordion.services" class="space-y-4 px-4 pb-4">
                     <template v-if="landingServicesEnabled">
                       <Field>
                         <FieldLabel for="landing-services-title">{{ t('config.landingServicesTitle') }}</FieldLabel>
-                        <Input
-                          id="landing-services-title"
-                          v-model="landingServicesTitle"
-                          :placeholder="t('config.landingServicesTitleHint')"
-                        />
+                        <Input id="landing-services-title" v-model="landingServicesTitle" :placeholder="t('config.landingServicesTitleHint')" />
                       </Field>
-
                       <Field>
                         <FieldLabel for="landing-services-subtitle">{{ t('config.landingServicesSubtitle') }}</FieldLabel>
-                        <Input
-                          id="landing-services-subtitle"
-                          v-model="landingServicesSubtitle"
-                          :placeholder="t('config.landingServicesSubtitleHint')"
-                        />
+                        <Input id="landing-services-subtitle" v-model="landingServicesSubtitle" :placeholder="t('config.landingServicesSubtitleHint')" />
                       </Field>
-
                       <Field>
                         <FieldLabel for="landing-services-wa">{{ t('config.landingServicesWhatsapp') }}</FieldLabel>
-                        <Input
-                          id="landing-services-wa"
-                          v-model="landingServicesWhatsapp"
-                          placeholder="6281234567890"
-                        />
+                        <Input id="landing-services-wa" v-model="landingServicesWhatsapp" placeholder="6281234567890" />
                         <p class="mt-1 text-xs text-muted-foreground">{{ t('config.landingServicesWhatsappHint') }}</p>
                       </Field>
-
-                      <LandingSectionBgFields
-                        v-model:bg-color="landingServicesBgColor"
-                        v-model:bg-image="landingServicesBgImage"
-                        color-id="landing-services-bg"
-                        image-id="landing-services-bg-image"
-                        :color-label="t('config.landingServicesBgColor')"
-                      />
-
+                      <LandingSectionBgFields v-model:bg-color="landingServicesBgColor" v-model:bg-image="landingServicesBgImage" color-id="landing-services-bg" image-id="landing-services-bg-image" :color-label="t('config.landingServicesBgColor')" section-key="services" />
                       <div class="space-y-4">
                         <div class="flex items-center justify-between">
                           <p class="text-sm font-medium">{{ t('config.landingServicesItems') }}</p>
-                          <Button size="sm" variant="outline" type="button" @click="addServiceItem">
-                            <Plus class="size-4" />
-                            {{ t('common.add') }}
-                          </Button>
+                          <Button size="sm" variant="outline" type="button" @click="addServiceItem"><Plus class="size-4" /> {{ t('common.add') }}</Button>
                         </div>
-
-                        <div
-                          v-for="(item, idx) in landingServicesData"
-                          :key="idx"
-                          class="rounded-lg border p-3 space-y-3"
-                        >
+                        <div v-for="(item, idx) in landingServicesData" :key="idx" class="rounded-lg border p-3 space-y-3">
                           <div class="flex items-center justify-between">
-                            <span class="text-xs font-medium text-muted-foreground">
-                              {{ t('config.landingServiceItem', { n: idx + 1 }) }}
-                            </span>
-                            <Button size="icon" variant="ghost" class="size-8" type="button" @click="removeServiceItem(idx)">
-                              <Trash2 class="size-4 text-red-500" />
-                            </Button>
+                            <span class="text-xs font-medium text-muted-foreground">{{ t('config.landingServiceItem', { n: idx + 1 }) }}</span>
+                            <Button size="icon" variant="ghost" class="size-8" type="button" @click="removeServiceItem(idx)"><Trash2 class="size-4 text-red-500" /></Button>
                           </div>
-
                           <div class="flex gap-3">
-                            <div
-                              class="flex size-16 shrink-0 items-center justify-center rounded-lg bg-muted overflow-hidden"
-                            >
-                              <img
-                                v-if="item.image_url"
-                                :src="item.image_url"
-                                alt="Service"
-                                class="size-full object-cover"
-                              >
+                            <div class="flex size-16 shrink-0 items-center justify-center rounded-lg bg-muted overflow-hidden">
+                              <img v-if="item.image_url" :src="item.image_url" alt="Service" class="size-full object-cover">
                               <ImageIcon v-else class="size-6 text-muted-foreground" />
                             </div>
                             <div class="flex flex-col justify-center gap-1.5">
                               <Button as-child size="sm" variant="outline" type="button">
                                 <label class="cursor-pointer">
-                                  <Upload class="size-3.5" />
-                                  <span class="ml-1 text-xs">{{ t('config.uploadImage') }}</span>
-                                  <input
-                                    type="file"
-                                    accept="image/webp"
-                                    class="hidden"
-                                    @change="handleServiceImageUpload($event, idx)"
-                                  >
+                                  <Upload class="size-3.5" /><span class="ml-1 text-xs">{{ t('config.uploadImage') }}</span>
+                                  <input type="file" accept="image/webp" class="hidden" @change="handleServiceImageUpload($event, idx)">
                                 </label>
                               </Button>
-                              <Button
-                                v-if="item.image_url"
-                                size="sm"
-                                variant="ghost"
-                                type="button"
-                                @click="handleServiceImageRemove(idx)"
-                              >
-                                <Trash2 class="size-3.5 text-red-500" />
-                              </Button>
+                              <Button v-if="item.image_url" size="sm" variant="ghost" type="button" @click="handleServiceImageRemove(idx)"><Trash2 class="size-3.5 text-red-500" /></Button>
                             </div>
                           </div>
-
                           <Field>
                             <FieldLabel class="text-xs">{{ t('config.landingServiceItemTitle') }}</FieldLabel>
                             <Input v-model="item.title" :placeholder="t('config.landingServiceItemTitlePh')" class="h-8 text-sm" />
                           </Field>
-
                           <Field>
                             <FieldLabel class="text-xs">{{ t('config.landingServiceItemPrice') }}</FieldLabel>
                             <Input v-model="item.price" placeholder="$99" class="h-8 text-sm" />
                           </Field>
-
                           <Field>
                             <FieldLabel class="text-xs">{{ t('config.landingServiceItemDesc') }}</FieldLabel>
-                            <textarea
-                              v-model="item.description"
-                              class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                              rows="2"
-                              :placeholder="t('config.landingServiceItemDescPh')"
-                            />
+                            <textarea v-model="item.description" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" rows="2" :placeholder="t('config.landingServiceItemDescPh')" />
                           </Field>
                         </div>
-
-                        <p v-if="landingServicesData.length === 0" class="text-xs text-muted-foreground py-2 text-center">
-                          {{ t('config.landingServicesEmptyHint') }}
-                        </p>
+                        <p v-if="landingServicesData.length === 0" class="text-xs text-muted-foreground py-2 text-center">{{ t('config.landingServicesEmptyHint') }}</p>
                       </div>
                     </template>
                   </div>
+                </div>
 
-                  <div class="rounded-lg border bg-background p-4 space-y-4">
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <p class="text-sm font-medium">{{ t('config.landingGalleryEnable') }}</p>
-                        <p class="text-xs text-muted-foreground">{{ t('config.landingGalleryEnableDesc') }}</p>
-                      </div>
-                      <Switch v-model="landingGalleryEnabled" />
-                    </div>
-
+                <div class="rounded-lg border bg-background">
+                  <button type="button" class="flex w-full items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors" @click="toggleAccordion('gallery')">
+                    <span class="flex items-center gap-3">
+                      <span class="text-sm font-medium">{{ t('config.landingGalleryEnable') }}</span>
+                      <Switch v-model="landingGalleryEnabled" @click.stop />
+                    </span>
+                    <ChevronDown class="size-4 shrink-0 text-muted-foreground transition-transform" :class="{ 'rotate-180': landingAccordion.gallery }" />
+                  </button>
+                  <div v-show="landingAccordion.gallery" class="space-y-4 px-4 pb-4">
                     <template v-if="landingGalleryEnabled">
                       <Field>
                         <FieldLabel for="landing-gallery-title">{{ t('config.landingGalleryTitle') }}</FieldLabel>
@@ -1668,20 +1405,11 @@ watch(landingTemplate, (newTemplate) => {
                         <FieldLabel for="landing-gallery-subtitle">{{ t('config.landingGallerySubtitle') }}</FieldLabel>
                         <Input id="landing-gallery-subtitle" v-model="landingGallerySubtitle" :placeholder="t('config.landingGallerySubtitleHint')" />
                       </Field>
-                      <LandingSectionBgFields
-                        v-model:bg-color="landingGalleryBgColor"
-                        v-model:bg-image="landingGalleryBgImage"
-                        color-id="landing-gallery-bg"
-                        image-id="landing-gallery-bg-image"
-                        :color-label="t('config.landingGalleryBgColor')"
-                      />
-
+                      <LandingSectionBgFields v-model:bg-color="landingGalleryBgColor" v-model:bg-image="landingGalleryBgImage" color-id="landing-gallery-bg" image-id="landing-gallery-bg-image" :color-label="t('config.landingGalleryBgColor')" section-key="gallery" />
                       <div class="space-y-4">
                         <div class="flex items-center justify-between">
                           <p class="text-sm font-medium">{{ t('config.landingGalleryImages') }}</p>
-                          <Button size="sm" variant="outline" type="button" @click="addGalleryImage">
-                            <Plus class="size-4" /> {{ t('common.add') }}
-                          </Button>
+                          <Button size="sm" variant="outline" type="button" @click="addGalleryImage"><Plus class="size-4" /> {{ t('common.add') }}</Button>
                         </div>
                         <div class="grid grid-cols-4 gap-2">
                           <div v-for="(_, idx) in landingGalleryImages" :key="idx" class="relative aspect-square rounded-lg border bg-muted overflow-hidden">
@@ -1694,9 +1422,7 @@ watch(landingTemplate, (newTemplate) => {
                                   <input type="file" accept="image/webp" class="hidden" @change="handleGalleryImageUpload($event, idx)">
                                 </label>
                               </Button>
-                              <Button size="sm" variant="secondary" type="button" class="size-6 p-0" @click="handleGalleryImageRemove(idx)">
-                                <Trash2 class="size-3 text-red-500" />
-                              </Button>
+                              <Button size="sm" variant="secondary" type="button" class="size-6 p-0" @click="handleGalleryImageRemove(idx)"><Trash2 class="size-3 text-red-500" /></Button>
                             </div>
                           </div>
                         </div>
@@ -1704,16 +1430,17 @@ watch(landingTemplate, (newTemplate) => {
                       </div>
                     </template>
                   </div>
+                </div>
 
-                  <div class="rounded-lg border bg-background p-4 space-y-4">
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <p class="text-sm font-medium">{{ t('config.landingContactEnable') }}</p>
-                        <p class="text-xs text-muted-foreground">{{ t('config.landingContactEnableDesc') }}</p>
-                      </div>
-                      <Switch v-model="landingContactEnabled" />
-                    </div>
-
+                <div class="rounded-lg border bg-background">
+                  <button type="button" class="flex w-full items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors" @click="toggleAccordion('contact')">
+                    <span class="flex items-center gap-3">
+                      <span class="text-sm font-medium">{{ t('config.landingContactEnable') }}</span>
+                      <Switch v-model="landingContactEnabled" @click.stop />
+                    </span>
+                    <ChevronDown class="size-4 shrink-0 text-muted-foreground transition-transform" :class="{ 'rotate-180': landingAccordion.contact }" />
+                  </button>
+                  <div v-show="landingAccordion.contact" class="space-y-4 px-4 pb-4">
                     <template v-if="landingContactEnabled">
                       <Field>
                         <FieldLabel for="landing-contact-title">{{ t('config.landingContactTitle') }}</FieldLabel>
@@ -1749,27 +1476,25 @@ watch(landingTemplate, (newTemplate) => {
                           <Input id="landing-contact-zoom" v-model.number="landingContactMapZoom" type="number" min="1" max="18" />
                         </Field>
                       </div>
-                      <LandingSectionBgFields
-                        v-model:bg-color="landingContactBgColor"
-                        v-model:bg-image="landingContactBgImage"
-                        color-id="landing-contact-bg"
-                        image-id="landing-contact-bg-image"
-                        :color-label="t('config.landingContactBgColor')"
-                      />
+                      <LandingSectionBgFields v-model:bg-color="landingContactBgColor" v-model:bg-image="landingContactBgImage" color-id="landing-contact-bg" image-id="landing-contact-bg-image" :color-label="t('config.landingContactBgColor')" section-key="contact" />
                     </template>
                   </div>
+                </div>
 
-                  <div v-if="landingTemplate === 'yummy'" class="rounded-lg border bg-background p-4 space-y-4">
-                    <div>
-                      <p class="text-sm font-medium">{{ t('config.landingBookSectionBg') }}</p>
-                      <p class="text-xs text-muted-foreground">{{ t('config.landingBookSectionBgDesc') }}</p>
-                    </div>
+                <div v-if="landingTemplate === 'yummy'" class="rounded-lg border bg-background">
+                  <button type="button" class="flex w-full items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors" @click="toggleAccordion('book')">
+                    <span class="text-sm font-medium">{{ t('config.landingBookSectionBg') }}</span>
+                    <ChevronDown class="size-4 shrink-0 text-muted-foreground transition-transform" :class="{ 'rotate-180': landingAccordion.book }" />
+                  </button>
+                  <div v-show="landingAccordion.book" class="space-y-4 px-4 pb-4">
+                    <p class="text-xs text-muted-foreground">{{ t('config.landingBookSectionBgDesc') }}</p>
                     <LandingSectionBgFields
                       v-model:bg-color="landingBookBgColor"
                       v-model:bg-image="landingBookBgImage"
                       color-id="landing-book-bg"
                       image-id="landing-book-bg-image"
                       :color-label="t('config.landingBookBgColor')"
+                      section-key="book"
                     />
                   </div>
                 </div>
