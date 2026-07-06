@@ -10,6 +10,7 @@ import type {
   Customer,
   PaymentMethod,
   Product,
+  ShopConfig,
   Transaction,
   TransactionWithDetails,
 } from '@/types/database'
@@ -27,6 +28,20 @@ export type InvoiceLineItem = {
   subtotal: number
 }
 
+export type InvoiceCustomization = {
+  footerText: string | null
+  logoUrl: string | null
+  showLogo: boolean
+  showQris: boolean
+  taxId: string | null
+  showTaxId: boolean
+  termsText: string | null
+  showTerms: boolean
+  primaryColor: string
+  showItemPrices: boolean
+  showQty: boolean
+}
+
 export type InvoiceData = {
   transactionId: string
   invoiceNumber: string
@@ -39,6 +54,39 @@ export type InvoiceData = {
   paidAt: string
   notes: string | null
   queueNumber: number | null
+  customization: InvoiceCustomization
+}
+
+export const DEFAULT_INVOICE_CUSTOMIZATION: InvoiceCustomization = {
+  footerText: null,
+  logoUrl: null,
+  showLogo: false,
+  showQris: true,
+  taxId: null,
+  showTaxId: false,
+  termsText: null,
+  showTerms: false,
+  primaryColor: '#000000',
+  showItemPrices: true,
+  showQty: true,
+}
+
+export function buildInvoiceCustomization(config: ShopConfig | null): InvoiceCustomization {
+  if (!config) return { ...DEFAULT_INVOICE_CUSTOMIZATION }
+
+  return {
+    footerText: config.invoice_footer_text ?? null,
+    logoUrl: config.invoice_logo_url ?? null,
+    showLogo: config.invoice_show_logo ?? false,
+    showQris: config.invoice_show_qris ?? true,
+    taxId: config.invoice_tax_id ?? null,
+    showTaxId: config.invoice_show_tax_id ?? false,
+    termsText: config.invoice_terms_text ?? null,
+    showTerms: config.invoice_show_terms ?? false,
+    primaryColor: config.invoice_primary_color || '#000000',
+    showItemPrices: config.invoice_show_item_prices ?? true,
+    showQty: config.invoice_show_qty ?? true,
+  }
 }
 
 export function getPaymentMethodLabel(method: PaymentMethod) {
@@ -99,6 +147,7 @@ export function buildInvoiceFromTransaction(
     paidAt,
     notes: transaction.notes,
     queueNumber: extras?.queueNumber ?? null,
+    customization: { ...DEFAULT_INVOICE_CUSTOMIZATION },
   }
 }
 
@@ -130,6 +179,7 @@ export function buildInvoiceFromCart(
     paidAt,
     notes: transaction.notes,
     queueNumber: extras?.queueNumber ?? null,
+    customization: { ...DEFAULT_INVOICE_CUSTOMIZATION },
   }
 }
 
@@ -137,10 +187,12 @@ export function applyShopInfoToInvoice(
   invoice: InvoiceData,
   shopName: string | null | undefined,
   shopAddress: string | null | undefined,
+  customization?: InvoiceCustomization,
 ): InvoiceData {
   return {
     ...invoice,
     shopName: shopName?.trim() || 'INVOICE',
     shopAddress: shopAddress?.trim() || null,
+    customization: customization ?? invoice.customization ?? { ...DEFAULT_INVOICE_CUSTOMIZATION },
   }
 }

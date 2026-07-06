@@ -32,6 +32,7 @@ import BookingListPages from '@/pages/BookingListPages.vue'
 import PreOrderInboxPages from '@/pages/PreOrderInboxPages.vue'
 import UserRoleMasterPages from '@/pages/UserRoleMasterPages.vue'
 import ProfilePages from '@/pages/ProfilePages.vue'
+import InvoiceListPages from '@/pages/InvoiceListPages.vue'
 
 function createAppRouterHistory() {
   if (import.meta.env.VITE_ROUTER_MODE === 'hash') {
@@ -194,6 +195,11 @@ const router = createRouter({
       path: '/bookings',
       name: 'bookings',
       component: BookingListPages,
+    },
+    {
+      path: '/invoices',
+      name: 'invoices',
+      component: InvoiceListPages,
     },
     {
       path: '/:pathMatch(.*)*',

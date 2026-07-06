@@ -8,6 +8,7 @@ export type { PaymentFlowMode }
 export const SHOP_CONFIG_ID = '00000000-0000-0000-0000-000000000001'
 const QRIS_STORAGE_BUCKET = 'shop-assets'
 const QRIS_STORAGE_PATH = 'qris/qris'
+const LOGO_STORAGE_PATH = 'invoice-logo/logo'
 
 export const getShopConfig = async () => {
   const supabaseClient = supabase()
@@ -84,6 +85,42 @@ export const updateShopConfig = async (input: ShopConfigInput) => {
   }
   if (input.loyalty_minimum_transaction_amount !== undefined) {
     payload.loyalty_minimum_transaction_amount = validated.data.loyalty_minimum_transaction_amount
+  }
+  if (input.invoice_footer_text !== undefined) {
+    payload.invoice_footer_text = validated.data.invoice_footer_text?.trim() || null
+  }
+  if (input.invoice_logo_url !== undefined) {
+    payload.invoice_logo_url = input.invoice_logo_url
+  }
+  if (input.invoice_show_logo !== undefined) {
+    payload.invoice_show_logo = validated.data.invoice_show_logo
+  }
+  if (input.invoice_show_qris !== undefined) {
+    payload.invoice_show_qris = validated.data.invoice_show_qris
+  }
+  if (input.invoice_tax_id !== undefined) {
+    payload.invoice_tax_id = validated.data.invoice_tax_id?.trim() || null
+  }
+  if (input.invoice_show_tax_id !== undefined) {
+    payload.invoice_show_tax_id = validated.data.invoice_show_tax_id
+  }
+  if (input.invoice_terms_text !== undefined) {
+    payload.invoice_terms_text = validated.data.invoice_terms_text?.trim() || null
+  }
+  if (input.invoice_show_terms !== undefined) {
+    payload.invoice_show_terms = validated.data.invoice_show_terms
+  }
+  if (input.invoice_primary_color !== undefined) {
+    payload.invoice_primary_color = validated.data.invoice_primary_color
+  }
+  if (input.invoice_show_item_prices !== undefined) {
+    payload.invoice_show_item_prices = validated.data.invoice_show_item_prices
+  }
+  if (input.invoice_show_qty !== undefined) {
+    payload.invoice_show_qty = validated.data.invoice_show_qty
+  }
+  if (input.landing_template !== undefined) {
+    payload.landing_template = validated.data.landing_template
   }
 
   const supabaseClient = supabase()
@@ -205,4 +242,48 @@ export function getLoyaltyMinimumTransactionAmount(config: ShopConfig | null) {
 export function qualifiesForLoyaltyEarn(grossAmount: number, config: ShopConfig | null) {
   const minimum = getLoyaltyMinimumTransactionAmount(config)
   return grossAmount >= minimum
+}
+
+export const uploadInvoiceLogo = async (file: File) => {
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? 'png'
+  const allowed = ['png', 'jpg', 'jpeg', 'webp', 'svg']
+  if (!allowed.includes(extension)) {
+    return { url: null, error: { message: useLocaleStore().translate('config.imageMustBeImage') } }
+  }
+
+  const path = `${LOGO_STORAGE_PATH}.${extension}`
+  const supabaseClient = supabase()
+  const { error: uploadError } = await supabaseClient.storage
+    .from(QRIS_STORAGE_BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type })
+
+  if (uploadError) {
+    return { url: null, error: uploadError }
+  }
+
+  const { data } = supabaseClient.storage.from(QRIS_STORAGE_BUCKET).getPublicUrl(path)
+  const cacheBustedUrl = `${data.publicUrl}?t=${Date.now()}`
+
+  const { error } = await updateShopConfig({
+    invoice_logo_url: cacheBustedUrl,
+    invoice_show_logo: true,
+  })
+  if (error) {
+    return { url: null, error: typeof error === 'object' && 'message' in error ? error : { message: useLocaleStore().translate('config.invoiceSaveFailed') } }
+  }
+
+  return { url: cacheBustedUrl, error: null }
+}
+
+export const removeInvoiceLogo = async () => {
+  const supabaseClient = supabase()
+  const extensions = ['png', 'jpg', 'jpeg', 'webp', 'svg']
+
+  await Promise.all(
+    extensions.map((extension) =>
+      supabaseClient.storage.from(QRIS_STORAGE_BUCKET).remove([`${LOGO_STORAGE_PATH}.${extension}`]),
+    ),
+  )
+
+  return updateShopConfig({ invoice_logo_url: null, invoice_show_logo: false })
 }

@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { useI18n } from '@/composables/useI18n'
 import { getShopConfig } from '@/lib/config'
-import { applyShopInfoToInvoice, getPaymentMethodLabel, type InvoiceData } from '@/lib/invoice'
+import { applyShopInfoToInvoice, buildInvoiceCustomization, getPaymentMethodLabel, type InvoiceData } from '@/lib/invoice'
 import { formatInvoiceSummaryAmount, printInvoice } from '@/lib/print-invoice'
 import { formatQueueNumber } from '@/lib/format'
 import { WALK_IN_CUSTOMER_NAME } from '@/types/database'
@@ -36,10 +36,12 @@ async function handlePrint() {
   if (!props.invoice) return
 
   const { config } = await getShopConfig()
+  const customization = buildInvoiceCustomization(config)
   const invoiceWithShop = applyShopInfoToInvoice(
     props.invoice,
     config?.shop_name,
     config?.shop_address,
+    customization,
   )
   printInvoice(invoiceWithShop)
 }

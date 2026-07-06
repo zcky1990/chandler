@@ -270,6 +270,18 @@ export type ShopConfig = {
   loyalty_points_per_transaction: number
   loyalty_point_redeem_value: number
   loyalty_minimum_transaction_amount: number
+  invoice_footer_text: string | null
+  invoice_logo_url: string | null
+  invoice_show_logo: boolean
+  invoice_show_qris: boolean
+  invoice_tax_id: string | null
+  invoice_show_tax_id: boolean
+  invoice_terms_text: string | null
+  invoice_show_terms: boolean
+  invoice_primary_color: string
+  invoice_show_item_prices: boolean
+  invoice_show_qty: boolean
+  landing_template: string
   created_at: string
   updated_at: string
 }
@@ -294,7 +306,21 @@ export type ShopConfigInput = {
   loyalty_points_per_transaction?: number
   loyalty_point_redeem_value?: number
   loyalty_minimum_transaction_amount?: number
+  invoice_footer_text?: string | null
+  invoice_logo_url?: string | null
+  invoice_show_logo?: boolean
+  invoice_show_qris?: boolean
+  invoice_tax_id?: string | null
+  invoice_show_tax_id?: boolean
+  invoice_terms_text?: string | null
+  invoice_show_terms?: boolean
+  invoice_primary_color?: string
+  invoice_show_item_prices?: boolean
+  invoice_show_qty?: boolean
+  landing_template?: string
 }
+
+export type LandingTemplate = 'default' | 'sarab' | 'spicehaven' | 'yummy'
 
 export type TableBookingStatus =
   | 'pending'

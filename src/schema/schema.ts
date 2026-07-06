@@ -166,6 +166,18 @@ export function shopConfigSchema() {
     loyalty_points_per_transaction: z.coerce.number().int().min(0).max(10000).optional(),
     loyalty_point_redeem_value: z.coerce.number().min(0).max(1000000).optional(),
     loyalty_minimum_transaction_amount: z.coerce.number().min(0).max(100000000).optional(),
+    invoice_footer_text: z.string().nullable().optional(),
+    invoice_logo_url: z.string().nullable().optional(),
+    invoice_show_logo: z.boolean().optional(),
+    invoice_show_qris: z.boolean().optional(),
+    invoice_tax_id: z.string().nullable().optional(),
+    invoice_show_tax_id: z.boolean().optional(),
+    invoice_terms_text: z.string().nullable().optional(),
+    invoice_show_terms: z.boolean().optional(),
+    invoice_primary_color: z.string().optional(),
+    invoice_show_item_prices: z.boolean().optional(),
+    invoice_show_qty: z.boolean().optional(),
+    landing_template: z.string().optional(),
   })
 }
 
