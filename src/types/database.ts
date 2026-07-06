@@ -290,21 +290,25 @@ export type ShopConfig = {
   landing_carousel_max_items: number
   landing_carousel_title: string | null
   landing_carousel_bg_color: string
+  landing_carousel_bg_image_url: string | null
   landing_testimonials_enabled: boolean
   landing_testimonials_title: string | null
   landing_testimonials_data: LandingTestimonial[] | null
   landing_testimonials_bg_color: string
+  landing_testimonials_bg_image_url: string | null
   landing_services_enabled: boolean
   landing_services_title: string | null
   landing_services_subtitle: string | null
   landing_services_whatsapp: string | null
   landing_services_data: LandingServiceItem[] | null
   landing_services_bg_color: string
+  landing_services_bg_image_url: string | null
   landing_gallery_enabled: boolean
   landing_gallery_title: string | null
   landing_gallery_subtitle: string | null
   landing_gallery_images: string[] | null
   landing_gallery_bg_color: string
+  landing_gallery_bg_image_url: string | null
   landing_contact_enabled: boolean
   landing_contact_title: string | null
   landing_contact_subtitle: string | null
@@ -315,6 +319,32 @@ export type ShopConfig = {
   landing_contact_map_lng: number
   landing_contact_map_zoom: number
   landing_contact_bg_color: string
+  landing_contact_bg_image_url: string | null
+  landing_about_enabled: boolean
+  landing_about_label: string | null
+  landing_about_title: string | null
+  landing_about_description: string | null
+  landing_about_image_url: string | null
+  landing_about_bullets: string[] | null
+  landing_about_bg_color: string
+  landing_why_enabled: boolean
+  landing_why_label: string | null
+  landing_why_title: string | null
+  landing_why_description: string | null
+  landing_why_features: LandingFeatureItem[] | null
+  landing_why_stats: LandingStatItem[] | null
+  landing_why_bg_color: string
+  landing_hero_bg_color: string
+  landing_hero_bg_image: string | null
+  landing_about_bg_image: string | null
+  landing_why_bg_image: string | null
+  landing_carousel_bg_image: string | null
+  landing_testimonials_bg_image: string | null
+  landing_services_bg_image: string | null
+  landing_gallery_bg_image: string | null
+  landing_contact_bg_image: string | null
+  landing_book_bg_color: string | null
+  landing_book_bg_image: string | null
   created_at: string
   updated_at: string
 }
@@ -359,21 +389,25 @@ export type ShopConfigInput = {
   landing_carousel_max_items?: number
   landing_carousel_title?: string | null
   landing_carousel_bg_color?: string
+  landing_carousel_bg_image_url?: string | null
   landing_testimonials_enabled?: boolean
   landing_testimonials_title?: string | null
   landing_testimonials_data?: LandingTestimonial[] | null
   landing_testimonials_bg_color?: string
+  landing_testimonials_bg_image_url?: string | null
   landing_services_enabled?: boolean
   landing_services_title?: string | null
   landing_services_subtitle?: string | null
   landing_services_whatsapp?: string | null
   landing_services_data?: LandingServiceItem[] | null
   landing_services_bg_color?: string
+  landing_services_bg_image_url?: string | null
   landing_gallery_enabled?: boolean
   landing_gallery_title?: string | null
   landing_gallery_subtitle?: string | null
   landing_gallery_images?: string[] | null
   landing_gallery_bg_color?: string
+  landing_gallery_bg_image_url?: string | null
   landing_contact_enabled?: boolean
   landing_contact_title?: string | null
   landing_contact_subtitle?: string | null
@@ -384,6 +418,31 @@ export type ShopConfigInput = {
   landing_contact_map_lng?: number
   landing_contact_map_zoom?: number
   landing_contact_bg_color?: string
+  landing_about_enabled?: boolean
+  landing_about_label?: string | null
+  landing_about_title?: string | null
+  landing_about_description?: string | null
+  landing_about_image_url?: string | null
+  landing_about_bullets?: string[] | null
+  landing_about_bg_color?: string
+  landing_why_enabled?: boolean
+  landing_why_label?: string | null
+  landing_why_title?: string | null
+  landing_why_description?: string | null
+  landing_why_features?: LandingFeatureItem[] | null
+  landing_why_stats?: LandingStatItem[] | null
+  landing_why_bg_color?: string
+  landing_hero_bg_color?: string
+  landing_hero_bg_image?: string | null
+  landing_about_bg_image?: string | null
+  landing_why_bg_image?: string | null
+  landing_carousel_bg_image?: string | null
+  landing_testimonials_bg_image?: string | null
+  landing_services_bg_image?: string | null
+  landing_gallery_bg_image?: string | null
+  landing_contact_bg_image?: string | null
+  landing_book_bg_color?: string | null
+  landing_book_bg_image?: string | null
 }
 
 export type LandingTemplate = 'default' | 'sarab' | 'spicehaven' | 'yummy'
@@ -403,6 +462,16 @@ export type LandingServiceItem = {
   image_url: string | null
 }
 
+export type LandingFeatureItem = {
+  title: string
+  description: string
+}
+
+export type LandingStatItem = {
+  value: string
+  label: string
+}
+
 export type LandingTemplateConfig = {
   template: LandingTemplate
   heroImageUrl: string | null
@@ -413,21 +482,25 @@ export type LandingTemplateConfig = {
   carouselMaxItems: number
   carouselTitle: string | null
   carouselBgColor: string
+  carouselBgImageUrl: string | null
   testimonialsEnabled: boolean
   testimonialsTitle: string | null
   testimonialsData: LandingTestimonial[] | null
   testimonialsBgColor: string
+  testimonialsBgImageUrl: string | null
   servicesEnabled: boolean
   servicesTitle: string | null
   servicesSubtitle: string | null
   servicesWhatsapp: string | null
   servicesData: LandingServiceItem[] | null
   servicesBgColor: string
+  servicesBgImageUrl: string | null
   galleryEnabled: boolean
   galleryTitle: string | null
   gallerySubtitle: string | null
   galleryImages: string[] | null
   galleryBgColor: string
+  galleryBgImageUrl: string | null
   contactEnabled: boolean
   contactTitle: string | null
   contactSubtitle: string | null
@@ -438,6 +511,31 @@ export type LandingTemplateConfig = {
   contactMapLng: number
   contactMapZoom: number
   contactBgColor: string
+  aboutEnabled: boolean
+  aboutLabel: string | null
+  aboutTitle: string | null
+  aboutDescription: string | null
+  aboutImageUrl: string | null
+  aboutBullets: string[] | null
+  aboutBgColor: string
+  whyEnabled: boolean
+  whyLabel: string | null
+  whyTitle: string | null
+  whyDescription: string | null
+  whyFeatures: LandingFeatureItem[] | null
+  whyStats: LandingStatItem[] | null
+  whyBgColor: string
+  heroBgColor: string
+  heroBgImage: string | null
+  aboutBgImage: string | null
+  whyBgImage: string | null
+  carouselBgImage: string | null
+  testimonialsBgImage: string | null
+  servicesBgImage: string | null
+  galleryBgImage: string | null
+  contactBgImage: string | null
+  bookBgColor: string | null
+  bookBgImage: string | null
 }
 
 export type LandingTemplatePreset = {

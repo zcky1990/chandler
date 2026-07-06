@@ -1,8 +1,56 @@
-import type { LandingTemplate, LandingTemplateConfig, LandingTemplatePreset, LandingTestimonial, LandingServiceItem } from '@/types/database'
+import type { LandingTemplate, LandingTemplateConfig, LandingTemplatePreset, LandingTestimonial, LandingServiceItem, LandingFeatureItem, LandingStatItem } from '@/types/database'
 import defaultThumb from '@/assets/default-thumbnail.webp'
 import sarabThumb from '@/assets/satab-thumbnail.webp'
 import spiceThumb from '@/assets/spice-thumbnail.webp'
 import yummyThumb from '@/assets/yummy-thumbnail.webp'
+
+const LANDING_SECTION_BG_DEFAULTS = {
+  heroBgColor: '#ffffff',
+  heroBgImage: null as string | null,
+  aboutBgImage: null as string | null,
+  whyBgImage: null as string | null,
+  carouselBgImage: null as string | null,
+  testimonialsBgImage: null as string | null,
+  servicesBgImage: null as string | null,
+  galleryBgImage: null as string | null,
+  contactBgImage: null as string | null,
+  bookBgColor: null as string | null,
+  bookBgImage: null as string | null,
+}
+
+const LANDING_ABOUT_WHY_DISABLED = {
+  aboutEnabled: false,
+  aboutLabel: null as string | null,
+  aboutTitle: null as string | null,
+  aboutDescription: null as string | null,
+  aboutImageUrl: null as string | null,
+  aboutBullets: null as string[] | null,
+  aboutBgColor: '#ffffff',
+  whyEnabled: false,
+  whyLabel: null as string | null,
+  whyTitle: null as string | null,
+  whyDescription: null as string | null,
+  whyFeatures: null as LandingFeatureItem[] | null,
+  whyStats: null as LandingStatItem[] | null,
+  whyBgColor: '#f2f2f2',
+}
+
+const LANDING_ABOUT_WHY_YUMMY = {
+  aboutEnabled: true,
+  aboutLabel: null as string | null,
+  aboutTitle: null as string | null,
+  aboutDescription: null as string | null,
+  aboutImageUrl: null as string | null,
+  aboutBullets: null as string[] | null,
+  aboutBgColor: '#ffffff',
+  whyEnabled: true,
+  whyLabel: null as string | null,
+  whyTitle: null as string | null,
+  whyDescription: null as string | null,
+  whyFeatures: null as LandingFeatureItem[] | null,
+  whyStats: null as LandingStatItem[] | null,
+  whyBgColor: '#f2f2f2',
+}
 
 export const LANDING_TEMPLATE_PRESETS: Record<LandingTemplate, LandingTemplatePreset> = {
   default: {
@@ -16,6 +64,8 @@ export const LANDING_TEMPLATE_PRESETS: Record<LandingTemplate, LandingTemplatePr
       galleryEnabled: false, galleryTitle: null, gallerySubtitle: null, galleryImages: null, galleryBgColor: '#ffffff',
       contactEnabled: false, contactTitle: null, contactSubtitle: null, contactAddress: null, contactPhone: null, contactEmail: null,
       contactMapLat: -6.2088, contactMapLng: 106.8456, contactMapZoom: 15, contactBgColor: '#f8fafc',
+      ...LANDING_SECTION_BG_DEFAULTS,
+      ...LANDING_ABOUT_WHY_DISABLED,
     },
   },
   sarab: {
@@ -29,6 +79,8 @@ export const LANDING_TEMPLATE_PRESETS: Record<LandingTemplate, LandingTemplatePr
       galleryEnabled: false, galleryTitle: null, gallerySubtitle: null, galleryImages: null, galleryBgColor: '#ffffff',
       contactEnabled: false, contactTitle: null, contactSubtitle: null, contactAddress: null, contactPhone: null, contactEmail: null,
       contactMapLat: -6.2088, contactMapLng: 106.8456, contactMapZoom: 15, contactBgColor: '#fff7ed',
+      ...LANDING_SECTION_BG_DEFAULTS,
+      ...LANDING_ABOUT_WHY_DISABLED,
     },
   },
   spicehaven: {
@@ -42,6 +94,8 @@ export const LANDING_TEMPLATE_PRESETS: Record<LandingTemplate, LandingTemplatePr
       galleryEnabled: false, galleryTitle: null, gallerySubtitle: null, galleryImages: null, galleryBgColor: '#fffbeb',
       contactEnabled: false, contactTitle: null, contactSubtitle: null, contactAddress: null, contactPhone: null, contactEmail: null,
       contactMapLat: -6.2088, contactMapLng: 106.8456, contactMapZoom: 15, contactBgColor: '#fef3c7',
+      ...LANDING_SECTION_BG_DEFAULTS,
+      ...LANDING_ABOUT_WHY_DISABLED,
     },
   },
   yummy: {
@@ -55,6 +109,8 @@ export const LANDING_TEMPLATE_PRESETS: Record<LandingTemplate, LandingTemplatePr
       galleryEnabled: false, galleryTitle: null, gallerySubtitle: null, galleryImages: null, galleryBgColor: '#ffffff',
       contactEnabled: false, contactTitle: null, contactSubtitle: null, contactAddress: null, contactPhone: null, contactEmail: null,
       contactMapLat: -6.2088, contactMapLng: 106.8456, contactMapZoom: 15, contactBgColor: '#fef2f2',
+      ...LANDING_SECTION_BG_DEFAULTS,
+      ...LANDING_ABOUT_WHY_YUMMY,
     },
   },
 }
@@ -100,6 +156,31 @@ export function getLandingConfig(
     contactMapLng: overrides.contactMapLng ?? d.contactMapLng,
     contactMapZoom: overrides.contactMapZoom ?? d.contactMapZoom,
     contactBgColor: overrides.contactBgColor ?? d.contactBgColor,
+    aboutEnabled: overrides.aboutEnabled ?? d.aboutEnabled,
+    aboutLabel: overrides.aboutLabel ?? d.aboutLabel,
+    aboutTitle: overrides.aboutTitle ?? d.aboutTitle,
+    aboutDescription: overrides.aboutDescription ?? d.aboutDescription,
+    aboutImageUrl: overrides.aboutImageUrl ?? d.aboutImageUrl,
+    aboutBullets: overrides.aboutBullets ?? d.aboutBullets,
+    aboutBgColor: overrides.aboutBgColor ?? d.aboutBgColor,
+    whyEnabled: overrides.whyEnabled ?? d.whyEnabled,
+    whyLabel: overrides.whyLabel ?? d.whyLabel,
+    whyTitle: overrides.whyTitle ?? d.whyTitle,
+    whyDescription: overrides.whyDescription ?? d.whyDescription,
+    whyFeatures: overrides.whyFeatures ?? d.whyFeatures,
+    whyStats: overrides.whyStats ?? d.whyStats,
+    whyBgColor: overrides.whyBgColor ?? d.whyBgColor,
+    heroBgColor: overrides.heroBgColor ?? d.heroBgColor,
+    heroBgImage: overrides.heroBgImage ?? d.heroBgImage,
+    aboutBgImage: overrides.aboutBgImage ?? d.aboutBgImage,
+    whyBgImage: overrides.whyBgImage ?? d.whyBgImage,
+    carouselBgImage: overrides.carouselBgImage ?? d.carouselBgImage,
+    testimonialsBgImage: overrides.testimonialsBgImage ?? d.testimonialsBgImage,
+    servicesBgImage: overrides.servicesBgImage ?? d.servicesBgImage,
+    galleryBgImage: overrides.galleryBgImage ?? d.galleryBgImage,
+    contactBgImage: overrides.contactBgImage ?? d.contactBgImage,
+    bookBgColor: overrides.bookBgColor ?? d.bookBgColor,
+    bookBgImage: overrides.bookBgImage ?? d.bookBgImage,
   }
 }
 
@@ -137,6 +218,31 @@ export function extractLandingOverrides(config: {
   landing_contact_map_lng?: number
   landing_contact_map_zoom?: number
   landing_contact_bg_color?: string
+  landing_about_enabled?: boolean
+  landing_about_label?: string | null
+  landing_about_title?: string | null
+  landing_about_description?: string | null
+  landing_about_image_url?: string | null
+  landing_about_bullets?: string[] | null
+  landing_about_bg_color?: string
+  landing_why_enabled?: boolean
+  landing_why_label?: string | null
+  landing_why_title?: string | null
+  landing_why_description?: string | null
+  landing_why_features?: LandingFeatureItem[] | null
+  landing_why_stats?: LandingStatItem[] | null
+  landing_why_bg_color?: string
+  landing_hero_bg_color?: string
+  landing_hero_bg_image?: string | null
+  landing_about_bg_image?: string | null
+  landing_why_bg_image?: string | null
+  landing_carousel_bg_image?: string | null
+  landing_testimonials_bg_image?: string | null
+  landing_services_bg_image?: string | null
+  landing_gallery_bg_image?: string | null
+  landing_contact_bg_image?: string | null
+  landing_book_bg_color?: string | null
+  landing_book_bg_image?: string | null
 } | null): Partial<LandingTemplateConfig> {
   if (!config) return {}
   return {
@@ -173,5 +279,30 @@ export function extractLandingOverrides(config: {
     contactMapLng: config.landing_contact_map_lng ?? undefined,
     contactMapZoom: config.landing_contact_map_zoom ?? undefined,
     contactBgColor: config.landing_contact_bg_color ?? '',
+    aboutEnabled: config.landing_about_enabled ?? undefined,
+    aboutLabel: config.landing_about_label ?? null,
+    aboutTitle: config.landing_about_title ?? null,
+    aboutDescription: config.landing_about_description ?? null,
+    aboutImageUrl: config.landing_about_image_url ?? null,
+    aboutBullets: config.landing_about_bullets ?? null,
+    aboutBgColor: config.landing_about_bg_color ?? '',
+    whyEnabled: config.landing_why_enabled ?? undefined,
+    whyLabel: config.landing_why_label ?? null,
+    whyTitle: config.landing_why_title ?? null,
+    whyDescription: config.landing_why_description ?? null,
+    whyFeatures: config.landing_why_features ?? null,
+    whyStats: config.landing_why_stats ?? null,
+    whyBgColor: config.landing_why_bg_color ?? '',
+    heroBgColor: config.landing_hero_bg_color ?? '',
+    heroBgImage: config.landing_hero_bg_image ?? null,
+    aboutBgImage: config.landing_about_bg_image ?? null,
+    whyBgImage: config.landing_why_bg_image ?? null,
+    carouselBgImage: config.landing_carousel_bg_image ?? null,
+    testimonialsBgImage: config.landing_testimonials_bg_image ?? null,
+    servicesBgImage: config.landing_services_bg_image ?? null,
+    galleryBgImage: config.landing_gallery_bg_image ?? null,
+    contactBgImage: config.landing_contact_bg_image ?? null,
+    bookBgColor: config.landing_book_bg_color ?? null,
+    bookBgImage: config.landing_book_bg_image ?? null,
   }
 }
