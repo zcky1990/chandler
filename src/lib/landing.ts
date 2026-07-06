@@ -4,7 +4,7 @@ import sarabThumb from '@/assets/satab-thumbnail.webp'
 import spiceThumb from '@/assets/spice-thumbnail.webp'
 import yummyThumb from '@/assets/yummy-thumbnail.webp'
 
-const LANDING_SECTION_BG_DEFAULTS = {
+const LANDING_SECTION_BG_LIGHT = {
   heroBgColor: '#ffffff',
   heroBgImage: null as string | null,
   aboutBgImage: null as string | null,
@@ -18,7 +18,17 @@ const LANDING_SECTION_BG_DEFAULTS = {
   bookBgImage: null as string | null,
 }
 
-const LANDING_ABOUT_WHY_DISABLED = {
+const LANDING_SECTION_BG_SARAB = {
+  ...LANDING_SECTION_BG_LIGHT,
+  heroBgColor: '#09090b',
+}
+
+const LANDING_SECTION_BG_SPICE = {
+  ...LANDING_SECTION_BG_LIGHT,
+  heroBgColor: '#0c0a09',
+}
+
+const LANDING_ABOUT_WHY_LIGHT_DISABLED = {
   aboutEnabled: false,
   aboutLabel: null as string | null,
   aboutTitle: null as string | null,
@@ -33,6 +43,18 @@ const LANDING_ABOUT_WHY_DISABLED = {
   whyFeatures: null as LandingFeatureItem[] | null,
   whyStats: null as LandingStatItem[] | null,
   whyBgColor: '#f2f2f2',
+}
+
+const LANDING_ABOUT_WHY_DARK_DISABLED = {
+  ...LANDING_ABOUT_WHY_LIGHT_DISABLED,
+  aboutBgColor: '#18181b',
+  whyBgColor: '#18181b',
+}
+
+const LANDING_ABOUT_WHY_SPICE_DISABLED = {
+  ...LANDING_ABOUT_WHY_LIGHT_DISABLED,
+  aboutBgColor: '#0c0a09',
+  whyBgColor: '#1c1917',
 }
 
 const LANDING_ABOUT_WHY_YUMMY = {
@@ -64,38 +86,38 @@ export const LANDING_TEMPLATE_PRESETS: Record<LandingTemplate, LandingTemplatePr
       galleryEnabled: false, galleryTitle: null, gallerySubtitle: null, galleryImages: null, galleryBgColor: '#ffffff',
       contactEnabled: false, contactTitle: null, contactSubtitle: null, contactAddress: null, contactPhone: null, contactEmail: null,
       contactMapLat: -6.2088, contactMapLng: 106.8456, contactMapZoom: 15, contactBgColor: '#f8fafc',
-      ...LANDING_SECTION_BG_DEFAULTS,
-      ...LANDING_ABOUT_WHY_DISABLED,
+      ...LANDING_SECTION_BG_LIGHT,
+      ...LANDING_ABOUT_WHY_LIGHT_DISABLED,
     },
   },
   sarab: {
     label: 'Sarab',
     thumbnail: sarabThumb,
     defaults: {
-      heroImageUrl: null, heroTitle: null, heroSubtitle: null, primaryColor: '#7c2d12',
-      carouselEnabled: true, carouselMaxItems: 8, carouselTitle: null, carouselBgColor: '#fff7ed',
-      testimonialsEnabled: false, testimonialsTitle: null, testimonialsData: null, testimonialsBgColor: '#faf5ff',
-      servicesEnabled: false, servicesTitle: null, servicesSubtitle: null, servicesWhatsapp: null, servicesData: null, servicesBgColor: '#fef2f2',
-      galleryEnabled: false, galleryTitle: null, gallerySubtitle: null, galleryImages: null, galleryBgColor: '#ffffff',
+      heroImageUrl: null, heroTitle: null, heroSubtitle: null, primaryColor: '#ea580c',
+      carouselEnabled: true, carouselMaxItems: 8, carouselTitle: null, carouselBgColor: '#09090b',
+      testimonialsEnabled: false, testimonialsTitle: null, testimonialsData: null, testimonialsBgColor: '#18181b',
+      servicesEnabled: false, servicesTitle: null, servicesSubtitle: null, servicesWhatsapp: null, servicesData: null, servicesBgColor: '#18181b',
+      galleryEnabled: false, galleryTitle: null, gallerySubtitle: null, galleryImages: null, galleryBgColor: '#09090b',
       contactEnabled: false, contactTitle: null, contactSubtitle: null, contactAddress: null, contactPhone: null, contactEmail: null,
-      contactMapLat: -6.2088, contactMapLng: 106.8456, contactMapZoom: 15, contactBgColor: '#fff7ed',
-      ...LANDING_SECTION_BG_DEFAULTS,
-      ...LANDING_ABOUT_WHY_DISABLED,
+      contactMapLat: -6.2088, contactMapLng: 106.8456, contactMapZoom: 15, contactBgColor: '#18181b',
+      ...LANDING_SECTION_BG_SARAB,
+      ...LANDING_ABOUT_WHY_DARK_DISABLED,
     },
   },
   spicehaven: {
     label: 'Spice Haven',
     thumbnail: spiceThumb,
     defaults: {
-      heroImageUrl: null, heroTitle: null, heroSubtitle: null, primaryColor: '#92400e',
-      carouselEnabled: true, carouselMaxItems: 8, carouselTitle: null, carouselBgColor: '#fef3c7',
-      testimonialsEnabled: false, testimonialsTitle: null, testimonialsData: null, testimonialsBgColor: '#fffbeb',
-      servicesEnabled: false, servicesTitle: null, servicesSubtitle: null, servicesWhatsapp: null, servicesData: null, servicesBgColor: '#fff7ed',
-      galleryEnabled: false, galleryTitle: null, gallerySubtitle: null, galleryImages: null, galleryBgColor: '#fffbeb',
+      heroImageUrl: null, heroTitle: null, heroSubtitle: null, primaryColor: '#d97706',
+      carouselEnabled: true, carouselMaxItems: 8, carouselTitle: null, carouselBgColor: '#0c0a09',
+      testimonialsEnabled: false, testimonialsTitle: null, testimonialsData: null, testimonialsBgColor: '#1c1917',
+      servicesEnabled: false, servicesTitle: null, servicesSubtitle: null, servicesWhatsapp: null, servicesData: null, servicesBgColor: '#1c1917',
+      galleryEnabled: false, galleryTitle: null, gallerySubtitle: null, galleryImages: null, galleryBgColor: '#0c0a09',
       contactEnabled: false, contactTitle: null, contactSubtitle: null, contactAddress: null, contactPhone: null, contactEmail: null,
-      contactMapLat: -6.2088, contactMapLng: 106.8456, contactMapZoom: 15, contactBgColor: '#fef3c7',
-      ...LANDING_SECTION_BG_DEFAULTS,
-      ...LANDING_ABOUT_WHY_DISABLED,
+      contactMapLat: -6.2088, contactMapLng: 106.8456, contactMapZoom: 15, contactBgColor: '#0c0a09',
+      ...LANDING_SECTION_BG_SPICE,
+      ...LANDING_ABOUT_WHY_SPICE_DISABLED,
     },
   },
   yummy: {
@@ -109,7 +131,7 @@ export const LANDING_TEMPLATE_PRESETS: Record<LandingTemplate, LandingTemplatePr
       galleryEnabled: false, galleryTitle: null, gallerySubtitle: null, galleryImages: null, galleryBgColor: '#ffffff',
       contactEnabled: false, contactTitle: null, contactSubtitle: null, contactAddress: null, contactPhone: null, contactEmail: null,
       contactMapLat: -6.2088, contactMapLng: 106.8456, contactMapZoom: 15, contactBgColor: '#fef2f2',
-      ...LANDING_SECTION_BG_DEFAULTS,
+      ...LANDING_SECTION_BG_LIGHT,
       ...LANDING_ABOUT_WHY_YUMMY,
     },
   },

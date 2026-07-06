@@ -53,7 +53,7 @@ function onScroll() {
         <p class="mb-1 text-sm font-semibold tracking-widest uppercase opacity-60" :style="{ color: accentColor }">
           {{ t('config.landingCarouselLabel') }}
         </p>
-        <h2 class="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
+        <h2 class="text-2xl font-bold tracking-tight text-[var(--landing-heading,#0f172a)] md:text-3xl">
           {{ title || t('config.landingCarouselTitle') }}
         </h2>
       </div>
@@ -92,7 +92,7 @@ function onScroll() {
       >
         <RouterLink
           :to="'/order'"
-          class="group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md"
+          class="group block overflow-hidden rounded-2xl border border-[var(--landing-border,#e2e8f0)] bg-[var(--landing-surface,#ffffff)] shadow-sm transition-shadow hover:shadow-md"
         >
           <div class="relative flex h-44 items-center justify-center bg-slate-100 md:h-52">
             <img
@@ -110,7 +110,7 @@ function onScroll() {
             </span>
           </div>
           <div class="p-4">
-            <h3 class="mb-1 line-clamp-2 text-sm font-semibold text-slate-900">
+            <h3 class="mb-1 line-clamp-2 text-sm font-semibold text-[var(--landing-heading,#0f172a)]">
               {{ product.name }}
             </h3>
             <p class="text-sm font-bold" :style="{ color: accentColor }">

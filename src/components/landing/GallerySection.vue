@@ -18,10 +18,10 @@ defineProps<{
       <p class="mb-2 text-sm font-semibold tracking-widest uppercase opacity-60" :style="{ color: accentColor }">
         {{ t('config.landingGalleryLabel') }}
       </p>
-      <h2 class="text-3xl font-bold tracking-tight text-slate-900">
+      <h2 class="text-3xl font-bold tracking-tight text-[var(--landing-heading,#0f172a)]">
         {{ title || t('config.landingGalleryTitle') }}
       </h2>
-      <p v-if="subtitle" class="mt-3 max-w-2xl mx-auto text-slate-500">
+      <p v-if="subtitle" class="mt-3 max-w-2xl mx-auto text-[var(--landing-muted,#64748b)]">
         {{ subtitle }}
       </p>
     </div>
@@ -30,7 +30,7 @@ defineProps<{
       <div
         v-for="(url, idx) in images"
         :key="idx"
-        class="group relative aspect-square overflow-hidden rounded-xl border border-slate-200"
+        class="group relative aspect-square overflow-hidden rounded-xl border border-[var(--landing-border,#e2e8f0)]"
       >
         <img
           :src="url"

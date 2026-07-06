@@ -15,19 +15,19 @@ defineProps<{
 <template>
   <div class="relative mx-auto max-w-6xl">
     <div class="mb-12 text-center">
-      <p class="mb-2 text-sm font-semibold tracking-widest uppercase opacity-60" :style="{ color: accentColor }">
-        {{ t('config.landingTestimonialsLabel') }}
-      </p>
-      <h2 class="text-3xl font-bold tracking-tight text-slate-900">
-        {{ title || t('config.landingTestimonialsTitle') }}
-      </h2>
+        <p class="mb-2 text-sm font-semibold tracking-widest uppercase opacity-60" :style="{ color: accentColor }">
+          {{ t('config.landingTestimonialsLabel') }}
+        </p>
+        <h2 class="text-3xl font-bold tracking-tight text-[var(--landing-heading,#0f172a)]">
+          {{ title || t('config.landingTestimonialsTitle') }}
+        </h2>
     </div>
 
     <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       <div
         v-for="(item, idx) in testimonials"
         :key="idx"
-        class="relative flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        class="relative flex flex-col rounded-2xl border border-[var(--landing-border,#e2e8f0)] bg-[var(--landing-surface,#ffffff)] p-6 shadow-sm"
       >
         <Quote class="absolute right-4 top-4 size-8 opacity-10" :style="{ color: accentColor }" />
 
@@ -40,11 +40,11 @@ defineProps<{
           />
         </div>
 
-        <p class="mb-6 flex-1 text-sm leading-relaxed text-slate-600">
+        <p class="mb-6 flex-1 text-sm leading-relaxed text-[var(--landing-muted,#475569)]">
           &ldquo;{{ item.text }}&rdquo;
         </p>
 
-        <div class="flex items-center gap-3 border-t border-slate-100 pt-4">
+        <div class="flex items-center gap-3 border-t border-[var(--landing-border,#f1f5f9)] pt-4">
           <div
             class="flex size-10 shrink-0 items-center justify-center rounded-full text-white text-sm font-bold"
             :style="{ backgroundColor: accentColor }"
@@ -58,8 +58,8 @@ defineProps<{
             <User v-else class="size-5" />
           </div>
           <div>
-            <p class="text-sm font-semibold text-slate-900">{{ item.name }}</p>
-            <p v-if="item.role" class="text-xs text-slate-500">{{ item.role }}</p>
+            <p class="text-sm font-semibold text-[var(--landing-heading,#0f172a)]">{{ item.name }}</p>
+            <p v-if="item.role" class="text-xs text-[var(--landing-muted,#64748b)]">{{ item.role }}</p>
           </div>
         </div>
       </div>
