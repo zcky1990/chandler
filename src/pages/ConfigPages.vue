@@ -3,15 +3,7 @@ import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { LayoutTemplate, Wallet, ReceiptText, LayoutGrid } from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import StoreConfigTab from '@/components/config/StoreConfigTab.vue'
 import LandingConfigTab from '@/components/config/LandingConfigTab.vue'
 import PaymentsConfigTab from '@/components/config/PaymentsConfigTab.vue'
@@ -23,29 +15,17 @@ import yummyThumb from '@/assets/yummy-thumbnail.webp'
 import defaultThumb from '@/assets/default-thumbnail.webp'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useI18n } from '@/composables/useI18n'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import { useConfigForm } from '@/composables/useConfigForm'
 import { LayoutTemplate as LayoutTemplateIcon } from '@lucide/vue'
 
 const { t } = useI18n()
-const confirmDialogOpen = ref(false)
-const confirmDialogMessage = ref('')
-let confirmResolver: ((confirmed: boolean) => void) | null = null
-
-function requestConfirm(message: string) {
-  confirmDialogMessage.value = message
-  confirmDialogOpen.value = true
-  return new Promise<boolean>((resolve) => {
-    confirmResolver = resolve
-  })
-}
-
-function resolveConfirm(confirmed: boolean) {
-  confirmDialogOpen.value = false
-  if (confirmResolver) {
-    confirmResolver(confirmed)
-    confirmResolver = null
-  }
-}
+const {
+  isOpen: confirmDialogOpen,
+  message: confirmDialogMessage,
+  confirm: requestConfirm,
+  resolve: resolveConfirmDialog,
+} = useConfirmDialog()
 
 const {
   isLoading,
@@ -528,24 +508,13 @@ onUnmounted(() => {
         </div>
       </template>
     </div>
-    <Dialog :open="confirmDialogOpen" @update:open="(open) => { if (!open) resolveConfirm(false) }">
-      <DialogContent class="sm:max-w-[440px]">
-        <DialogHeader>
-          <DialogTitle>{{ t('common.confirm') }}</DialogTitle>
-          <DialogDescription>
-            {{ confirmDialogMessage }}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button type="button" variant="outline" @click="resolveConfirm(false)">
-            {{ t('common.cancel') }}
-          </Button>
-          <Button type="button" @click="resolveConfirm(true)">
-            {{ t('common.continue') }}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ConfirmDialog
+      :open="confirmDialogOpen"
+      :message="confirmDialogMessage"
+      @update:open="(open) => { if (!open) resolveConfirmDialog(false) }"
+      @confirm="resolveConfirmDialog(true)"
+      @cancel="resolveConfirmDialog(false)"
+    />
   </DashboardLayout>
 </template>
 

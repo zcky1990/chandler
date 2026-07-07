@@ -168,9 +168,12 @@ onMounted(loadDashboard)
 
       <template v-else-if="todaySummary">
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Card class="border-l-4 border-l-[var(--chart-1)]">
+          <Card>
             <CardHeader class="pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">{{ t('dashboard.revenueToday') }}</CardTitle>
+              <CardTitle class="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Banknote class="size-4 text-[var(--chart-1)]" />
+                {{ t('dashboard.revenueToday') }}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <p class="text-2xl font-bold">{{ formatPrice(todaySummary.revenue) }}</p>
@@ -180,9 +183,12 @@ onMounted(loadDashboard)
             </CardContent>
           </Card>
 
-          <Card class="border-l-4 border-l-[var(--chart-3)]">
+          <Card>
             <CardHeader class="pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">{{ t('dashboard.grossProfitToday') }}</CardTitle>
+              <CardTitle class="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <TrendingUp class="size-4 text-[var(--chart-3)]" />
+                {{ t('dashboard.grossProfitToday') }}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <p class="text-2xl font-bold">{{ formatPrice(todaySummary.grossProfit) }}</p>
@@ -192,9 +198,12 @@ onMounted(loadDashboard)
             </CardContent>
           </Card>
 
-          <Card class="border-l-4 border-l-[var(--chart-4)]">
+          <Card>
             <CardHeader class="pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">{{ t('dashboard.paymentsToday') }}</CardTitle>
+              <CardTitle class="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Wallet class="size-4 text-[var(--chart-4)]" />
+                {{ t('dashboard.paymentsToday') }}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <p class="text-2xl font-bold">{{ formatPrice(todaySummary.paidAmount) }}</p>
@@ -204,9 +213,12 @@ onMounted(loadDashboard)
             </CardContent>
           </Card>
 
-          <Card class="border-l-4 border-l-amber-500">
+          <Card>
             <CardHeader class="pb-2">
-              <CardTitle class="text-sm font-medium text-muted-foreground">{{ t('dashboard.debtQueue') }}</CardTitle>
+              <CardTitle class="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <AlertTriangle class="size-4 text-amber-500" />
+                {{ t('dashboard.debtQueue') }}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <p class="text-2xl font-bold">{{ formatPrice(todaySummary.outstandingDebt) }}</p>

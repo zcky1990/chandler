@@ -193,6 +193,10 @@ export function useConfigForm(options?: { confirm?: ConfirmFn }) {
     return confirm(message)
   }
 
+  function markClean() {
+    isDirty.value = false
+  }
+
   const landingAccordion = ref<Record<string, boolean>>({
     hero: false,
     about: false,
@@ -359,7 +363,7 @@ export function useConfigForm(options?: { confirm?: ConfirmFn }) {
     activeCategories.value = categoriesResult.categories ?? []
     suppressDirtyTracking.value = true
     applyConfig(config)
-    isDirty.value = false
+    markClean()
     await nextTick()
     suppressDirtyTracking.value = false
   }
@@ -427,7 +431,7 @@ export function useConfigForm(options?: { confirm?: ConfirmFn }) {
     }
 
     alertStore.showAlert(t('alert.success'), t('config.transferSaved'), 'success')
-    isDirty.value = false
+    markClean()
   }
 
   async function handleSaveReceipt() {
@@ -449,7 +453,7 @@ export function useConfigForm(options?: { confirm?: ConfirmFn }) {
 
     applyAppTitle(receiptForm.value.app_title.trim() || receiptForm.value.shop_name.trim() || 'Bistro')
     alertStore.showAlert(t('alert.success'), t('config.receiptSaved'), 'success')
-    isDirty.value = false
+    markClean()
   }
 
   async function handleSavePaymentFlow() {
@@ -466,7 +470,7 @@ export function useConfigForm(options?: { confirm?: ConfirmFn }) {
     }
 
     alertStore.showAlert(t('alert.success'), t('config.paymentFlowSaved'), 'success')
-    isDirty.value = false
+    markClean()
   }
 
   async function handleSaveBooking() {
@@ -483,7 +487,7 @@ export function useConfigForm(options?: { confirm?: ConfirmFn }) {
     }
 
     alertStore.showAlert(t('alert.success'), t('config.bookingSaved'), 'success')
-    isDirty.value = false
+    markClean()
   }
 
   async function handleSaveLoyalty() {
@@ -500,7 +504,7 @@ export function useConfigForm(options?: { confirm?: ConfirmFn }) {
     }
 
     alertStore.showAlert(t('alert.success'), t('config.loyaltySaved'), 'success')
-    isDirty.value = false
+    markClean()
   }
 
   async function handleSaveInvoice() {
@@ -517,7 +521,7 @@ export function useConfigForm(options?: { confirm?: ConfirmFn }) {
     }
 
     alertStore.showAlert(t('alert.success'), t('config.invoiceSaved'), 'success')
-    isDirty.value = false
+    markClean()
   }
 
   function buildLandingFormOverrides(): Partial<LandingTemplateConfig> {
@@ -685,7 +689,7 @@ export function useConfigForm(options?: { confirm?: ConfirmFn }) {
     })
 
     alertStore.showAlert(t('alert.success'), t('config.landingSaved'), 'success')
-    isDirty.value = false
+    markClean()
     await router.push('/')
   }
 
@@ -1078,7 +1082,7 @@ export function useConfigForm(options?: { confirm?: ConfirmFn }) {
     }
 
     alertStore.showAlert(t('alert.success'), t('config.menuCategorySaved'), 'success')
-    isDirty.value = false
+    markClean()
   }
 
   function handleMenuCategoryCustomChange(enabled: boolean | 'indeterminate') {
