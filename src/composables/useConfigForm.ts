@@ -5,6 +5,7 @@ import { useAlertStore } from '@/stores/useAlertStore'
 import {
   getShopConfig,
   removeInvoiceLogo,
+  removeGalleryImage as removeGalleryImageFile,
   removeLandingAboutImage,
   removeLandingHeroImage,
   removeNavLogo,
@@ -17,9 +18,11 @@ import {
   uploadLandingHeroImage,
   uploadNavLogo,
   uploadQrisImage,
+  uploadGalleryImage,
   uploadServiceImage,
   uploadTestimonialAvatar,
 } from '@/lib/config'
+import { applyAppTitle } from '../lib/app-title'
 import { LANDING_TEMPLATE_PRESETS, getLandingConfig } from '@/lib/landing'
 import { saveLandingPageCache, landingConfigToPageState, filterLandingProducts } from '@/lib/landing-cache'
 import { getProducts } from '@/lib/product'
@@ -37,7 +40,9 @@ import type {
   LandingTemplateConfig,
 } from '@/types/database'
 
-export function useConfigForm() {
+type ConfirmFn = (message: string) => Promise<boolean>
+
+export function useConfigForm(options?: { confirm?: ConfirmFn }) {
   const router = useRouter()
   const { t, locale } = useI18n()
   const alertStore = useAlertStore()
@@ -177,6 +182,16 @@ export function useConfigForm() {
   const landingNavLogoPreview = ref<string | null>(null)
   const isUploadingNavLogo = ref(false)
   const isRemovingNavLogo = ref(false)
+  const isDirty = ref(false)
+  const suppressDirtyTracking = ref(true)
+  const isRevertingTemplateSwitch = ref(false)
+
+  async function confirmAction(message: string) {
+    if (options?.confirm) {
+      return options.confirm(message)
+    }
+    return confirm(message)
+  }
 
   const landingAccordion = ref<Record<string, boolean>>({
     hero: false,
@@ -215,7 +230,7 @@ export function useConfigForm() {
       shop_name: config?.shop_name ?? '',
       shop_address: config?.shop_address ?? '',
     }
-    document.title = config?.app_title || config?.shop_name || 'Bistro'
+    applyAppTitle(config?.app_title || config?.shop_name || 'Bistro')
     paymentFlowForm.value = {
       payment_flow_mode: config?.payment_flow_mode ?? 'both',
       require_table_for_eat_first: config?.require_table_for_eat_first ?? true,
@@ -342,7 +357,10 @@ export function useConfigForm() {
     }
 
     activeCategories.value = categoriesResult.categories ?? []
+    suppressDirtyTracking.value = true
     applyConfig(config)
+    isDirty.value = false
+    suppressDirtyTracking.value = false
   }
 
   async function handleQrisUpload(event: Event) {
@@ -376,7 +394,7 @@ export function useConfigForm() {
   }
 
   async function handleRemoveQris() {
-    if (!confirm(t('config.deleteQrisConfirm'))) return
+    if (!(await confirmAction(t('config.deleteQrisConfirm')))) return
 
     isRemovingQris.value = true
     const { error } = await removeQrisImage()
@@ -408,6 +426,7 @@ export function useConfigForm() {
     }
 
     alertStore.showAlert(t('alert.success'), t('config.transferSaved'), 'success')
+    isDirty.value = false
   }
 
   async function handleSaveReceipt() {
@@ -427,8 +446,9 @@ export function useConfigForm() {
       return
     }
 
-    document.title = receiptForm.value.app_title.trim() || receiptForm.value.shop_name.trim() || 'Bistro'
+    applyAppTitle(receiptForm.value.app_title.trim() || receiptForm.value.shop_name.trim() || 'Bistro')
     alertStore.showAlert(t('alert.success'), t('config.receiptSaved'), 'success')
+    isDirty.value = false
   }
 
   async function handleSavePaymentFlow() {
@@ -445,6 +465,7 @@ export function useConfigForm() {
     }
 
     alertStore.showAlert(t('alert.success'), t('config.paymentFlowSaved'), 'success')
+    isDirty.value = false
   }
 
   async function handleSaveBooking() {
@@ -461,6 +482,7 @@ export function useConfigForm() {
     }
 
     alertStore.showAlert(t('alert.success'), t('config.bookingSaved'), 'success')
+    isDirty.value = false
   }
 
   async function handleSaveLoyalty() {
@@ -477,6 +499,7 @@ export function useConfigForm() {
     }
 
     alertStore.showAlert(t('alert.success'), t('config.loyaltySaved'), 'success')
+    isDirty.value = false
   }
 
   async function handleSaveInvoice() {
@@ -493,6 +516,7 @@ export function useConfigForm() {
     }
 
     alertStore.showAlert(t('alert.success'), t('config.invoiceSaved'), 'success')
+    isDirty.value = false
   }
 
   function buildLandingFormOverrides(): Partial<LandingTemplateConfig> {
@@ -561,6 +585,7 @@ export function useConfigForm() {
       whyBgImage: landingWhyBgImage.value.trim() || null,
       bookBgColor: landingBookBgColor.value.trim() || null,
       bookBgImage: landingBookBgImage.value.trim() || null,
+      navLogoUrl: landingNavLogoUrl.value || null,
     }
   }
 
@@ -659,6 +684,7 @@ export function useConfigForm() {
     })
 
     alertStore.showAlert(t('alert.success'), t('config.landingSaved'), 'success')
+    isDirty.value = false
     await router.push('/')
   }
 
@@ -694,7 +720,7 @@ export function useConfigForm() {
   }
 
   async function handleRemoveLandingHero() {
-    if (!confirm(t('config.landingHeroDeleteConfirm'))) return
+    if (!(await confirmAction(t('config.landingHeroDeleteConfirm')))) return
 
     isRemovingLandingHero.value = true
     const { error } = await removeLandingHeroImage()
@@ -745,7 +771,7 @@ export function useConfigForm() {
   }
 
   async function handleRemoveLandingAbout() {
-    if (!confirm(t('config.landingAboutDeleteConfirm'))) return
+    if (!(await confirmAction(t('config.landingAboutDeleteConfirm')))) return
 
     isRemovingLandingAbout.value = true
     const { error } = await removeLandingAboutImage()
@@ -825,12 +851,14 @@ export function useConfigForm() {
       return
     }
 
+    if (!landingTestimonialsData.value[index]) return
     landingTestimonialsData.value[index].avatar_url = url
     alertStore.showAlert(t('alert.success'), t('config.landingTestimonialAvatarUploaded'), 'success')
   }
 
   async function handleTestimonialAvatarRemove(index: number) {
     await removeTestimonialAvatar(index)
+    if (!landingTestimonialsData.value[index]) return
     landingTestimonialsData.value[index].avatar_url = null
     alertStore.showAlert(t('alert.success'), t('config.landingTestimonialAvatarDeleted'), 'success')
   }
@@ -871,12 +899,14 @@ export function useConfigForm() {
       return
     }
 
+    if (!landingServicesData.value[index]) return
     landingServicesData.value[index].image_url = url
     alertStore.showAlert(t('alert.success'), t('config.landingServiceImageUploaded'), 'success')
   }
 
   async function handleServiceImageRemove(index: number) {
     await removeServiceImage(index)
+    if (!landingServicesData.value[index]) return
     landingServicesData.value[index].image_url = null
     alertStore.showAlert(t('alert.success'), t('config.landingServiceImageDeleted'), 'success')
   }
@@ -917,7 +947,7 @@ export function useConfigForm() {
   }
 
   async function handleGalleryImageRemove(index: number) {
-    await removeGalleryImage(index)
+    await removeGalleryImageFile(index)
     landingGalleryImages.value.splice(index, 1, '')
     alertStore.showAlert(t('alert.success'), t('config.landingGalleryImageDeleted'), 'success')
   }
@@ -954,7 +984,7 @@ export function useConfigForm() {
   }
 
   async function handleRemoveNavLogo() {
-    if (!confirm(t('config.navLogoDeleteConfirm'))) return
+    if (!(await confirmAction(t('config.navLogoDeleteConfirm')))) return
 
     isRemovingNavLogo.value = true
     const { error } = await removeNavLogo()
@@ -1006,7 +1036,7 @@ export function useConfigForm() {
   }
 
   async function handleRemoveLogo() {
-    if (!confirm(t('config.invoiceLogoDeleteConfirm'))) return
+    if (!(await confirmAction(t('config.invoiceLogoDeleteConfirm')))) return
 
     isRemovingLogo.value = true
     const { error } = await removeInvoiceLogo()
@@ -1047,6 +1077,7 @@ export function useConfigForm() {
     }
 
     alertStore.showAlert(t('alert.success'), t('config.menuCategorySaved'), 'success')
+    isDirty.value = false
   }
 
   function handleMenuCategoryCustomChange(enabled: boolean | 'indeterminate') {
@@ -1116,7 +1147,96 @@ export function useConfigForm() {
     </div>`
   })
 
-  watch(landingTemplate, (newTemplate) => {
+  const markDirty = () => {
+    if (suppressDirtyTracking.value) return
+    isDirty.value = true
+  }
+
+  const dirtySources = [
+    transferForm,
+    receiptForm,
+    paymentFlowForm,
+    menuCategoryCustom,
+    menuCategoryIds,
+    bookingForm,
+    loyaltyForm,
+    invoiceForm,
+    landingTemplate,
+    landingHeroImage,
+    landingHeroTitle,
+    landingHeroSubtitle,
+    landingPrimaryColor,
+    landingHeroBgColor,
+    landingHeroBgImage,
+    landingCarouselEnabled,
+    landingCarouselMaxItems,
+    landingCarouselTitle,
+    landingCarouselBgColor,
+    landingCarouselBgImage,
+    landingTestimonialsEnabled,
+    landingTestimonialsTitle,
+    landingTestimonialsData,
+    landingTestimonialsBgColor,
+    landingTestimonialsBgImage,
+    landingServicesEnabled,
+    landingServicesTitle,
+    landingServicesSubtitle,
+    landingServicesWhatsapp,
+    landingServicesData,
+    landingServicesBgColor,
+    landingServicesBgImage,
+    landingGalleryEnabled,
+    landingGalleryTitle,
+    landingGallerySubtitle,
+    landingGalleryImages,
+    landingGalleryBgColor,
+    landingGalleryBgImage,
+    landingContactEnabled,
+    landingContactTitle,
+    landingContactSubtitle,
+    landingContactAddress,
+    landingContactPhone,
+    landingContactEmail,
+    landingContactMapLat,
+    landingContactMapLng,
+    landingContactMapZoom,
+    landingContactBgColor,
+    landingContactBgImage,
+    landingAboutEnabled,
+    landingAboutLabel,
+    landingAboutTitle,
+    landingAboutDescription,
+    landingAboutImage,
+    landingAboutBullets,
+    landingAboutBgColor,
+    landingAboutBgImage,
+    landingWhyEnabled,
+    landingWhyLabel,
+    landingWhyTitle,
+    landingWhyDescription,
+    landingWhyFeatures,
+    landingWhyStats,
+    landingWhyBgColor,
+    landingWhyBgImage,
+    landingBookBgColor,
+    landingBookBgImage,
+    landingNavLogoUrl,
+  ]
+
+  dirtySources.forEach((source) => {
+    watch(source, markDirty, { deep: true })
+  })
+
+  watch(landingTemplate, async (newTemplate, oldTemplate) => {
+    if (suppressDirtyTracking.value || isRevertingTemplateSwitch.value) return
+    if (newTemplate === oldTemplate) return
+    const confirmed = await confirmAction(t('config.templateSwitchConfirm'))
+    if (!confirmed) {
+      isRevertingTemplateSwitch.value = true
+      landingTemplate.value = oldTemplate
+      isRevertingTemplateSwitch.value = false
+      return
+    }
     const preset = LANDING_TEMPLATE_PRESETS[newTemplate as LandingTemplate]
     if (!preset) return
     landingPrimaryColor.value = preset.defaults.primaryColor
@@ -1134,6 +1254,7 @@ export function useConfigForm() {
 
   return {
     isLoading,
+    isDirty,
     activeTab: ref('store'),
     isSavingTransfer, isSavingReceipt, isSavingPaymentFlow, isSavingMenuCategories,
     isSavingBooking, isSavingLoyalty, isSavingInvoice, isSavingLanding,

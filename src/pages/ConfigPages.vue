@@ -1,7 +1,17 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, onUnmounted, ref, computed } from 'vue'
+import { onBeforeRouteLeave } from 'vue-router'
 import { LayoutTemplate, Wallet, ReceiptText, LayoutGrid } from '@lucide/vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import StoreConfigTab from '@/components/config/StoreConfigTab.vue'
 import LandingConfigTab from '@/components/config/LandingConfigTab.vue'
 import PaymentsConfigTab from '@/components/config/PaymentsConfigTab.vue'
@@ -17,8 +27,29 @@ import { useConfigForm } from '@/composables/useConfigForm'
 import { LayoutTemplate as LayoutTemplateIcon } from '@lucide/vue'
 
 const { t } = useI18n()
+const confirmDialogOpen = ref(false)
+const confirmDialogMessage = ref('')
+let confirmResolver: ((confirmed: boolean) => void) | null = null
+
+function requestConfirm(message: string) {
+  confirmDialogMessage.value = message
+  confirmDialogOpen.value = true
+  return new Promise<boolean>((resolve) => {
+    confirmResolver = resolve
+  })
+}
+
+function resolveConfirm(confirmed: boolean) {
+  confirmDialogOpen.value = false
+  if (confirmResolver) {
+    confirmResolver(confirmed)
+    confirmResolver = null
+  }
+}
+
 const {
   isLoading,
+  isDirty,
   isSavingReceipt,
   isSavingTransfer,
   isSavingPaymentFlow,
@@ -152,7 +183,7 @@ const {
   handleGalleryImageRemove,
   handleNavLogoUpload,
   handleRemoveNavLogo,
-} = useConfigForm()
+} = useConfigForm({ confirm: requestConfirm })
 
 const activeTab = ref('store')
 
@@ -170,7 +201,25 @@ const templateOptions = computed(() => [
   { id: 'yummy', name: t('config.landingYummy'), desc: t('config.landingYummyDesc'), thumb: yummyThumb, color: null },
 ])
 
-onMounted(loadConfig)
+const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+  if (!isDirty.value) return
+  event.preventDefault()
+  event.returnValue = ''
+}
+
+onBeforeRouteLeave(async () => {
+  if (!isDirty.value) return true
+  return requestConfirm(t('config.unsavedChangesWarning'))
+})
+
+onMounted(() => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
+  loadConfig()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+})
 </script>
 
 <template>
@@ -479,6 +528,24 @@ onMounted(loadConfig)
         </div>
       </template>
     </div>
+    <Dialog :open="confirmDialogOpen" @update:open="(open) => { if (!open) resolveConfirm(false) }">
+      <DialogContent class="sm:max-w-[440px]">
+        <DialogHeader>
+          <DialogTitle>{{ t('common.confirm') }}</DialogTitle>
+          <DialogDescription>
+            {{ confirmDialogMessage }}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button type="button" variant="outline" @click="resolveConfirm(false)">
+            {{ t('common.cancel') }}
+          </Button>
+          <Button type="button" @click="resolveConfirm(true)">
+            {{ t('common.continue') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </DashboardLayout>
 </template>
 

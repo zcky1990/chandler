@@ -148,6 +148,7 @@ export function getLandingConfig(
     heroImageUrl: overrides.heroImageUrl ?? d.heroImageUrl,
     heroTitle: overrides.heroTitle ?? d.heroTitle,
     heroSubtitle: overrides.heroSubtitle ?? d.heroSubtitle,
+    navLogoUrl: overrides.navLogoUrl ?? null,
     primaryColor: overrides.primaryColor ?? d.primaryColor,
     carouselEnabled: overrides.carouselEnabled ?? d.carouselEnabled,
     carouselMaxItems: overrides.carouselMaxItems ?? d.carouselMaxItems,

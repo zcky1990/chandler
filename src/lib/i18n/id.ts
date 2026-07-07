@@ -463,6 +463,8 @@ export const id = {
   'config.saveLanding': 'Simpan Template',
   'config.landingSaved': 'Template halaman utama tersimpan',
   'config.landingSaveFailed': 'Gagal menyimpan template',
+  'config.unsavedChangesWarning': 'Ada perubahan yang belum disimpan. Tinggalkan halaman ini?',
+  'config.templateSwitchConfirm': 'Mengganti template akan mereset warna section ke bawaan template. Lanjutkan?',
   'config.landingCustomize': 'Sesuaikan Konten',
   'config.landingHeroSection': 'Section Hero',
   'config.landingHeroSectionDesc': 'Sesuaikan banner hero di bagian atas landing page',

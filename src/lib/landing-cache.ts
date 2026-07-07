@@ -4,7 +4,7 @@ import type {
   Product,
 } from '@/types/database'
 
-const STORAGE_KEY = 'landing_page_cache'
+const STORAGE_KEY = 'landing_page_cache_v2'
 const CACHE_TTL_MS = 3 * 60 * 60 * 1000
 
 export type LandingPageLandingState = {

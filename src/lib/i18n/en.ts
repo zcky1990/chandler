@@ -463,6 +463,8 @@ export const en = {
   'config.saveLanding': 'Save Template',
   'config.landingSaved': 'Landing template saved',
   'config.landingSaveFailed': 'Failed to save landing template',
+  'config.unsavedChangesWarning': 'You have unsaved changes. Leave this page?',
+  'config.templateSwitchConfirm': 'Switching template will reset section colors to template defaults. Continue?',
   'config.landingCustomize': 'Customize Content',
   'config.landingHeroSection': 'Hero Section',
   'config.landingHeroSectionDesc': 'Customize the hero banner at the top of the landing page',
