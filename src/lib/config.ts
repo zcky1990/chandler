@@ -8,6 +8,11 @@ export type { PaymentFlowMode }
 export const SHOP_CONFIG_ID = '00000000-0000-0000-0000-000000000001'
 const QRIS_STORAGE_BUCKET = 'shop-assets'
 const QRIS_STORAGE_PATH = 'qris/qris'
+const LOGO_STORAGE_PATH = 'invoice-logo/logo'
+const LANDING_HERO_STORAGE_PATH = 'landing/hero'
+const LANDING_ABOUT_STORAGE_PATH = 'landing/about'
+const TESTIMONIAL_AVATAR_STORAGE_PATH = 'landing/testimonials'
+const SERVICE_IMAGE_STORAGE_PATH = 'landing/services'
 
 export const getShopConfig = async () => {
   const supabaseClient = supabase()
@@ -84,6 +89,231 @@ export const updateShopConfig = async (input: ShopConfigInput) => {
   }
   if (input.loyalty_minimum_transaction_amount !== undefined) {
     payload.loyalty_minimum_transaction_amount = validated.data.loyalty_minimum_transaction_amount
+  }
+  if (input.invoice_footer_text !== undefined) {
+    payload.invoice_footer_text = validated.data.invoice_footer_text?.trim() || null
+  }
+  if (input.invoice_logo_url !== undefined) {
+    payload.invoice_logo_url = input.invoice_logo_url
+  }
+  if (input.invoice_show_logo !== undefined) {
+    payload.invoice_show_logo = validated.data.invoice_show_logo
+  }
+  if (input.invoice_show_qris !== undefined) {
+    payload.invoice_show_qris = validated.data.invoice_show_qris
+  }
+  if (input.invoice_tax_id !== undefined) {
+    payload.invoice_tax_id = validated.data.invoice_tax_id?.trim() || null
+  }
+  if (input.invoice_show_tax_id !== undefined) {
+    payload.invoice_show_tax_id = validated.data.invoice_show_tax_id
+  }
+  if (input.invoice_terms_text !== undefined) {
+    payload.invoice_terms_text = validated.data.invoice_terms_text?.trim() || null
+  }
+  if (input.invoice_show_terms !== undefined) {
+    payload.invoice_show_terms = validated.data.invoice_show_terms
+  }
+  if (input.invoice_primary_color !== undefined) {
+    payload.invoice_primary_color = validated.data.invoice_primary_color
+  }
+  if (input.invoice_show_item_prices !== undefined) {
+    payload.invoice_show_item_prices = validated.data.invoice_show_item_prices
+  }
+  if (input.invoice_show_qty !== undefined) {
+    payload.invoice_show_qty = validated.data.invoice_show_qty
+  }
+  if (input.landing_template !== undefined) {
+    payload.landing_template = validated.data.landing_template
+  }
+  if (input.landing_hero_image_url !== undefined) {
+    payload.landing_hero_image_url = input.landing_hero_image_url
+  }
+  if (input.landing_hero_title !== undefined) {
+    payload.landing_hero_title = validated.data.landing_hero_title?.trim() || null
+  }
+  if (input.landing_hero_subtitle !== undefined) {
+    payload.landing_hero_subtitle = validated.data.landing_hero_subtitle?.trim() || null
+  }
+  if (input.landing_primary_color !== undefined) {
+    payload.landing_primary_color = validated.data.landing_primary_color
+  }
+  if (input.landing_carousel_enabled !== undefined) {
+    payload.landing_carousel_enabled = validated.data.landing_carousel_enabled
+  }
+  if (input.landing_carousel_max_items !== undefined) {
+    payload.landing_carousel_max_items = validated.data.landing_carousel_max_items
+  }
+  if (input.landing_carousel_title !== undefined) {
+    payload.landing_carousel_title = validated.data.landing_carousel_title?.trim() || null
+  }
+  if (input.landing_carousel_bg_color !== undefined) {
+    payload.landing_carousel_bg_color = validated.data.landing_carousel_bg_color
+  }
+  if (input.landing_carousel_bg_image_url !== undefined) {
+    payload.landing_carousel_bg_image_url = input.landing_carousel_bg_image_url
+  }
+  if (input.landing_testimonials_enabled !== undefined) {
+    payload.landing_testimonials_enabled = validated.data.landing_testimonials_enabled
+  }
+  if (input.landing_testimonials_title !== undefined) {
+    payload.landing_testimonials_title = validated.data.landing_testimonials_title?.trim() || null
+  }
+  if (input.landing_testimonials_data !== undefined) {
+    payload.landing_testimonials_data = input.landing_testimonials_data
+  }
+  if (input.landing_testimonials_bg_color !== undefined) {
+    payload.landing_testimonials_bg_color = validated.data.landing_testimonials_bg_color
+  }
+  if (input.landing_testimonials_bg_image_url !== undefined) {
+    payload.landing_testimonials_bg_image_url = input.landing_testimonials_bg_image_url
+  }
+  if (input.landing_services_enabled !== undefined) {
+    payload.landing_services_enabled = validated.data.landing_services_enabled
+  }
+  if (input.landing_services_title !== undefined) {
+    payload.landing_services_title = validated.data.landing_services_title?.trim() || null
+  }
+  if (input.landing_services_subtitle !== undefined) {
+    payload.landing_services_subtitle = validated.data.landing_services_subtitle?.trim() || null
+  }
+  if (input.landing_services_whatsapp !== undefined) {
+    payload.landing_services_whatsapp = validated.data.landing_services_whatsapp?.trim() || null
+  }
+  if (input.landing_services_data !== undefined) {
+    payload.landing_services_data = input.landing_services_data
+  }
+  if (input.landing_services_bg_color !== undefined) {
+    payload.landing_services_bg_color = validated.data.landing_services_bg_color
+  }
+  if (input.landing_services_bg_image_url !== undefined) {
+    payload.landing_services_bg_image_url = input.landing_services_bg_image_url
+  }
+  if (input.landing_gallery_enabled !== undefined) {
+    payload.landing_gallery_enabled = validated.data.landing_gallery_enabled
+  }
+  if (input.landing_gallery_title !== undefined) {
+    payload.landing_gallery_title = validated.data.landing_gallery_title?.trim() || null
+  }
+  if (input.landing_gallery_subtitle !== undefined) {
+    payload.landing_gallery_subtitle = validated.data.landing_gallery_subtitle?.trim() || null
+  }
+  if (input.landing_gallery_images !== undefined) {
+    payload.landing_gallery_images = input.landing_gallery_images
+  }
+  if (input.landing_gallery_bg_color !== undefined) {
+    payload.landing_gallery_bg_color = validated.data.landing_gallery_bg_color
+  }
+  if (input.landing_gallery_bg_image_url !== undefined) {
+    payload.landing_gallery_bg_image_url = input.landing_gallery_bg_image_url
+  }
+  if (input.landing_contact_enabled !== undefined) {
+    payload.landing_contact_enabled = validated.data.landing_contact_enabled
+  }
+  if (input.landing_contact_title !== undefined) {
+    payload.landing_contact_title = validated.data.landing_contact_title?.trim() || null
+  }
+  if (input.landing_contact_subtitle !== undefined) {
+    payload.landing_contact_subtitle = validated.data.landing_contact_subtitle?.trim() || null
+  }
+  if (input.landing_contact_address !== undefined) {
+    payload.landing_contact_address = validated.data.landing_contact_address?.trim() || null
+  }
+  if (input.landing_contact_phone !== undefined) {
+    payload.landing_contact_phone = validated.data.landing_contact_phone?.trim() || null
+  }
+  if (input.landing_contact_email !== undefined) {
+    payload.landing_contact_email = validated.data.landing_contact_email?.trim() || null
+  }
+  if (input.landing_contact_map_lat !== undefined) {
+    payload.landing_contact_map_lat = validated.data.landing_contact_map_lat
+  }
+  if (input.landing_contact_map_lng !== undefined) {
+    payload.landing_contact_map_lng = validated.data.landing_contact_map_lng
+  }
+  if (input.landing_contact_map_zoom !== undefined) {
+    payload.landing_contact_map_zoom = validated.data.landing_contact_map_zoom
+  }
+  if (input.landing_contact_bg_color !== undefined) {
+    payload.landing_contact_bg_color = validated.data.landing_contact_bg_color
+  }
+  if (input.landing_contact_bg_image_url !== undefined) {
+    payload.landing_contact_bg_image_url = input.landing_contact_bg_image_url
+  }
+  if (input.landing_about_enabled !== undefined) {
+    payload.landing_about_enabled = validated.data.landing_about_enabled
+  }
+  if (input.landing_about_label !== undefined) {
+    payload.landing_about_label = validated.data.landing_about_label?.trim() || null
+  }
+  if (input.landing_about_title !== undefined) {
+    payload.landing_about_title = validated.data.landing_about_title?.trim() || null
+  }
+  if (input.landing_about_description !== undefined) {
+    payload.landing_about_description = validated.data.landing_about_description?.trim() || null
+  }
+  if (input.landing_about_image_url !== undefined) {
+    payload.landing_about_image_url = input.landing_about_image_url
+  }
+  if (input.landing_about_bullets !== undefined) {
+    payload.landing_about_bullets = input.landing_about_bullets
+  }
+  if (input.landing_about_bg_color !== undefined) {
+    payload.landing_about_bg_color = validated.data.landing_about_bg_color
+  }
+  if (input.landing_why_enabled !== undefined) {
+    payload.landing_why_enabled = validated.data.landing_why_enabled
+  }
+  if (input.landing_why_label !== undefined) {
+    payload.landing_why_label = validated.data.landing_why_label?.trim() || null
+  }
+  if (input.landing_why_title !== undefined) {
+    payload.landing_why_title = validated.data.landing_why_title?.trim() || null
+  }
+  if (input.landing_why_description !== undefined) {
+    payload.landing_why_description = validated.data.landing_why_description?.trim() || null
+  }
+  if (input.landing_why_features !== undefined) {
+    payload.landing_why_features = input.landing_why_features
+  }
+  if (input.landing_why_stats !== undefined) {
+    payload.landing_why_stats = input.landing_why_stats
+  }
+  if (input.landing_why_bg_color !== undefined) {
+    payload.landing_why_bg_color = validated.data.landing_why_bg_color
+  }
+  if (input.landing_hero_bg_color !== undefined) {
+    payload.landing_hero_bg_color = validated.data.landing_hero_bg_color
+  }
+  if (input.landing_hero_bg_image !== undefined) {
+    payload.landing_hero_bg_image = input.landing_hero_bg_image
+  }
+  if (input.landing_about_bg_image !== undefined) {
+    payload.landing_about_bg_image = input.landing_about_bg_image
+  }
+  if (input.landing_why_bg_image !== undefined) {
+    payload.landing_why_bg_image = input.landing_why_bg_image
+  }
+  if (input.landing_carousel_bg_image !== undefined) {
+    payload.landing_carousel_bg_image = input.landing_carousel_bg_image
+  }
+  if (input.landing_testimonials_bg_image !== undefined) {
+    payload.landing_testimonials_bg_image = input.landing_testimonials_bg_image
+  }
+  if (input.landing_services_bg_image !== undefined) {
+    payload.landing_services_bg_image = input.landing_services_bg_image
+  }
+  if (input.landing_gallery_bg_image !== undefined) {
+    payload.landing_gallery_bg_image = input.landing_gallery_bg_image
+  }
+  if (input.landing_contact_bg_image !== undefined) {
+    payload.landing_contact_bg_image = input.landing_contact_bg_image
+  }
+  if (input.landing_book_bg_color !== undefined) {
+    payload.landing_book_bg_color = validated.data.landing_book_bg_color?.trim() || null
+  }
+  if (input.landing_book_bg_image !== undefined) {
+    payload.landing_book_bg_image = input.landing_book_bg_image
   }
 
   const supabaseClient = supabase()
@@ -205,4 +435,234 @@ export function getLoyaltyMinimumTransactionAmount(config: ShopConfig | null) {
 export function qualifiesForLoyaltyEarn(grossAmount: number, config: ShopConfig | null) {
   const minimum = getLoyaltyMinimumTransactionAmount(config)
   return grossAmount >= minimum
+}
+
+export const uploadInvoiceLogo = async (file: File) => {
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? 'png'
+  const allowed = ['png', 'jpg', 'jpeg', 'webp', 'svg']
+  if (!allowed.includes(extension)) {
+    return { url: null, error: { message: useLocaleStore().translate('config.imageMustBeImage') } }
+  }
+
+  const path = `${LOGO_STORAGE_PATH}.${extension}`
+  const supabaseClient = supabase()
+  const { error: uploadError } = await supabaseClient.storage
+    .from(QRIS_STORAGE_BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type })
+
+  if (uploadError) {
+    return { url: null, error: uploadError }
+  }
+
+  const { data } = supabaseClient.storage.from(QRIS_STORAGE_BUCKET).getPublicUrl(path)
+  const cacheBustedUrl = `${data.publicUrl}?t=${Date.now()}`
+
+  const { error } = await updateShopConfig({
+    invoice_logo_url: cacheBustedUrl,
+    invoice_show_logo: true,
+  })
+  if (error) {
+    return { url: null, error: typeof error === 'object' && 'message' in error ? error : { message: useLocaleStore().translate('config.invoiceSaveFailed') } }
+  }
+
+  return { url: cacheBustedUrl, error: null }
+}
+
+export const removeInvoiceLogo = async () => {
+  const supabaseClient = supabase()
+  const extensions = ['png', 'jpg', 'jpeg', 'webp', 'svg']
+
+  await Promise.all(
+    extensions.map((extension) =>
+      supabaseClient.storage.from(QRIS_STORAGE_BUCKET).remove([`${LOGO_STORAGE_PATH}.${extension}`]),
+    ),
+  )
+
+  return updateShopConfig({ invoice_logo_url: null, invoice_show_logo: false })
+}
+
+export const uploadLandingHeroImage = async (file: File) => {
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? 'webp'
+  const allowed = ['webp']
+  if (!allowed.includes(extension)) {
+    return { url: null, error: { message: useLocaleStore().translate('config.imageMustBeWebp') } }
+  }
+
+  const path = `${LANDING_HERO_STORAGE_PATH}.webp`
+  const supabaseClient = supabase()
+  const { error: uploadError } = await supabaseClient.storage
+    .from(QRIS_STORAGE_BUCKET)
+    .upload(path, file, { upsert: true, contentType: 'image/webp' })
+
+  if (uploadError) {
+    return { url: null, error: uploadError }
+  }
+
+  const { data } = supabaseClient.storage.from(QRIS_STORAGE_BUCKET).getPublicUrl(path)
+  const cacheBustedUrl = `${data.publicUrl}?t=${Date.now()}`
+
+  const { error } = await updateShopConfig({ landing_hero_image_url: cacheBustedUrl })
+  if (error) {
+    return { url: null, error: typeof error === 'object' && 'message' in error ? error : { message: useLocaleStore().translate('error.landingHeroSaveFailed') } }
+  }
+
+  return { url: cacheBustedUrl, error: null }
+}
+
+export const removeLandingHeroImage = async () => {
+  const supabaseClient = supabase()
+
+  await supabaseClient.storage.from(QRIS_STORAGE_BUCKET).remove([`${LANDING_HERO_STORAGE_PATH}.webp`])
+
+  return updateShopConfig({ landing_hero_image_url: null })
+}
+
+export const uploadLandingAboutImage = async (file: File) => {
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? 'webp'
+  const allowed = ['webp']
+  if (!allowed.includes(extension)) {
+    return { url: null, error: { message: useLocaleStore().translate('config.imageMustBeWebp') } }
+  }
+
+  const path = `${LANDING_ABOUT_STORAGE_PATH}.webp`
+  const supabaseClient = supabase()
+  const { error: uploadError } = await supabaseClient.storage
+    .from(QRIS_STORAGE_BUCKET)
+    .upload(path, file, { upsert: true, contentType: 'image/webp' })
+
+  if (uploadError) {
+    return { url: null, error: uploadError }
+  }
+
+  const { data } = supabaseClient.storage.from(QRIS_STORAGE_BUCKET).getPublicUrl(path)
+  const cacheBustedUrl = `${data.publicUrl}?t=${Date.now()}`
+
+  const { error } = await updateShopConfig({ landing_about_image_url: cacheBustedUrl })
+  if (error) {
+    return { url: null, error: typeof error === 'object' && 'message' in error ? error : { message: useLocaleStore().translate('error.landingAboutSaveFailed') } }
+  }
+
+  return { url: cacheBustedUrl, error: null }
+}
+
+export const removeLandingAboutImage = async () => {
+  const supabaseClient = supabase()
+
+  await supabaseClient.storage.from(QRIS_STORAGE_BUCKET).remove([`${LANDING_ABOUT_STORAGE_PATH}.webp`])
+
+  return updateShopConfig({ landing_about_image_url: null })
+}
+
+export const uploadTestimonialAvatar = async (file: File, index: number) => {
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? 'webp'
+  const allowed = ['webp']
+  if (!allowed.includes(extension)) {
+    return { url: null, error: { message: useLocaleStore().translate('config.imageMustBeWebp') } }
+  }
+
+  const path = `${TESTIMONIAL_AVATAR_STORAGE_PATH}/avatar_${index}.webp`
+  const supabaseClient = supabase()
+  const { error: uploadError } = await supabaseClient.storage
+    .from(QRIS_STORAGE_BUCKET)
+    .upload(path, file, { upsert: true, contentType: 'image/webp' })
+
+  if (uploadError) {
+    return { url: null, error: uploadError }
+  }
+
+  const { data } = supabaseClient.storage.from(QRIS_STORAGE_BUCKET).getPublicUrl(path)
+  const cacheBustedUrl = `${data.publicUrl}?t=${Date.now()}`
+
+  return { url: cacheBustedUrl, error: null }
+}
+
+export const removeTestimonialAvatar = async (index: number) => {
+  const supabaseClient = supabase()
+  await supabaseClient.storage
+    .from(QRIS_STORAGE_BUCKET)
+    .remove([`${TESTIMONIAL_AVATAR_STORAGE_PATH}/avatar_${index}.webp`])
+}
+
+export const uploadServiceImage = async (file: File, index: number) => {
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? 'webp'
+  const allowed = ['webp']
+  if (!allowed.includes(extension)) {
+    return { url: null, error: { message: useLocaleStore().translate('config.imageMustBeWebp') } }
+  }
+
+  const path = `${SERVICE_IMAGE_STORAGE_PATH}/service_${index}.webp`
+  const supabaseClient = supabase()
+  const { error: uploadError } = await supabaseClient.storage
+    .from(QRIS_STORAGE_BUCKET)
+    .upload(path, file, { upsert: true, contentType: 'image/webp' })
+
+  if (uploadError) {
+    return { url: null, error: uploadError }
+  }
+
+  const { data } = supabaseClient.storage.from(QRIS_STORAGE_BUCKET).getPublicUrl(path)
+  return { url: `${data.publicUrl}?t=${Date.now()}`, error: null }
+}
+
+export const removeServiceImage = async (index: number) => {
+  const supabaseClient = supabase()
+  await supabaseClient.storage
+    .from(QRIS_STORAGE_BUCKET)
+    .remove([`${SERVICE_IMAGE_STORAGE_PATH}/service_${index}.webp`])
+}
+
+export const uploadGalleryImage = async (file: File, index: number) => {
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? 'webp'
+  const allowed = ['webp']
+  if (!allowed.includes(extension)) {
+    return { url: null, error: { message: useLocaleStore().translate('config.imageMustBeWebp') } }
+  }
+
+  const path = `landing/gallery/gallery_${index}.webp`
+  const supabaseClient = supabase()
+  const { error: uploadError } = await supabaseClient.storage
+    .from(QRIS_STORAGE_BUCKET)
+    .upload(path, file, { upsert: true, contentType: 'image/webp' })
+
+  if (uploadError) {
+    return { url: null, error: uploadError }
+  }
+
+  const { data } = supabaseClient.storage.from(QRIS_STORAGE_BUCKET).getPublicUrl(path)
+  return { url: `${data.publicUrl}?t=${Date.now()}`, error: null }
+}
+
+export const removeGalleryImage = async (index: number) => {
+  const supabaseClient = supabase()
+  await supabaseClient.storage
+    .from(QRIS_STORAGE_BUCKET)
+    .remove([`landing/gallery/gallery_${index}.webp`])
+}
+
+export const uploadSectionBgImage = async (file: File, section: string) => {
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? 'webp'
+  const allowed = ['webp']
+  if (!allowed.includes(extension)) {
+    return { url: null, error: { message: useLocaleStore().translate('config.imageMustBeWebp') } }
+  }
+
+  const path = `landing/bg/${section}.webp`
+  const supabaseClient = supabase()
+  const { error: uploadError } = await supabaseClient.storage
+    .from(QRIS_STORAGE_BUCKET)
+    .upload(path, file, { upsert: true, contentType: 'image/webp' })
+
+  if (uploadError) {
+    return { url: null, error: uploadError }
+  }
+
+  const { data } = supabaseClient.storage.from(QRIS_STORAGE_BUCKET).getPublicUrl(path)
+  return { url: `${data.publicUrl}?t=${Date.now()}`, error: null }
+}
+
+export const removeSectionBgImage = async (section: string) => {
+  const supabaseClient = supabase()
+  await supabaseClient.storage
+    .from(QRIS_STORAGE_BUCKET)
+    .remove([`landing/bg/${section}.webp`])
 }

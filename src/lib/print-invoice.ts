@@ -1,9 +1,11 @@
 import {
   applyShopInfoToInvoice,
+  buildInvoiceCustomization,
   buildInvoiceFromTransaction,
   formatInvoiceDateTime,
   getPaymentMethodLabel,
   type InvoiceData,
+  type InvoiceCustomization,
 } from '@/lib/invoice'
 import { getShopConfig } from '@/lib/config'
 import { formatPrice, formatQueueNumber } from '@/lib/format'
@@ -30,16 +32,38 @@ function buildInvoiceHtml(data: InvoiceData) {
   const localeStore = useLocaleStore()
   const t = localeStore.translate.bind(localeStore)
   const locale = localeStore.locale
+  const c = data.customization ?? {} as InvoiceCustomization
+  const accent = escapeHtml(c.primaryColor || '#000000')
 
-  const itemRows = data.items.map((item) => `
-    <tr>
+  const itemRows = data.items.map((item) => {
+    const qtyCol = c.showQty
+      ? `<td class="item-qty">${item.quantity}x</td>`
+      : ''
+    const priceCol = c.showItemPrices
+      ? `<td class="item-price">${formatPricePlain(item.subtotal, locale)}</td>`
+      : ''
+
+    if (!c.showQty && !c.showItemPrices) {
+      return `<tr><td class="item-name" colspan="2">${escapeHtml(item.label)}</td></tr>`
+    }
+
+    return `<tr>
       <td class="item-name">${escapeHtml(item.label)}</td>
-      <td class="item-price">${formatPricePlain(item.subtotal, locale)}</td>
-    </tr>
-  `).join('')
+      ${qtyCol}
+      ${priceCol}
+    </tr>`
+  }).join('')
+
+  const logoBlock = c.showLogo && c.logoUrl
+    ? `<div class="center logo-wrap"><img src="${escapeHtml(c.logoUrl)}" alt="Logo" class="logo-img" /></div>`
+    : ''
 
   const addressBlock = data.shopAddress
     ? `<p class="shop-address">${escapeHtml(data.shopAddress)}</p>`
+    : ''
+
+  const taxIDBlock = c.showTaxId && c.taxId
+    ? `<p class="tax-id">${escapeHtml(t('invoice.taxIdLabel'))} ${escapeHtml(c.taxId)}</p>`
     : ''
 
   const notesBlock = data.notes
@@ -49,6 +73,22 @@ function buildInvoiceHtml(data: InvoiceData) {
   const queueBlock = data.queueNumber != null
     ? `<p>${escapeHtml(t('receipt.queue'))} ${escapeHtml(formatQueueNumber(data.queueNumber))}</p>`
     : ''
+
+  const termsBlock = c.showTerms && c.termsText
+    ? `<div class="divider"></div><p class="terms">${escapeHtml(c.termsText)}</p>`
+    : ''
+
+  const qrisBlock = c.showQris
+    ? `<p>${escapeHtml(t('receipt.qris'))} ${escapeHtml(t('config.qrisTitle'))}</p>`
+    : ''
+
+  const footerBlock = c.footerText
+    ? `<div class="divider"></div><p class="footer-text center">${escapeHtml(c.footerText)}</p>`
+    : ''
+
+  const qtyColCount = c.showQty ? 1 : 0
+  const priceColCount = c.showItemPrices ? 1 : 0
+  const extraCols = qtyColCount + priceColCount
 
   return `<!DOCTYPE html>
 <html lang="${locale}">
@@ -67,26 +107,34 @@ function buildInvoiceHtml(data: InvoiceData) {
       background: #fff;
     }
     .center { text-align: center; }
-    .shop-name { font-size: 14px; font-weight: bold; margin-bottom: 2px; }
+    .shop-name { font-size: 14px; font-weight: bold; margin-bottom: 2px; color: ${accent}; }
     .shop-address { font-size: 10px; margin-bottom: 6px; }
-    .divider { border-top: 1px dashed #000; margin: 6px 0; }
+    .tax-id { font-size: 10px; margin-bottom: 4px; }
+    .divider { border-top: 1px dashed ${accent}; margin: 6px 0; }
     .meta p { margin-bottom: 2px; }
     table { width: 100%; border-collapse: collapse; }
     .item-name { padding: 3px 4px 3px 0; vertical-align: top; }
+    .item-qty { padding: 3px 4px; text-align: center; white-space: nowrap; vertical-align: top; }
     .item-price { padding: 3px 0; text-align: right; white-space: nowrap; vertical-align: top; }
     .total-row { font-weight: bold; font-size: 12px; }
     .total-row td { padding-top: 6px; }
     .footer { margin-top: 8px; font-size: 10px; }
-    .thanks { margin-top: 6px; font-weight: bold; }
+    .footer-text { font-size: 10px; }
+    .thanks { margin-top: 6px; font-weight: bold; color: ${accent}; }
+    .terms { font-size: 9px; font-style: italic; }
+    .logo-wrap { margin-bottom: 6px; }
+    .logo-img { max-width: 60mm; max-height: 20mm; }
     @media print {
       body { width: 72mm; }
     }
   </style>
 </head>
 <body>
+  ${logoBlock}
   <div class="center">
-    <p class="shop-name">${escapeHtml(data.shopName)}</p>
+    <p class="shop-name" style="color: ${accent}">${escapeHtml(data.shopName)}</p>
     ${addressBlock}
+    ${taxIDBlock}
   </div>
   <div class="divider"></div>
   <div class="meta">
@@ -101,8 +149,8 @@ function buildInvoiceHtml(data: InvoiceData) {
     </tbody>
     <tfoot>
       <tr class="total-row">
-        <td>${escapeHtml(t('common.total').toUpperCase())}</td>
-        <td class="item-price">${formatPricePlain(data.totalAmount, locale)}</td>
+        <td${extraCols ? ` colspan="${1 + extraCols}"` : ''}>${escapeHtml(t('common.total').toUpperCase())}</td>
+        ${c.showItemPrices ? `<td class="item-price">${formatPricePlain(data.totalAmount, locale)}</td>` : ''}
       </tr>
     </tfoot>
   </table>
@@ -110,7 +158,10 @@ function buildInvoiceHtml(data: InvoiceData) {
   <div class="footer">
     <p>${escapeHtml(t('receipt.pay'))} ${escapeHtml(getPaymentMethodLabel(data.paymentMethod))}</p>
     ${queueBlock}
+    ${qrisBlock}
     ${notesBlock}
+    ${termsBlock}
+    ${footerBlock}
     <p class="center thanks">${escapeHtml(t('receipt.thanks'))}</p>
   </div>
 </body>
@@ -166,6 +217,7 @@ export async function printTransactionReceipt(
   if (!paymentMethod) return
 
   const { config } = await getShopConfig()
+  const customization = buildInvoiceCustomization(config)
   const invoice = applyShopInfoToInvoice(
     buildInvoiceFromTransaction(transaction, paymentMethod, {
       paidAt: transaction.paid_at ?? undefined,
@@ -173,6 +225,7 @@ export async function printTransactionReceipt(
     }),
     config?.shop_name,
     config?.shop_address,
+    customization,
   )
   printInvoice(invoice)
 }
