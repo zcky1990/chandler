@@ -55,7 +55,7 @@ const firstTestimonial = computed(() => props.testimonialsData?.[0] ?? null)
         />
         <div v-else class="absolute inset-0" :style="heroStyle" />
         <div class="absolute inset-0 bg-stone-950/60" />
-        <SpiceHavenNav :shop-name="shopName" :accent-color="primaryColor" />
+        <SpiceHavenNav :shop-name="shopName" :accent-color="primaryColor" :nav-logo-url="navLogoUrl" />
         <div class="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-24 text-center">
           <p class="mb-6 flex items-center gap-2 text-sm tracking-[0.3em] text-amber-200/80 uppercase">
             <Sparkles class="size-4" />

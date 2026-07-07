@@ -80,7 +80,7 @@ const bookStyle = computed(() => landingSectionStyle(props.bookBgImage, props.bo
 <template>
   <ApplicationLayout show-staff-button>
     <div class="yummy-page w-full bg-[#f9f9f9] text-slate-700">
-      <YummyNav :shop-name="shopName" :accent-color="primaryColor" />
+      <YummyNav :shop-name="shopName" :accent-color="primaryColor" :nav-logo-url="navLogoUrl" />
 
       <!-- Hero: light background like Yummy Red -->
       <section id="hero" class="relative overflow-hidden px-6 py-16 md:py-24" :style="heroStyle">

@@ -10,6 +10,7 @@ const props = defineProps<{
   variant: NavVariant
   shopName: string
   accentColor: string
+  navLogoUrl?: string | null
 }>()
 
 const { t } = useI18n()
@@ -29,7 +30,8 @@ const variantClasses: Record<NavVariant, string> = {
   >
     <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
       <RouterLink to="/" class="flex items-center gap-2 font-bold tracking-tight">
-        <UtensilsCrossed class="size-5" :style="{ color: accentColor }" />
+        <img v-if="navLogoUrl" :src="navLogoUrl" alt="Logo" class="h-7 w-auto object-contain">
+        <UtensilsCrossed v-else class="size-5" :style="{ color: accentColor }" />
         <span>{{ shopName }}</span>
       </RouterLink>
       <nav class="hidden items-center gap-6 text-sm font-medium md:flex">

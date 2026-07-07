@@ -66,6 +66,7 @@ export type LandingPageLandingState = {
   whyBgImage: string | null
   bookBgColor: string | null
   bookBgImage: string | null
+  navLogoUrl: string | null
 }
 
 export type LandingPageCachePayload = {
@@ -140,6 +141,7 @@ export function landingConfigToPageState(cfg: LandingTemplateConfig): LandingPag
     whyBgImage: cfg.whyBgImage,
     bookBgColor: cfg.bookBgColor,
     bookBgImage: cfg.bookBgImage,
+    navLogoUrl: cfg.navLogoUrl,
   }
 }
 

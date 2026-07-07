@@ -42,7 +42,7 @@ const ctaBackground = computed(() => {
         class="relative flex min-h-[85vh] flex-col overflow-hidden"
         :style="heroStyle"
       >
-        <DefaultNav :shop-name="shopName" :accent-color="primaryColor" />
+        <DefaultNav :shop-name="shopName" :accent-color="primaryColor" :nav-logo-url="navLogoUrl" />
         <div class="relative z-10 flex flex-1 items-center px-6 py-16">
           <div class="absolute inset-0 bg-[radial-gradient(circle_at_60%_50%,rgba(255,255,255,0.06)_0%,transparent_60%)]" />
           <div class="relative mx-auto flex w-full max-w-6xl flex-col-reverse items-center gap-12 lg:flex-row lg:gap-16">

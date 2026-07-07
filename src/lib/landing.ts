@@ -326,5 +326,6 @@ export function extractLandingOverrides(config: {
     contactBgImage: config.landing_contact_bg_image ?? null,
     bookBgColor: config.landing_book_bg_color ?? null,
     bookBgImage: config.landing_book_bg_image ?? null,
+    navLogoUrl: config.landing_nav_logo_url ?? null,
   }
 }

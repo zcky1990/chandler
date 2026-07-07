@@ -71,4 +71,5 @@ export type LandingPageProps = {
   whyBgImage: string | null
   bookBgColor: string | null
   bookBgImage: string | null
+  navLogoUrl: string | null
 }

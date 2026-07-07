@@ -6,6 +6,7 @@ import { useI18n } from '@/composables/useI18n'
 defineProps<{
   shopName: string
   accentColor: string
+  navLogoUrl?: string | null
 }>()
 
 const { t } = useI18n()
@@ -22,8 +23,9 @@ const navLinks = [
 <template>
   <header class="sticky top-0 z-40 border-b border-slate-100 bg-white/98 shadow-sm backdrop-blur-sm">
     <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
-      <RouterLink to="/" class="yummy-font-display text-3xl font-bold leading-none" :style="{ color: accentColor }">
-        {{ shopName }}<span class="text-4xl">.</span>
+      <RouterLink to="/" class="flex items-center gap-2 yummy-font-display text-3xl font-bold leading-none" :style="{ color: accentColor }">
+        <img v-if="navLogoUrl" :src="navLogoUrl" alt="Logo" class="h-8 w-auto object-contain">
+        <span>{{ shopName }}</span><span v-if="!navLogoUrl" class="text-4xl">.</span>
       </RouterLink>
 
       <nav class="hidden items-center gap-5 lg:flex">

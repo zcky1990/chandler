@@ -78,7 +78,7 @@ const categoryBgColor = computed(() => props.carouselBgColor || '#09090b')
 
       <section id="hero" class="relative overflow-hidden" :style="heroStyle">
         <div class="absolute inset-0 bg-gradient-to-br from-zinc-950/80 via-zinc-900/60 to-orange-950/30" />
-        <SarabNav :shop-name="shopName" :accent-color="primaryColor" />
+        <SarabNav :shop-name="shopName" :accent-color="primaryColor" :nav-logo-url="navLogoUrl" />
         <div class="relative z-10 mx-auto flex max-w-6xl flex-col items-center gap-12 px-6 py-20 lg:flex-row lg:py-28">
           <div class="flex-1 text-center lg:text-left">
             <p class="mb-3 text-sm font-semibold tracking-widest text-orange-400 uppercase">
