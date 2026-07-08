@@ -21,6 +21,7 @@ const landing = ref({
   heroImageUrl: null as string | null,
   heroTitle: null as string | null,
   heroSubtitle: null as string | null,
+  heroTagline: null as string | null,
   navLogoUrl: null as string | null,
   primaryColor: '#0f172a',
   heroBgColor: '#ffffff', heroBgImage: null as string | null,
@@ -96,6 +97,7 @@ onMounted(async () => {
     :hero-image-url="landing.heroImageUrl"
     :hero-title="landing.heroTitle"
     :hero-subtitle="landing.heroSubtitle"
+    :hero-tagline="landing.heroTagline"
     :nav-logo-url="landing.navLogoUrl"
     :primary-color="landing.primaryColor"
     :hero-bg-color="landing.heroBgColor"

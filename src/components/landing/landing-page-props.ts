@@ -15,6 +15,7 @@ export type LandingPageProps = {
   heroImageUrl: string | null
   heroTitle: string | null
   heroSubtitle: string | null
+  heroTagline: string | null
   primaryColor: string
   heroBgColor: string
   heroBgImage: string | null

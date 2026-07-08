@@ -62,6 +62,7 @@ const {
   landingHeroImage,
   landingHeroTitle,
   landingHeroSubtitle,
+  landingHeroTagline,
   landingPrimaryColor,
   landingHeroBgColor,
   landingHeroBgImage,
@@ -251,6 +252,7 @@ onUnmounted(() => {
                 :landing-hero-image="landingHeroImage"
                 :landing-hero-title="landingHeroTitle"
                 :landing-hero-subtitle="landingHeroSubtitle"
+                :landing-hero-tagline="landingHeroTagline"
                 :landing-primary-color="landingPrimaryColor"
                 :landing-hero-bg-color="landingHeroBgColor"
                 :landing-hero-bg-image="landingHeroBgImage"
@@ -321,6 +323,7 @@ onUnmounted(() => {
                 @update:landing-template="landingTemplate = $event"
                 @update:landing-hero-title="landingHeroTitle = $event"
                 @update:landing-hero-subtitle="landingHeroSubtitle = $event"
+                @update:landing-hero-tagline="landingHeroTagline = $event"
                 @update:landing-primary-color="landingPrimaryColor = $event"
                 @update:landing-hero-bg-color="landingHeroBgColor = $event"
                 @update:landing-hero-bg-image="landingHeroBgImage = $event"

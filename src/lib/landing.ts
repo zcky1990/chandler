@@ -79,7 +79,7 @@ export const LANDING_TEMPLATE_PRESETS: Record<LandingTemplate, LandingTemplatePr
     label: 'Default',
     thumbnail: defaultThumb,
     defaults: {
-      heroImageUrl: null, heroTitle: null, heroSubtitle: null, primaryColor: '#0f172a',
+      heroImageUrl: null, heroTitle: null, heroSubtitle: null, heroTagline: null, primaryColor: '#0f172a',
       carouselEnabled: true, carouselMaxItems: 8, carouselTitle: null, carouselBgColor: '#f1f5f9',
       testimonialsEnabled: false, testimonialsTitle: null, testimonialsData: null, testimonialsBgColor: '#ffffff',
       servicesEnabled: false, servicesTitle: null, servicesSubtitle: null, servicesWhatsapp: null, servicesData: null, servicesBgColor: '#f8fafc',
@@ -94,7 +94,7 @@ export const LANDING_TEMPLATE_PRESETS: Record<LandingTemplate, LandingTemplatePr
     label: 'Sarab',
     thumbnail: sarabThumb,
     defaults: {
-      heroImageUrl: null, heroTitle: null, heroSubtitle: null, primaryColor: '#ea580c',
+      heroImageUrl: null, heroTitle: null, heroSubtitle: null, heroTagline: null, primaryColor: '#ea580c',
       carouselEnabled: true, carouselMaxItems: 8, carouselTitle: null, carouselBgColor: '#09090b',
       testimonialsEnabled: false, testimonialsTitle: null, testimonialsData: null, testimonialsBgColor: '#18181b',
       servicesEnabled: false, servicesTitle: null, servicesSubtitle: null, servicesWhatsapp: null, servicesData: null, servicesBgColor: '#18181b',
@@ -109,7 +109,7 @@ export const LANDING_TEMPLATE_PRESETS: Record<LandingTemplate, LandingTemplatePr
     label: 'Spice Haven',
     thumbnail: spiceThumb,
     defaults: {
-      heroImageUrl: null, heroTitle: null, heroSubtitle: null, primaryColor: '#d97706',
+      heroImageUrl: null, heroTitle: null, heroSubtitle: null, heroTagline: null, primaryColor: '#d97706',
       carouselEnabled: true, carouselMaxItems: 8, carouselTitle: null, carouselBgColor: '#0c0a09',
       testimonialsEnabled: false, testimonialsTitle: null, testimonialsData: null, testimonialsBgColor: '#1c1917',
       servicesEnabled: false, servicesTitle: null, servicesSubtitle: null, servicesWhatsapp: null, servicesData: null, servicesBgColor: '#1c1917',
@@ -124,7 +124,7 @@ export const LANDING_TEMPLATE_PRESETS: Record<LandingTemplate, LandingTemplatePr
     label: 'Yummy',
     thumbnail: yummyThumb,
     defaults: {
-      heroImageUrl: null, heroTitle: null, heroSubtitle: null, primaryColor: '#991b1b',
+      heroImageUrl: null, heroTitle: null, heroSubtitle: null, heroTagline: null, primaryColor: '#991b1b',
       carouselEnabled: true, carouselMaxItems: 8, carouselTitle: null, carouselBgColor: '#fef2f2',
       testimonialsEnabled: false, testimonialsTitle: null, testimonialsData: null, testimonialsBgColor: '#ffffff',
       servicesEnabled: false, servicesTitle: null, servicesSubtitle: null, servicesWhatsapp: null, servicesData: null, servicesBgColor: '#fee2e2',
@@ -148,6 +148,7 @@ export function getLandingConfig(
     heroImageUrl: overrides.heroImageUrl ?? d.heroImageUrl,
     heroTitle: overrides.heroTitle ?? d.heroTitle,
     heroSubtitle: overrides.heroSubtitle ?? d.heroSubtitle,
+    heroTagline: overrides.heroTagline ?? d.heroTagline,
     navLogoUrl: overrides.navLogoUrl ?? null,
     primaryColor: overrides.primaryColor ?? d.primaryColor,
     carouselEnabled: overrides.carouselEnabled ?? d.carouselEnabled,
@@ -211,6 +212,7 @@ export function extractLandingOverrides(config: {
   landing_hero_image_url?: string | null
   landing_hero_title?: string | null
   landing_hero_subtitle?: string | null
+  landing_hero_tagline?: string | null
   landing_primary_color?: string
   landing_carousel_enabled?: boolean
   landing_carousel_max_items?: number
@@ -272,6 +274,7 @@ export function extractLandingOverrides(config: {
     heroImageUrl: config.landing_hero_image_url ?? null,
     heroTitle: config.landing_hero_title ?? null,
     heroSubtitle: config.landing_hero_subtitle ?? null,
+    heroTagline: config.landing_hero_tagline ?? null,
     primaryColor: config.landing_primary_color ?? '',
     carouselEnabled: config.landing_carousel_enabled ?? undefined,
     carouselMaxItems: config.landing_carousel_max_items ?? undefined,

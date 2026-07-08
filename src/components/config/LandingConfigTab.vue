@@ -25,6 +25,7 @@ const props = defineProps<{
   landingHeroImage: string | null
   landingHeroTitle: string
   landingHeroSubtitle: string
+  landingHeroTagline: string
   landingPrimaryColor: string
   landingHeroBgColor: string
   landingHeroBgImage: string
@@ -98,6 +99,7 @@ const emit = defineEmits<{
   'update:landingTemplate': [value: string]
   'update:landingHeroTitle': [value: string]
   'update:landingHeroSubtitle': [value: string]
+  'update:landingHeroTagline': [value: string]
   'update:landingPrimaryColor': [value: string]
   'update:landingHeroBgColor': [value: string]
   'update:landingHeroBgImage': [value: string]
@@ -234,6 +236,10 @@ const emit = defineEmits<{
         <Field>
           <FieldLabel for="landing-hero-subtitle">{{ t('config.landingHeroSubtitle') }}</FieldLabel>
           <Input id="landing-hero-subtitle" :model-value="landingHeroSubtitle" @update:model-value="$emit('update:landingHeroSubtitle', $event)" :placeholder="t('config.landingHeroSubtitleHint')" />
+        </Field>
+        <Field>
+          <FieldLabel for="landing-hero-tagline">{{ t('config.landingHeroTagline') }}</FieldLabel>
+          <Input id="landing-hero-tagline" :model-value="landingHeroTagline" @update:model-value="$emit('update:landingHeroTagline', $event)" :placeholder="t('config.landingHeroTaglineHint')" />
         </Field>
         <Field>
           <FieldLabel for="landing-primary-color">{{ t('config.landingPrimaryColor') }}</FieldLabel>

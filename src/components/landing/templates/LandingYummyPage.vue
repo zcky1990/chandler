@@ -32,6 +32,7 @@ const { t } = useI18n()
 
 const displayTitle = computed(() => props.heroTitle || t('config.landingYummyHero'))
 const displaySubtitle = computed(() => props.heroSubtitle || t('config.landingYummyHeroDesc'))
+const displayTagline = computed(() => props.heroTagline || t('config.landingYummyHeroLine2'))
 const menuCount = computed(() => props.products.length)
 const phoneDisplay = computed(() => props.contactPhone || props.shopPhone || '')
 const aboutImage = computed(() => props.aboutImageUrl || props.heroImageUrl)
@@ -83,13 +84,13 @@ const bookStyle = computed(() => landingSectionStyle(props.bookBgImage, props.bo
       <YummyNav :shop-name="shopName" :accent-color="primaryColor" :nav-logo-url="navLogoUrl" />
 
       <!-- Hero: light background like Yummy Red -->
-      <section id="hero" class="relative overflow-hidden px-6 py-16 md:py-24" :style="heroStyle">
+      <section id="hero" class="landing-fade-in relative overflow-hidden px-6 py-16 md:py-24" :style="heroStyle">
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,color-mix(in_srgb,var(--yummy-accent)_8%,transparent)_0%,transparent_50%)]" />
         <div class="relative z-10 mx-auto flex max-w-6xl flex-col items-center gap-12 lg:flex-row lg:gap-16">
-          <div class="flex-1 text-center lg:text-left">
+          <div class="landing-fade-up landing-delay-1 flex-1 text-center lg:text-left">
             <h1 class="mb-4 text-4xl leading-tight font-bold text-slate-800 md:text-5xl lg:text-6xl">
               {{ displayTitle }}<br />
-              <span :style="{ color: primaryColor }">{{ t('config.landingYummyHeroLine2') }}</span>
+              <span :style="{ color: primaryColor }">{{ displayTagline }}</span>
             </h1>
             <p class="mb-8 max-w-lg text-base leading-relaxed text-slate-500 md:text-lg">
               {{ displaySubtitle }}
@@ -116,7 +117,7 @@ const bookStyle = computed(() => landingSectionStyle(props.bookBgImage, props.bo
               </RouterLink>
             </div>
           </div>
-          <div class="flex-1">
+          <div class="landing-fade-up landing-delay-2 flex-1">
             <img
               v-if="heroImageUrl"
               :src="heroImageUrl"
@@ -137,7 +138,7 @@ const bookStyle = computed(() => landingSectionStyle(props.bookBgImage, props.bo
       <section
         v-if="aboutEnabled"
         id="about"
-        class="px-6 py-20"
+        class="landing-fade-up px-6 py-20"
         :style="aboutStyle"
       >
         <div class="mx-auto max-w-6xl">
@@ -195,7 +196,7 @@ const bookStyle = computed(() => landingSectionStyle(props.bookBgImage, props.bo
       <section
         v-if="whyEnabled"
         id="why-choose"
-        class="px-6 py-20"
+        class="landing-fade-up px-6 py-20"
         :style="whyStyle"
       >
         <div class="mx-auto max-w-6xl">

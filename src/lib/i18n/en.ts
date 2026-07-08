@@ -474,6 +474,8 @@ export const en = {
   'config.landingHeroTitleHint': 'Leave empty to use shop name',
   'config.landingHeroSubtitle': 'Hero Subtitle',
   'config.landingHeroSubtitleHint': 'Leave empty to use default text',
+  'config.landingHeroTagline': 'Hero Tagline',
+  'config.landingHeroTaglineHint': 'Leave empty to use default text',
   'config.landingPrimaryColor': 'Accent Color',
   'config.imageMustBeWebp': 'Only .webp images are allowed',
   'config.landingHeroUploaded': 'Hero image uploaded',

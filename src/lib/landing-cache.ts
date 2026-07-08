@@ -11,6 +11,7 @@ export type LandingPageLandingState = {
   heroImageUrl: string | null
   heroTitle: string | null
   heroSubtitle: string | null
+  heroTagline: string | null
   primaryColor: string
   heroBgColor: string
   heroBgImage: string | null
@@ -86,6 +87,7 @@ export function landingConfigToPageState(cfg: LandingTemplateConfig): LandingPag
     heroImageUrl: cfg.heroImageUrl,
     heroTitle: cfg.heroTitle,
     heroSubtitle: cfg.heroSubtitle,
+    heroTagline: cfg.heroTagline,
     primaryColor: cfg.primaryColor,
     heroBgColor: cfg.heroBgColor,
     heroBgImage: cfg.heroBgImage,

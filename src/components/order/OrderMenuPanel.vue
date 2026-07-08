@@ -69,7 +69,7 @@ const emit = defineEmits<{
         :key="product.id"
         class="gap-0 overflow-hidden py-0"
       >
-        <div class="relative aspect-[4/3] bg-muted/40">
+        <div class="relative h-44 w-full bg-muted/40">
           <img
             v-if="product.image_url"
             :src="product.image_url"

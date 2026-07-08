@@ -21,6 +21,7 @@ const { t } = useI18n()
 
 const displaySubtitle = computed(() => props.heroSubtitle || t('config.landingSpiceHavenHero'))
 const heroHeadline = computed(() => props.heroTitle || t('config.landingSpiceHavenHeroHeadline'))
+const displayTagline = computed(() => props.heroTagline)
 
 const heroStyle = computed(() => {
   if (props.heroBgImage?.trim()) {
@@ -47,7 +48,7 @@ const firstTestimonial = computed(() => props.testimonialsData?.[0] ?? null)
 <template>
   <ApplicationLayout show-staff-button>
     <div class="w-full bg-stone-950 text-amber-50">
-      <section id="hero" class="relative flex min-h-screen flex-col">
+      <section id="hero" class="landing-fade-in relative flex min-h-screen flex-col">
         <div
           v-if="heroImageUrl && !heroBgImage"
           class="absolute inset-0 bg-cover bg-center"
@@ -56,10 +57,9 @@ const firstTestimonial = computed(() => props.testimonialsData?.[0] ?? null)
         <div v-else class="absolute inset-0" :style="heroStyle" />
         <div class="absolute inset-0 bg-stone-950/60" />
         <SpiceHavenNav :shop-name="shopName" :accent-color="primaryColor" :nav-logo-url="navLogoUrl" />
-        <div class="relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-24 text-center">
-          <p class="mb-6 flex items-center gap-2 text-sm tracking-[0.3em] text-amber-200/80 uppercase">
-            <Sparkles class="size-4" />
-            {{ t('config.landingSpiceHavenEst') }}
+        <div class="landing-fade-up landing-delay-1 relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-24 text-center">
+          <p v-if="displayTagline" class="mb-4 text-sm font-semibold tracking-[0.2em] text-amber-400 uppercase">
+            {{ displayTagline }}
           </p>
           <h1 class="max-w-4xl font-serif text-5xl leading-tight font-light whitespace-pre-line md:text-6xl lg:text-7xl">
             {{ heroHeadline }}
@@ -126,7 +126,7 @@ const firstTestimonial = computed(() => props.testimonialsData?.[0] ?? null)
       />
 
       <section
-        class="px-6 py-20"
+        class="landing-fade-up px-6 py-20"
         :style="landingSectionStyle(bookBgImage, bookBgColor || primaryColor)"
       >
         <div class="mx-auto max-w-3xl text-center">

@@ -474,6 +474,8 @@ export const id = {
   'config.landingHeroTitleHint': 'Kosongkan untuk menggunakan nama toko',
   'config.landingHeroSubtitle': 'Subjudul Hero',
   'config.landingHeroSubtitleHint': 'Kosongkan untuk menggunakan teks default',
+  'config.landingHeroTagline': 'Tagline Hero',
+  'config.landingHeroTaglineHint': 'Kosongkan untuk menggunakan teks default',
   'config.landingPrimaryColor': 'Warna Aksen',
   'config.imageMustBeWebp': 'Hanya gambar .webp yang diizinkan',
   'config.landingHeroUploaded': 'Gambar hero terunggah',

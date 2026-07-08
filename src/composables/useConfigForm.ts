@@ -116,6 +116,7 @@ export function useConfigForm(options?: { confirm?: ConfirmFn }) {
   const landingHeroImage = ref<string | null>(null)
   const landingHeroTitle = ref('')
   const landingHeroSubtitle = ref('')
+  const landingHeroTagline = ref('')
   const landingPrimaryColor = ref('#0f172a')
   const landingHeroBgColor = ref('#ffffff')
   const landingHeroBgImage = ref('')
@@ -274,6 +275,7 @@ export function useConfigForm(options?: { confirm?: ConfirmFn }) {
     landingHeroPreview.value = config?.landing_hero_image_url ?? null
     landingHeroTitle.value = config?.landing_hero_title ?? ''
     landingHeroSubtitle.value = config?.landing_hero_subtitle ?? ''
+    landingHeroTagline.value = config?.landing_hero_tagline ?? ''
     landingPrimaryColor.value = config?.landing_primary_color
       || LANDING_TEMPLATE_PRESETS[(config?.landing_template || 'default') as LandingTemplate].defaults.primaryColor
     landingHeroBgColor.value = config?.landing_hero_bg_color
@@ -529,6 +531,7 @@ export function useConfigForm(options?: { confirm?: ConfirmFn }) {
       heroImageUrl: landingHeroImage.value || null,
       heroTitle: landingHeroTitle.value.trim() || null,
       heroSubtitle: landingHeroSubtitle.value.trim() || null,
+      heroTagline: landingHeroTagline.value.trim() || null,
       primaryColor: landingPrimaryColor.value,
       heroBgColor: landingHeroBgColor.value,
       heroBgImage: landingHeroBgImage.value.trim() || null,
@@ -601,6 +604,7 @@ export function useConfigForm(options?: { confirm?: ConfirmFn }) {
       landing_hero_image_url: landingHeroImage.value || null,
       landing_hero_title: landingHeroTitle.value.trim() || null,
       landing_hero_subtitle: landingHeroSubtitle.value.trim() || null,
+      landing_hero_tagline: landingHeroTagline.value.trim() || null,
       landing_primary_color: landingPrimaryColor.value,
       landing_hero_bg_color: landingHeroBgColor.value,
       landing_hero_bg_image: landingHeroBgImage.value.trim() || null,
@@ -1170,6 +1174,7 @@ export function useConfigForm(options?: { confirm?: ConfirmFn }) {
     landingHeroImage,
     landingHeroTitle,
     landingHeroSubtitle,
+    landingHeroTagline,
     landingPrimaryColor,
     landingHeroBgColor,
     landingHeroBgImage,
@@ -1269,7 +1274,7 @@ export function useConfigForm(options?: { confirm?: ConfirmFn }) {
     qrisPreview, logoPreview, landingHeroPreview, landingAboutPreview,
     transferForm, receiptForm, paymentFlowForm,
     menuCategoryCustom, menuCategoryIds, bookingForm, loyaltyForm, invoiceForm,
-    landingTemplate, landingHeroImage, landingHeroTitle, landingHeroSubtitle,
+    landingTemplate, landingHeroImage, landingHeroTitle, landingHeroSubtitle, landingHeroTagline,
     landingPrimaryColor, landingHeroBgColor, landingHeroBgImage,
     landingCarouselEnabled, landingCarouselMaxItems, landingCarouselTitle,
     landingCarouselBgColor, landingCarouselBgImage,

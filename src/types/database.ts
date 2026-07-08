@@ -286,6 +286,7 @@ export type ShopConfig = {
   landing_hero_image_url: string | null
   landing_hero_title: string | null
   landing_hero_subtitle: string | null
+  landing_hero_tagline: string | null
   landing_primary_color: string
   landing_carousel_enabled: boolean
   landing_carousel_max_items: number
@@ -387,6 +388,7 @@ export type ShopConfigInput = {
   landing_hero_image_url?: string | null
   landing_hero_title?: string | null
   landing_hero_subtitle?: string | null
+  landing_hero_tagline?: string | null
   landing_primary_color?: string
   landing_carousel_enabled?: boolean
   landing_carousel_max_items?: number
@@ -481,6 +483,7 @@ export type LandingTemplateConfig = {
   heroImageUrl: string | null
   heroTitle: string | null
   heroSubtitle: string | null
+  heroTagline: string | null
   primaryColor: string
   carouselEnabled: boolean
   carouselMaxItems: number

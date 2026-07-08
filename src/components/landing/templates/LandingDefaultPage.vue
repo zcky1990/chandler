@@ -17,6 +17,7 @@ const { t } = useI18n()
 
 const displayTitle = computed(() => props.heroTitle || props.shopName)
 const displaySubtitle = computed(() => props.heroSubtitle || t('config.landingDefaultHero'))
+const displayTagline = computed(() => props.heroTagline || t('config.landingDefaultBadge'))
 
 const heroStyle = computed(() => {
   if (props.heroBgImage?.trim()) {
@@ -39,17 +40,17 @@ const ctaBackground = computed(() => {
     <div class="w-full text-[var(--landing-text)]">
       <section
         id="hero"
-        class="relative flex min-h-[85vh] flex-col overflow-hidden"
+        class="landing-fade-in relative flex min-h-[85vh] flex-col overflow-hidden"
         :style="heroStyle"
       >
         <DefaultNav :shop-name="shopName" :accent-color="primaryColor" :nav-logo-url="navLogoUrl" />
         <div class="relative z-10 flex flex-1 items-center px-6 py-16">
           <div class="absolute inset-0 bg-[radial-gradient(circle_at_60%_50%,rgba(255,255,255,0.06)_0%,transparent_60%)]" />
           <div class="relative mx-auto flex w-full max-w-6xl flex-col-reverse items-center gap-12 lg:flex-row lg:gap-16">
-            <div class="flex-1 text-center lg:text-left">
+            <div class="landing-fade-up landing-delay-1 flex-1 text-center lg:text-left">
               <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm text-white/80 backdrop-blur-sm">
                 <Star class="size-3.5 fill-amber-400 text-amber-400" />
-                <span>{{ t('config.landingDefaultBadge') }}</span>
+                <span>{{ displayTagline }}</span>
               </div>
               <h1 class="mb-6 text-4xl font-bold tracking-tight text-white md:text-5xl lg:text-7xl">
                 {{ displayTitle }}
@@ -72,7 +73,7 @@ const ctaBackground = computed(() => {
                 </RouterLink>
               </div>
             </div>
-            <div class="flex-1">
+            <div class="landing-fade-up landing-delay-2 flex-1">
               <div class="relative mx-auto max-w-md lg:max-w-none">
                 <div class="absolute -inset-4 rounded-3xl bg-white/10 blur-xl" />
                 <img
@@ -93,7 +94,7 @@ const ctaBackground = computed(() => {
         </div>
       </section>
 
-      <section id="features" class="border-b px-6 py-20" style="background-color: var(--landing-surface)">
+      <section id="features" class="landing-fade-up border-b px-6 py-20" style="background-color: var(--landing-surface)">
         <div class="mx-auto max-w-6xl">
           <div class="mb-12 text-center">
             <p class="mb-2 text-sm font-semibold tracking-widest uppercase" style="color: var(--landing-muted)">
@@ -160,7 +161,7 @@ const ctaBackground = computed(() => {
         :bg-image="carouselBgImage"
       />
 
-      <section class="px-6 py-20" :style="{ background: ctaBackground }">
+      <section class="landing-fade-up px-6 py-20" :style="{ background: ctaBackground }">
         <div class="mx-auto max-w-3xl text-center">
           <h2 class="mb-4 text-3xl font-bold tracking-tight text-white">{{ t('config.landingDefaultCta') }}</h2>
           <p class="mb-8 text-lg text-white/70">{{ t('config.landingDefaultCtaDesc') }}</p>
