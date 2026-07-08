@@ -47,7 +47,7 @@ watch(() => [props.mapLat, props.mapLng, props.mapZoom], () => {
 </script>
 
 <template>
-  <section id="contact" class="px-6 py-20" :style="sectionStyle">
+  <section id="contact" class="landing-fade-up px-6 py-20" :style="sectionStyle">
     <div class="mx-auto max-w-6xl">
       <SarabSectionHeading
         :label="t('config.landingContactLabel')"

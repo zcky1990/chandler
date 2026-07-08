@@ -30,8 +30,8 @@ defineProps<{
       <div
         v-for="(url, idx) in images"
         :key="idx"
-        class="group relative aspect-square overflow-hidden rounded-xl border border-[var(--landing-border,#e2e8f0)]"
-      >
+        class="landing-stagger group relative aspect-square overflow-hidden rounded-xl border border-[var(--landing-border,#e2e8f0)]"
+        :style="{ '--i': idx }">
         <img
           :src="url"
           :alt="`Gallery ${idx + 1}`"

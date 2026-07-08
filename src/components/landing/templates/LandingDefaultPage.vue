@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import { ArrowRight, UtensilsCrossed, Clock, Star, MapPin, Phone, ChefHat, Users, Leaf } from '@lucide/vue'
+import { ArrowRight, UtensilsCrossed, Clock, Star, MapPin, Phone, ChefHat, Users, Leaf, Check } from '@lucide/vue'
 import ApplicationLayout from '@/layouts/ApplicationLayout.vue'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/composables/useI18n'
@@ -33,6 +33,46 @@ const ctaBackground = computed(() => {
   const c = props.primaryColor
   return `linear-gradient(135deg, color-mix(in srgb, ${c} 85%, #000) 0%, color-mix(in srgb, ${c} 60%, #000) 100%)`
 })
+
+const aboutImage = computed(() => props.aboutImageUrl || props.heroImageUrl)
+const aboutStyle = computed(() => landingSectionStyle(props.aboutBgImage, props.aboutBgColor))
+const whyStyle = computed(() => landingSectionStyle(props.whyBgImage, props.whyBgColor))
+
+const aboutBulletsList = computed(() => {
+  if (props.aboutBullets?.length) return props.aboutBullets
+  return [
+    t('config.landingYummyAboutBullet1'),
+    t('config.landingYummyAboutBullet2'),
+    t('config.landingYummyAboutBullet3'),
+  ]
+})
+
+const whyFeaturesList = computed(() => {
+  if (props.whyFeatures?.length) return props.whyFeatures
+  return [
+    { title: t('config.landingYummyFeat1Title'), description: t('config.landingYummyFeat1Desc') },
+    { title: t('config.landingYummyFeat2Title'), description: t('config.landingYummyFeat2Desc') },
+    { title: t('config.landingYummyFeat3Title'), description: t('config.landingYummyFeat3Desc') },
+  ]
+})
+
+const whyStatsList = computed(() => {
+  if (props.whyStats?.length) {
+    return props.whyStats.map((stat) => ({
+      value: stat.value === '{menuCount}' ? `${menuCount.value}+` : stat.value,
+      label: stat.label,
+    }))
+  }
+  return [
+    { value: '850+', label: t('config.landingYummyStat1') },
+    { value: `${menuCount.value}+`, label: t('config.landingYummyStat2') },
+    { value: '15+', label: t('config.landingYummyStat3') },
+    { value: '12 yr', label: t('config.landingYummyStat4') },
+  ]
+})
+
+const menuCount = computed(() => props.products.length)
+const featureIcons = [ChefHat, Users, Leaf]
 </script>
 
 <template>
@@ -89,6 +129,95 @@ const ctaBackground = computed(() => {
                   <UtensilsCrossed class="size-20 text-white/30" />
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        v-if="aboutEnabled"
+        id="about"
+        class="landing-fade-up px-6 py-20"
+        :style="aboutStyle"
+      >
+        <div class="mx-auto max-w-6xl">
+          <div class="mb-12 text-center">
+            <p class="mb-2 text-sm font-semibold tracking-widest uppercase" style="color: var(--landing-muted)">
+              {{ aboutLabel || t('config.landingDefaultAbout') }}
+            </p>
+            <h2 class="text-3xl font-bold tracking-tight" style="color: var(--landing-heading)">
+              {{ aboutTitle || t('config.landingDefaultAboutTitle') }}
+            </h2>
+          </div>
+          <div class="grid items-center gap-12 lg:grid-cols-2">
+            <div class="overflow-hidden rounded-xl">
+              <img
+                v-if="aboutImage"
+                :src="aboutImage"
+                :alt="shopName"
+                class="h-full min-h-[320px] w-full object-cover"
+              />
+              <div
+                v-else
+                class="flex min-h-[320px] items-center justify-center rounded-xl bg-muted/40"
+              >
+                <UtensilsCrossed class="size-16 text-muted-foreground/40" />
+              </div>
+            </div>
+            <div>
+              <p class="mb-6 leading-relaxed" style="color: var(--landing-muted)">
+                {{ aboutDescription || t('config.landingDefaultAboutDesc') }}
+              </p>
+              <ul class="mb-8 space-y-3">
+                <li
+                  v-for="(bullet, idx) in aboutBulletsList"
+                  :key="idx"
+                  class="flex gap-3 text-sm"
+                  style="color: var(--landing-muted)"
+                >
+                  <Check class="mt-0.5 size-4 shrink-0" :style="{ color: primaryColor }" />
+                  <span>{{ bullet }}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        v-if="whyEnabled"
+        id="why-choose"
+        class="landing-fade-up border-b px-6 py-20"
+        :style="whyStyle"
+      >
+        <div class="mx-auto max-w-6xl">
+          <div class="mb-12 text-center">
+            <p class="mb-2 text-sm font-semibold tracking-widest uppercase" style="color: var(--landing-muted)">
+              {{ whyLabel || t('config.landingDefaultWhy') }}
+            </p>
+            <h2 class="text-3xl font-bold tracking-tight" style="color: var(--landing-heading)">
+              {{ whyTitle || t('config.landingDefaultWhy') }}
+            </h2>
+            <p v-if="whyDescription" class="mt-3 max-w-2xl mx-auto" style="color: var(--landing-muted)">
+              {{ whyDescription }}
+            </p>
+          </div>
+          <div class="grid gap-6 sm:grid-cols-3">
+            <div
+              v-for="(feat, idx) in whyFeaturesList"
+              :key="feat.title"
+              class="rounded-2xl border p-6 text-center transition-shadow hover:shadow-lg"
+              :style="{ borderColor: 'var(--landing-border)', backgroundColor: 'var(--landing-surface)' }"
+            >
+              <component :is="featureIcons[idx % featureIcons.length]" class="mx-auto mb-4 size-8" :style="{ color: primaryColor }" />
+              <h3 class="mb-2 font-semibold" style="color: var(--landing-heading)">{{ feat.title }}</h3>
+              <p class="text-sm leading-relaxed" style="color: var(--landing-muted)">{{ feat.description }}</p>
+            </div>
+          </div>
+          <div v-if="whyStatsList.length > 0" class="mt-12 grid gap-6 rounded-2xl border px-6 py-10 sm:grid-cols-4" :style="{ borderColor: 'var(--landing-border)', backgroundColor: 'var(--landing-surface)' }">
+            <div v-for="stat in whyStatsList" :key="stat.label" class="text-center">
+              <p class="text-3xl font-bold" :style="{ color: primaryColor }">{{ stat.value }}</p>
+              <p class="mt-1 text-sm" style="color: var(--landing-muted)">{{ stat.label }}</p>
             </div>
           </div>
         </div>

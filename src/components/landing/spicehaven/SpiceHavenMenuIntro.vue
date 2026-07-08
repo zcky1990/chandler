@@ -18,7 +18,7 @@ const sectionStyle = computed(() => landingSectionStyle(props.bgImage, props.bgC
 </script>
 
 <template>
-  <section id="menu" class="px-6 py-24" :style="sectionStyle">
+  <section id="menu" class="landing-fade-up px-6 py-24" :style="sectionStyle">
     <div class="mx-auto grid max-w-6xl items-center gap-16 lg:grid-cols-2">
       <div>
         <p class="mb-4 text-sm font-semibold tracking-[0.25em] text-amber-500 uppercase">

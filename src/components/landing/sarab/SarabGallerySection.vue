@@ -19,7 +19,7 @@ const sectionStyle = computed(() => landingSectionStyle(props.bgImage, props.bgC
 </script>
 
 <template>
-  <section id="gallery" class="px-6 py-20" :style="sectionStyle">
+  <section id="gallery" class="landing-fade-up px-6 py-20" :style="sectionStyle">
     <div class="mx-auto max-w-6xl">
       <SarabSectionHeading
         :label="t('config.landingGalleryLabel')"
@@ -30,9 +30,10 @@ const sectionStyle = computed(() => landingSectionStyle(props.bgImage, props.bgC
         <div
           v-for="(url, idx) in images"
           :key="idx"
-          class="group relative aspect-[4/5] overflow-hidden rounded-xl bg-zinc-800"
+          class="landing-stagger group relative aspect-[4/5] overflow-hidden rounded-xl bg-zinc-800"
+          :style="{ '--i': idx }"
         >
-          <img :src="url" :alt="`Gallery ${idx + 1}`" class="h-full w-full object-cover transition-transform group-hover:scale-110" />
+          <img :src="url" :alt="`Gallery ${idx + 1}`" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
         </div>
       </div>
       <p v-if="images.length === 0" class="py-8 text-center text-sm text-zinc-500">{{ t('config.landingGalleryEmpty') }}</p>

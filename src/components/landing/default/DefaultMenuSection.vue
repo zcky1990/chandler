@@ -23,7 +23,7 @@ const items = computed(() => props.products.slice(0, props.maxItems))
 </script>
 
 <template>
-  <section id="menu" class="px-6 py-20" :style="sectionStyle">
+  <section id="menu" class="landing-fade-up px-6 py-20" :style="sectionStyle">
     <div class="mx-auto max-w-6xl">
       <div class="mb-12 text-center">
         <p class="mb-2 text-sm font-semibold tracking-widest uppercase" style="color: var(--landing-muted)">
@@ -36,11 +36,11 @@ const items = computed(() => props.products.slice(0, props.maxItems))
       </div>
       <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <RouterLink
-          v-for="product in items"
+          v-for="(product, idx) in items"
           :key="product.id"
           to="/order"
-          class="group overflow-hidden rounded-2xl border shadow-sm transition-shadow hover:shadow-lg"
-          style="border-color: var(--landing-border); background-color: var(--landing-surface)"
+          class="landing-stagger group overflow-hidden rounded-2xl border shadow-sm transition-shadow hover:shadow-lg hover:-translate-y-0.5"
+          :style="{ '--i': idx, borderColor: 'var(--landing-border)', backgroundColor: 'var(--landing-surface)' }"
         >
           <div class="relative h-44 overflow-hidden bg-slate-100">
             <img

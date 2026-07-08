@@ -16,7 +16,7 @@ const sectionStyle = computed(() => landingSectionStyle(props.bgImage, props.bgC
 </script>
 
 <template>
-  <section id="moments" class="px-6 py-20" :style="sectionStyle">
+  <section id="moments" class="landing-fade-up px-6 py-20" :style="sectionStyle">
     <div class="mx-auto max-w-6xl text-center">
       <p class="mb-2 text-sm tracking-[0.25em] text-amber-500 uppercase">
         {{ t('config.landingSpiceHavenMoments') }}
@@ -29,8 +29,8 @@ const sectionStyle = computed(() => landingSectionStyle(props.bgImage, props.bgC
         <div
           v-for="(url, idx) in images"
           :key="idx"
-          class="group relative aspect-square overflow-hidden bg-stone-800"
-        >
+          class="landing-stagger group relative aspect-square overflow-hidden bg-stone-800"
+          :style="{ '--i': idx }">
           <img
             :src="url"
             :alt="`Moment ${idx + 1}`"

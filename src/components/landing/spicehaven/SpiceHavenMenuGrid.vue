@@ -22,18 +22,18 @@ const items = computed(() => props.products.slice(0, props.maxItems))
 </script>
 
 <template>
-  <section class="px-6 py-20" :style="sectionStyle">
+  <section class="landing-fade-up px-6 py-20" :style="sectionStyle">
     <div class="mx-auto max-w-6xl">
       <p class="mb-10 text-center text-sm tracking-[0.25em] text-amber-500 uppercase">
         {{ title || t('config.landingSpiceHavenMenuLabel') }}
       </p>
       <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <RouterLink
-          v-for="product in items"
+          v-for="(product, idx) in items"
           :key="product.id"
           to="/order"
-          class="group border border-amber-900/20 bg-stone-900/50 transition-colors hover:border-amber-500/40"
-        >
+          class="landing-stagger group border border-amber-900/20 bg-stone-900/50 transition-colors hover:border-amber-500/40 hover:-translate-y-0.5"
+          :style="{ '--i': idx }">
           <div class="relative h-48 overflow-hidden bg-stone-800">
             <img
               v-if="product.image_url"

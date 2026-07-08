@@ -20,7 +20,7 @@ const rating = computed(() => props.testimonial?.rating ?? 5)
 </script>
 
 <template>
-  <section class="px-6 py-20" :style="sectionStyle">
+  <section class="landing-fade-up px-6 py-20" :style="sectionStyle">
     <blockquote class="mx-auto max-w-3xl text-center">
       <p class="font-serif text-2xl leading-relaxed text-amber-100/90 italic md:text-3xl">
         &ldquo;{{ quote }}&rdquo;

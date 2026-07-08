@@ -281,7 +281,7 @@ const bookStyle = computed(() => landingSectionStyle(props.bookBgImage, props.bo
       />
 
       <!-- Book A Table -->
-      <section id="book" class="px-6 py-20" :style="bookStyle">
+      <section id="book" class="landing-fade-up px-6 py-20" :style="bookStyle">
         <div class="mx-auto max-w-3xl text-center">
           <YummySectionHeading
             :label="t('config.landingYummyBookSectionTitle')"
@@ -326,7 +326,7 @@ const bookStyle = computed(() => landingSectionStyle(props.bookBgImage, props.bo
       />
 
       <!-- Footer -->
-      <footer class="bg-slate-900 px-6 py-14 text-slate-300">
+      <footer class="landing-fade-up bg-slate-900 px-6 py-14 text-slate-300">
         <div class="mx-auto grid max-w-6xl gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <h4 class="mb-4 font-bold text-white">{{ t('config.landingContactAddress') }}</h4>

@@ -31,7 +31,7 @@ const placeholderGradients = [
 </script>
 
 <template>
-  <section id="events" class="events-section px-6 py-20" :style="sectionStyle">
+  <section id="events" class="landing-fade-up events-section px-6 py-20" :style="sectionStyle">
     <div class="mx-auto max-w-6xl">
       <YummySectionHeading
         v-if="showHeading"
@@ -48,8 +48,8 @@ const placeholderGradients = [
         <article
           v-for="(item, idx) in items"
           :key="idx"
-          class="event-card group flex h-full flex-col overflow-hidden rounded-sm bg-white shadow-[0_0_30px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
-        >
+          class="landing-stagger event-card group flex h-full flex-col overflow-hidden rounded-sm bg-white shadow-[0_0_30px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
+          :style="{ '--i': idx }">
           <div class="relative h-52 shrink-0 overflow-hidden">
             <img
               v-if="item.image_url"
