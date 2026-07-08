@@ -57,11 +57,12 @@ const categoryBgColor = computed(() => props.carouselBgColor || '#09090b')
 <template>
   <ApplicationLayout show-staff-button>
     <div class="w-full bg-zinc-950 text-white">
+      <div class="landing-scroll-progress fixed top-0 right-0 left-0 z-[60] h-0.5 origin-left scale-x-0" :style="{ backgroundColor: primaryColor }" />
       <section id="hero" class="landing-fade-in relative overflow-hidden" :style="heroStyle">
-        <div class="absolute inset-0 bg-gradient-to-br from-zinc-950/80 via-zinc-900/60 to-orange-950/30" />
+        <div class="landing-parallax absolute inset-0 bg-gradient-to-br from-zinc-950/80 via-zinc-900/60 to-orange-950/30" />
         <SarabNav :shop-name="shopName" :accent-color="primaryColor" :nav-logo-url="navLogoUrl" />
         <div class="relative z-10 mx-auto flex max-w-6xl flex-col items-center gap-12 px-6 py-20 lg:flex-row lg:py-28">
-          <div class="landing-fade-up landing-delay-1 flex-1 text-center lg:text-left">
+          <div class="landing-hero-choreo landing-fade-up landing-delay-1 flex-1 text-center lg:text-left">
             <p class="mb-3 text-sm font-semibold tracking-widest text-orange-400 uppercase">
               {{ displayTagline }}
             </p>

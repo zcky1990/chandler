@@ -78,6 +78,7 @@ const featureIcons = [ChefHat, Users, Leaf]
 <template>
   <ApplicationLayout show-staff-button>
     <div class="w-full text-[var(--landing-text)]">
+      <div class="landing-scroll-progress fixed top-0 right-0 left-0 z-[60] h-0.5 origin-left scale-x-0" :style="{ backgroundColor: primaryColor }" />
       <section
         id="hero"
         class="landing-fade-in relative flex min-h-[85vh] flex-col overflow-hidden"
@@ -87,7 +88,7 @@ const featureIcons = [ChefHat, Users, Leaf]
         <div class="relative z-10 flex flex-1 items-center px-6 py-16">
           <div class="absolute inset-0 bg-[radial-gradient(circle_at_60%_50%,rgba(255,255,255,0.06)_0%,transparent_60%)]" />
           <div class="relative mx-auto flex w-full max-w-6xl flex-col-reverse items-center gap-12 lg:flex-row lg:gap-16">
-            <div class="landing-fade-up landing-delay-1 flex-1 text-center lg:text-left">
+            <div class="landing-hero-choreo landing-fade-up landing-delay-1 flex-1 text-center lg:text-left">
               <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm text-white/80 backdrop-blur-sm">
                 <Star class="size-3.5 fill-amber-400 text-amber-400" />
                 <span>{{ displayTagline }}</span>
@@ -216,7 +217,7 @@ const featureIcons = [ChefHat, Users, Leaf]
           </div>
           <div v-if="whyStatsList.length > 0" class="mt-12 grid gap-6 rounded-2xl border px-6 py-10 sm:grid-cols-4" :style="{ borderColor: 'var(--landing-border)', backgroundColor: 'var(--landing-surface)' }">
             <div v-for="stat in whyStatsList" :key="stat.label" class="text-center">
-              <p class="text-3xl font-bold" :style="{ color: primaryColor }">{{ stat.value }}</p>
+              <p class="landing-counter text-3xl font-bold" :style="{ color: primaryColor }">{{ stat.value }}</p>
               <p class="mt-1 text-sm" style="color: var(--landing-muted)">{{ stat.label }}</p>
             </div>
           </div>

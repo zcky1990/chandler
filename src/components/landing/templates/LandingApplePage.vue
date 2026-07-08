@@ -71,11 +71,12 @@ const featureIcons = [ChefHat, Users, Leaf]
 <template>
   <ApplicationLayout show-staff-button>
     <div class="w-full bg-white text-[#1d1d1f]">
+      <div class="landing-scroll-progress fixed top-0 right-0 left-0 z-[60] h-0.5 origin-left scale-x-0" :style="{ backgroundColor: primaryColor }" />
       <AppleNav :shop-name="shopName" :accent-color="primaryColor" :nav-logo-url="navLogoUrl" />
 
       <section id="hero" class="landing-fade-in relative min-h-[90vh] overflow-hidden bg-black" :style="heroStyle">
         <div class="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black" />
-        <div class="relative z-10 mx-auto flex min-h-[90vh] max-w-7xl flex-col items-center justify-center px-6 py-32 text-center">
+        <div class="landing-hero-choreo relative z-10 mx-auto flex min-h-[90vh] max-w-7xl flex-col items-center justify-center px-6 py-32 text-center">
           <p class="mb-6 text-xs font-semibold tracking-[0.15em] text-white/40 uppercase">
             {{ displayTagline }}
           </p>
@@ -99,7 +100,7 @@ const featureIcons = [ChefHat, Users, Leaf]
             </RouterLink>
           </div>
         </div>
-        <div v-if="heroImageUrl" class="absolute inset-0 z-0">
+        <div v-if="heroImageUrl" class="landing-parallax absolute inset-0 z-0">
           <img :src="heroImageUrl" alt="" class="h-full w-full object-cover opacity-50" />
         </div>
       </section>
@@ -180,7 +181,7 @@ const featureIcons = [ChefHat, Users, Leaf]
           </div>
           <div v-if="whyStatsList.length > 0" class="mt-16 grid gap-8 rounded-2xl border border-[#d2d2d7] bg-white px-8 py-12 sm:grid-cols-3">
             <div v-for="stat in whyStatsList" :key="stat.label" class="text-center">
-              <p class="text-4xl font-bold" :style="{ color: primaryColor }">{{ stat.value }}</p>
+              <p class="landing-counter text-4xl font-bold" :style="{ color: primaryColor }">{{ stat.value }}</p>
               <p class="mt-2 text-sm text-[#86868b]">{{ stat.label }}</p>
             </div>
           </div>

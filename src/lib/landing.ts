@@ -4,6 +4,7 @@ import sarabThumb from '@/assets/satab-thumbnail.webp'
 import spiceThumb from '@/assets/spice-thumbnail.webp'
 import yummyThumb from '@/assets/yummy-thumbnail.webp'
 import appleThumb from '@/assets/apple-thumbnail.webp'
+import fugaThumb from '@/assets/fuga-thumbnail.webp'
 
 const LANDING_SECTION_BG_LIGHT = {
   heroBgColor: '#ffffff',
@@ -56,6 +57,28 @@ const LANDING_ABOUT_WHY_SPICE_DISABLED = {
   ...LANDING_ABOUT_WHY_LIGHT_DISABLED,
   aboutBgColor: '#0c0a09',
   whyBgColor: '#1c1917',
+}
+
+const LANDING_ABOUT_WHY_FUGA = {
+  aboutEnabled: true,
+  aboutLabel: null as string | null,
+  aboutTitle: null as string | null,
+  aboutDescription: null as string | null,
+  aboutImageUrl: null as string | null,
+  aboutBullets: null as string[] | null,
+  aboutBgColor: '#0f172a',
+  whyEnabled: true,
+  whyLabel: null as string | null,
+  whyTitle: null as string | null,
+  whyDescription: null as string | null,
+  whyFeatures: null as LandingFeatureItem[] | null,
+  whyStats: null as LandingStatItem[] | null,
+  whyBgColor: '#1e293b',
+}
+
+const LANDING_SECTION_BG_FUGA = {
+  ...LANDING_SECTION_BG_LIGHT,
+  heroBgColor: '#0f172a',
 }
 
 const LANDING_ABOUT_WHY_APPLE = {
@@ -136,6 +159,21 @@ export const LANDING_TEMPLATE_PRESETS: Record<LandingTemplate, LandingTemplatePr
       contactMapLat: -6.2088, contactMapLng: 106.8456, contactMapZoom: 15, contactBgColor: '#0c0a09',
       ...LANDING_SECTION_BG_SPICE,
       ...LANDING_ABOUT_WHY_SPICE_DISABLED,
+    },
+  },
+  fuga: {
+    label: 'Fuga',
+    thumbnail: fugaThumb,
+    defaults: {
+      heroImageUrl: null, heroTitle: null, heroSubtitle: null, heroTagline: null, primaryColor: '#2563eb',
+      carouselEnabled: true, carouselMaxItems: 6, carouselTitle: null, carouselBgColor: '#1e293b',
+      testimonialsEnabled: false, testimonialsTitle: null, testimonialsData: null, testimonialsBgColor: '#1e293b',
+      servicesEnabled: false, servicesTitle: null, servicesSubtitle: null, servicesWhatsapp: null, servicesData: null, servicesBgColor: '#0f172a',
+      galleryEnabled: false, galleryTitle: null, gallerySubtitle: null, galleryImages: null, galleryBgColor: '#1e293b',
+      contactEnabled: false, contactTitle: null, contactSubtitle: null, contactAddress: null, contactPhone: null, contactEmail: null,
+      contactMapLat: -6.2088, contactMapLng: 106.8456, contactMapZoom: 15, contactBgColor: '#0f172a',
+      ...LANDING_SECTION_BG_FUGA,
+      ...LANDING_ABOUT_WHY_FUGA,
     },
   },
   apple: {

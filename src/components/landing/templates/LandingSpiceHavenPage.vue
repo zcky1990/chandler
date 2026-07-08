@@ -68,20 +68,21 @@ function servicesWaLink(text: string) {
 <template>
   <ApplicationLayout show-staff-button>
     <div class="w-full bg-stone-950 text-amber-50">
+      <div class="landing-scroll-progress fixed top-0 right-0 left-0 z-[60] h-0.5 origin-left scale-x-0" :style="{ backgroundColor: primaryColor }" />
       <section id="hero" class="landing-fade-in relative flex min-h-screen flex-col">
         <div
           v-if="heroImageUrl && !heroBgImage"
-          class="absolute inset-0 bg-cover bg-center"
+          class="landing-parallax absolute inset-0 bg-cover bg-center"
           :style="{ backgroundImage: `url(${heroImageUrl})` }"
         />
-        <div v-else class="absolute inset-0" :style="heroStyle" />
+        <div v-else class="landing-parallax absolute inset-0" :style="heroStyle" />
         <div class="absolute inset-0 bg-stone-950/60" />
         <SpiceHavenNav :shop-name="shopName" :accent-color="primaryColor" :nav-logo-url="navLogoUrl" />
-        <div class="landing-fade-up landing-delay-1 relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-24 text-center">
+        <div class="landing-hero-choreo landing-fade-up landing-delay-1 relative z-10 flex flex-1 flex-col items-center justify-center px-6 py-24 text-center">
           <p v-if="displayTagline" class="mb-4 text-sm font-semibold tracking-[0.2em] text-amber-400 uppercase">
             {{ displayTagline }}
           </p>
-          <h1 class="max-w-4xl font-serif text-5xl leading-tight font-light whitespace-pre-line md:text-6xl lg:text-7xl">
+          <h1 class="landing-text-reveal max-w-4xl font-serif text-5xl leading-tight font-light whitespace-pre-line md:text-6xl lg:text-7xl">
             {{ heroHeadline }}
           </h1>
           <p class="mt-6 max-w-2xl text-lg text-amber-100/70">

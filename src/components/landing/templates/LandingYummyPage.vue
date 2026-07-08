@@ -81,14 +81,15 @@ const bookStyle = computed(() => landingSectionStyle(props.bookBgImage, props.bo
 <template>
   <ApplicationLayout show-staff-button>
     <div class="yummy-page w-full bg-[#f9f9f9] text-slate-700">
+      <div class="landing-scroll-progress fixed top-0 right-0 left-0 z-[60] h-0.5 origin-left scale-x-0" :style="{ backgroundColor: primaryColor }" />
       <YummyNav :shop-name="shopName" :accent-color="primaryColor" :nav-logo-url="navLogoUrl" />
 
       <!-- Hero: light background like Yummy Red -->
       <section id="hero" class="landing-fade-in relative overflow-hidden px-6 py-16 md:py-24" :style="heroStyle">
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,color-mix(in_srgb,var(--yummy-accent)_8%,transparent)_0%,transparent_50%)]" />
         <div class="relative z-10 mx-auto flex max-w-6xl flex-col items-center gap-12 lg:flex-row lg:gap-16">
-          <div class="landing-fade-up landing-delay-1 flex-1 text-center lg:text-left">
-            <h1 class="mb-4 text-4xl leading-tight font-bold text-slate-800 md:text-5xl lg:text-6xl">
+          <div class="landing-hero-choreo landing-fade-up landing-delay-1 flex-1 text-center lg:text-left">
+            <h1 class="landing-text-reveal mb-4 text-4xl leading-tight font-bold text-slate-800 md:text-5xl lg:text-6xl">
               {{ displayTitle }}<br />
               <span :style="{ color: primaryColor }">{{ displayTagline }}</span>
             </h1>
@@ -230,7 +231,7 @@ const bookStyle = computed(() => landingSectionStyle(props.bookBgImage, props.bo
 
           <div class="grid grid-cols-2 gap-6 rounded-lg bg-white px-6 py-10 shadow-sm md:grid-cols-4">
             <div v-for="stat in whyStatsList" :key="stat.label" class="text-center">
-              <p class="text-3xl font-bold md:text-4xl" :style="{ color: primaryColor }">{{ stat.value }}</p>
+              <p class="landing-counter text-3xl font-bold md:text-4xl" :style="{ color: primaryColor }">{{ stat.value }}</p>
               <p class="mt-2 text-sm text-slate-500">{{ stat.label }}</p>
             </div>
           </div>
