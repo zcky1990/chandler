@@ -42,8 +42,8 @@ function waLink(text: string) {
       <div
         v-for="(item, idx) in items"
         :key="idx"
-        class="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-lg"
-      >
+        class="landing-stagger group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-lg hover:-translate-y-0.5"
+        :style="{ '--i': idx }">
         <div class="relative h-52 overflow-hidden">
           <img
             v-if="item.image_url"

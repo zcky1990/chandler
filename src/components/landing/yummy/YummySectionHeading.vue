@@ -8,9 +8,9 @@ defineProps<{
 </script>
 
 <template>
-  <div class="mb-10 text-center">
+  <div class="landing-fade-up mb-10 text-center">
     <p
-      class="yummy-section-label mb-2 text-sm font-semibold tracking-[0.2em] uppercase"
+      class="yummy-section-label mb-2 text-sm font-semibold"
       :class="light ? 'text-white/70' : 'text-slate-500'"
       :style="!light ? { color: accentColor } : undefined"
     >

@@ -27,7 +27,8 @@ defineProps<{
       <div
         v-for="(item, idx) in testimonials"
         :key="idx"
-        class="relative flex flex-col rounded-2xl border border-[var(--landing-border,#e2e8f0)] bg-[var(--landing-surface,#ffffff)] p-6 shadow-sm"
+        class="landing-stagger relative flex flex-col rounded-2xl border border-[var(--landing-border,#e2e8f0)] bg-[var(--landing-surface,#ffffff)] p-6 shadow-sm transition-shadow hover:shadow-md"
+        :style="{ '--i': idx }"
       >
         <Quote class="absolute right-4 top-4 size-8 opacity-10" :style="{ color: accentColor }" />
 

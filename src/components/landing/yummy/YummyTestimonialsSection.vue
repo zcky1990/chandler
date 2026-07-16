@@ -35,7 +35,7 @@ const sectionStyle = computed(() => landingSectionStyle(props.bgImage, props.bgC
 </script>
 
 <template>
-  <section id="testimonials" class="px-6 py-20" :style="sectionStyle">
+  <section id="testimonials" class="landing-fade-up px-6 py-20" :style="sectionStyle">
     <div class="mx-auto max-w-4xl">
       <YummySectionHeading
         :label="t('config.landingTestimonialsLabel')"

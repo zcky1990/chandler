@@ -19,7 +19,7 @@ const sectionStyle = computed(() => landingSectionStyle(props.bgImage, props.bgC
 </script>
 
 <template>
-  <section id="gallery" class="px-6 py-20" :style="sectionStyle">
+  <section id="gallery" class="landing-fade-up px-6 py-20" :style="sectionStyle">
     <div class="mx-auto max-w-6xl">
       <YummySectionHeading
         :label="t('config.landingGalleryLabel')"
@@ -34,8 +34,8 @@ const sectionStyle = computed(() => landingSectionStyle(props.bgImage, props.bgC
         <div
           v-for="(url, idx) in images"
           :key="idx"
-          class="group relative aspect-square overflow-hidden bg-slate-100"
-        >
+          class="landing-stagger group relative aspect-square overflow-hidden bg-slate-100"
+          :style="{ '--i': idx }">
           <img
             :src="url"
             :alt="`Gallery ${idx + 1}`"

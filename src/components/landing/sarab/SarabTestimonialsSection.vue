@@ -32,7 +32,7 @@ function next() {
 </script>
 
 <template>
-  <section id="reviews" class="px-6 py-20" :style="sectionStyle">
+  <section id="reviews" class="landing-fade-up px-6 py-20" :style="sectionStyle">
     <div class="mx-auto max-w-4xl">
       <SarabSectionHeading
         :label="t('config.landingTestimonialsLabel')"

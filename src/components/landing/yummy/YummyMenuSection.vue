@@ -44,7 +44,7 @@ const sectionStyle = computed(() => landingSectionStyle(props.bgImage, props.bgC
 </script>
 
 <template>
-  <section id="menu" class="px-6 py-20" :style="sectionStyle">
+  <section id="menu" class="landing-fade-up px-6 py-20" :style="sectionStyle">
     <div class="mx-auto max-w-6xl">
       <YummySectionHeading
         :label="t('config.landingYummyMenuLabel')"
@@ -92,11 +92,11 @@ const sectionStyle = computed(() => landingSectionStyle(props.bgImage, props.bgC
 
           <div v-if="activeProducts.length > 0" class="space-y-0 divide-y divide-slate-100">
             <RouterLink
-              v-for="product in activeProducts"
+              v-for="(product, idx) in activeProducts"
               :key="product.id"
               to="/order"
-              class="group flex items-start justify-between gap-4 py-5 transition-colors hover:bg-white/60"
-            >
+              class="landing-stagger group flex items-start justify-between gap-4 py-5 transition-colors hover:bg-white/60"
+              :style="{ '--i': idx }">
               <div class="min-w-0 flex-1">
                 <h4 class="mb-1 font-semibold text-slate-800 group-hover:underline">
                   {{ product.name }}

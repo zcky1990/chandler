@@ -62,7 +62,7 @@ const sectionStyle = computed(() => landingSectionStyle(props.bgImage, props.bgC
 </script>
 
 <template>
-  <section id="contact" class="px-6 py-20" :style="sectionStyle">
+  <section id="contact" class="landing-fade-up px-6 py-20" :style="sectionStyle">
     <div class="mx-auto max-w-6xl">
       <YummySectionHeading
         :label="t('config.landingContactLabel')"

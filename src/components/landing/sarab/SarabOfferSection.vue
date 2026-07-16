@@ -27,7 +27,7 @@ const featured = computed(() => props.items[0])
 </script>
 
 <template>
-  <section class="px-6 py-20" :style="sectionStyle">
+  <section class="landing-fade-up px-6 py-20" :style="sectionStyle">
     <div class="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-2">
       <div>
         <p class="mb-2 text-sm font-semibold tracking-widest text-orange-200 uppercase">

@@ -16,7 +16,7 @@ const contactStyle = computed(() => landingSectionStyle(props.contactBgImage, pr
 </script>
 
 <template>
-  <section v-if="testimonialsEnabled" class="px-6 py-20" :style="testimonialsStyle">
+  <section v-if="testimonialsEnabled" class="landing-fade-up px-6 py-20" :style="testimonialsStyle">
     <TestimonialsSection
       :testimonials="testimonialsData ?? []"
       :accent-color="primaryColor"
@@ -24,7 +24,7 @@ const contactStyle = computed(() => landingSectionStyle(props.contactBgImage, pr
     />
   </section>
 
-  <section v-if="servicesEnabled" class="px-6 py-20" :style="servicesStyle">
+  <section v-if="servicesEnabled" class="landing-fade-up px-6 py-20" :style="servicesStyle">
     <ServicesSection
       :items="servicesData ?? []"
       :accent-color="primaryColor"
@@ -34,7 +34,7 @@ const contactStyle = computed(() => landingSectionStyle(props.contactBgImage, pr
     />
   </section>
 
-  <section v-if="galleryEnabled" class="px-6 py-20" :style="galleryStyle">
+  <section v-if="galleryEnabled" class="landing-fade-up px-6 py-20" :style="galleryStyle">
     <GallerySection
       :images="galleryImages ?? []"
       :accent-color="primaryColor"
@@ -43,7 +43,7 @@ const contactStyle = computed(() => landingSectionStyle(props.contactBgImage, pr
     />
   </section>
 
-  <section v-if="contactEnabled" id="contact" class="px-6 py-20" :style="contactStyle">
+  <section v-if="contactEnabled" id="contact" class="landing-fade-up px-6 py-20" :style="contactStyle">
     <ContactSection
       :accent-color="primaryColor"
       :title="contactTitle"

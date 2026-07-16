@@ -148,6 +148,7 @@ export type CancelTransactionSchema = z.infer<ReturnType<typeof cancelTransactio
 
 export function shopConfigSchema() {
   return z.object({
+    app_title: z.string().nullable().optional(),
     shop_name: z.string().nullable().optional(),
     shop_address: z.string().nullable().optional(),
     transfer_bank_name: z.string().nullable().optional(),
@@ -241,6 +242,7 @@ export function shopConfigSchema() {
     landing_contact_bg_image: z.string().nullable().optional(),
     landing_book_bg_color: z.string().nullable().optional(),
     landing_book_bg_image: z.string().nullable().optional(),
+    landing_nav_logo_url: z.string().nullable().optional(),
   })
 }
 

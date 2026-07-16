@@ -19,7 +19,7 @@ const sectionStyle = computed(() => landingSectionStyle(props.bgImage, props.bgC
 </script>
 
 <template>
-  <footer id="contact" class="border-t border-amber-900/30 px-6 py-16" :style="sectionStyle">
+  <footer id="contact" class="landing-fade-up border-t border-amber-900/30 px-6 py-16" :style="sectionStyle">
     <div class="mx-auto max-w-6xl">
       <div class="mb-8 text-center">
         <p class="font-serif text-2xl font-semibold tracking-widest text-amber-400 uppercase">{{ shopName }}</p>

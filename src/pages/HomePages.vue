@@ -3,6 +3,12 @@ import { onMounted, ref } from 'vue'
 import LandingPage from '@/components/landing/LandingPage.vue'
 import { getShopConfig } from '@/lib/config'
 import { getLandingConfig, extractLandingOverrides } from '@/lib/landing'
+import {
+  readLandingPageCache,
+  saveLandingPageCache,
+  landingConfigToPageState,
+  filterLandingProducts,
+} from '@/lib/landing-cache'
 import { getProducts as fetchProducts } from '@/lib/product'
 import type { LandingTemplate, Product, LandingTestimonial, LandingServiceItem, LandingFeatureItem, LandingStatItem } from '@/types/database'
 
@@ -15,6 +21,8 @@ const landing = ref({
   heroImageUrl: null as string | null,
   heroTitle: null as string | null,
   heroSubtitle: null as string | null,
+  heroTagline: null as string | null,
+  navLogoUrl: null as string | null,
   primaryColor: '#0f172a',
   heroBgColor: '#ffffff', heroBgImage: null as string | null,
   carouselEnabled: true, carouselMaxItems: 8, carouselTitle: null as string | null, carouselBgColor: '#f1f5f9', carouselBgImage: null as string | null,
@@ -35,35 +43,48 @@ const landing = ref({
   bookBgColor: null as string | null, bookBgImage: null as string | null,
 })
 
-onMounted(async () => {
+function applyCache(payload: ReturnType<typeof readLandingPageCache>) {
+  if (!payload) return
+  shopName.value = payload.shopName
+  shopAddress.value = payload.shopAddress
+  shopPhone.value = payload.shopPhone
+  template.value = payload.template
+  landing.value = { ...payload.landing }
+  products.value = payload.products
+}
+
+async function loadFromApi() {
   const [{ config }, productsResult] = await Promise.all([getShopConfig(), fetchProducts()])
+  const tpl = (config?.landing_template || 'default') as LandingTemplate
+  const cfg = getLandingConfig(tpl, extractLandingOverrides(config))
+  const filteredProducts = productsResult.products
+    ? filterLandingProducts(productsResult.products)
+    : []
+
   shopName.value = config?.shop_name || 'Bistro'
   shopAddress.value = config?.shop_address || ''
-  template.value = (config?.landing_template || 'default') as LandingTemplate
-  const cfg = getLandingConfig(template.value, extractLandingOverrides(config))
-  landing.value = {
-    heroImageUrl: cfg.heroImageUrl, heroTitle: cfg.heroTitle, heroSubtitle: cfg.heroSubtitle, primaryColor: cfg.primaryColor,
-    heroBgColor: cfg.heroBgColor, heroBgImage: cfg.heroBgImage,
-    carouselEnabled: cfg.carouselEnabled, carouselMaxItems: cfg.carouselMaxItems, carouselTitle: cfg.carouselTitle, carouselBgColor: cfg.carouselBgColor, carouselBgImage: cfg.carouselBgImage,
-    testimonialsEnabled: cfg.testimonialsEnabled, testimonialsTitle: cfg.testimonialsTitle, testimonialsData: cfg.testimonialsData, testimonialsBgColor: cfg.testimonialsBgColor, testimonialsBgImage: cfg.testimonialsBgImage,
-    servicesEnabled: cfg.servicesEnabled, servicesTitle: cfg.servicesTitle, servicesSubtitle: cfg.servicesSubtitle,
-    servicesWhatsapp: cfg.servicesWhatsapp, servicesData: cfg.servicesData, servicesBgColor: cfg.servicesBgColor, servicesBgImage: cfg.servicesBgImage,
-    galleryEnabled: cfg.galleryEnabled, galleryTitle: cfg.galleryTitle, gallerySubtitle: cfg.gallerySubtitle,
-    galleryImages: cfg.galleryImages, galleryBgColor: cfg.galleryBgColor, galleryBgImage: cfg.galleryBgImage,
-    contactEnabled: cfg.contactEnabled, contactTitle: cfg.contactTitle, contactSubtitle: cfg.contactSubtitle,
-    contactAddress: cfg.contactAddress, contactPhone: cfg.contactPhone, contactEmail: cfg.contactEmail,
-    contactMapLat: cfg.contactMapLat, contactMapLng: cfg.contactMapLng, contactMapZoom: cfg.contactMapZoom, contactBgColor: cfg.contactBgColor, contactBgImage: cfg.contactBgImage,
-    aboutEnabled: cfg.aboutEnabled, aboutLabel: cfg.aboutLabel, aboutTitle: cfg.aboutTitle,
-    aboutDescription: cfg.aboutDescription, aboutImageUrl: cfg.aboutImageUrl, aboutBullets: cfg.aboutBullets,
-    aboutBgColor: cfg.aboutBgColor, aboutBgImage: cfg.aboutBgImage,
-    whyEnabled: cfg.whyEnabled, whyLabel: cfg.whyLabel, whyTitle: cfg.whyTitle,
-    whyDescription: cfg.whyDescription, whyFeatures: cfg.whyFeatures, whyStats: cfg.whyStats,
-    whyBgColor: cfg.whyBgColor, whyBgImage: cfg.whyBgImage,
-    bookBgColor: cfg.bookBgColor, bookBgImage: cfg.bookBgImage,
+  shopPhone.value = config?.landing_contact_phone?.trim() || ''
+  template.value = tpl
+  landing.value = landingConfigToPageState(cfg)
+  products.value = filteredProducts
+
+  saveLandingPageCache({
+    shopName: shopName.value,
+    shopAddress: shopAddress.value,
+    shopPhone: shopPhone.value,
+    template: template.value,
+    landing: landing.value,
+    products: filteredProducts,
+  })
+}
+
+onMounted(async () => {
+  const cached = readLandingPageCache()
+  if (cached) {
+    applyCache(cached)
+    return
   }
-  if (productsResult.products) {
-    products.value = productsResult.products.filter((p) => p.is_active && !p.is_addons && p.stock_quantity > 0)
-  }
+  await loadFromApi()
 })
 </script>
 
@@ -76,6 +97,8 @@ onMounted(async () => {
     :hero-image-url="landing.heroImageUrl"
     :hero-title="landing.heroTitle"
     :hero-subtitle="landing.heroSubtitle"
+    :hero-tagline="landing.heroTagline"
+    :nav-logo-url="landing.navLogoUrl"
     :primary-color="landing.primaryColor"
     :hero-bg-color="landing.heroBgColor"
     :hero-bg-image="landing.heroBgImage"

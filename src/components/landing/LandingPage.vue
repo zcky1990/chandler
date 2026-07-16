@@ -4,7 +4,10 @@ import LandingDefaultPage from '@/components/landing/templates/LandingDefaultPag
 import LandingYummyPage from '@/components/landing/templates/LandingYummyPage.vue'
 import LandingSarabPage from '@/components/landing/templates/LandingSarabPage.vue'
 import LandingSpiceHavenPage from '@/components/landing/templates/LandingSpiceHavenPage.vue'
+import LandingApplePage from '@/components/landing/templates/LandingApplePage.vue'
+import LandingFugaPage from '@/components/landing/templates/LandingFugaPage.vue'
 import { getLandingThemeAttrs } from '@/lib/landing-theme'
+import { useLandingGsap } from '@/composables/useLandingGsap'
 import type { LandingPageProps } from '@/components/landing/landing-page-props'
 import type { LandingTemplate } from '@/types/database'
 
@@ -15,10 +18,14 @@ const templateComponents: Record<LandingTemplate, typeof LandingDefaultPage> = {
   yummy: LandingYummyPage,
   sarab: LandingSarabPage,
   spicehaven: LandingSpiceHavenPage,
+  apple: LandingApplePage,
+  fuga: LandingFugaPage,
 }
 
 const activeComponent = computed(() => templateComponents[props.template] ?? LandingDefaultPage)
 const themeAttrs = computed(() => getLandingThemeAttrs(props.template))
+
+useLandingGsap()
 </script>
 
 <template>

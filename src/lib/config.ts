@@ -13,6 +13,7 @@ const LANDING_HERO_STORAGE_PATH = 'landing/hero'
 const LANDING_ABOUT_STORAGE_PATH = 'landing/about'
 const TESTIMONIAL_AVATAR_STORAGE_PATH = 'landing/testimonials'
 const SERVICE_IMAGE_STORAGE_PATH = 'landing/services'
+const NAV_LOGO_STORAGE_PATH = 'landing/nav-logo'
 
 export const getShopConfig = async () => {
   const supabaseClient = supabase()
@@ -33,6 +34,9 @@ export const updateShopConfig = async (input: ShopConfigInput) => {
 
   const payload: ShopConfigInput = {}
 
+  if (input.app_title !== undefined) {
+    payload.app_title = input.app_title?.trim() || null
+  }
   if (input.shop_name !== undefined) {
     payload.shop_name = validated.data.shop_name?.trim() || null
   }
@@ -314,6 +318,9 @@ export const updateShopConfig = async (input: ShopConfigInput) => {
   }
   if (input.landing_book_bg_image !== undefined) {
     payload.landing_book_bg_image = input.landing_book_bg_image
+  }
+  if (input.landing_nav_logo_url !== undefined) {
+    payload.landing_nav_logo_url = input.landing_nav_logo_url
   }
 
   const supabaseClient = supabase()
@@ -665,4 +672,46 @@ export const removeSectionBgImage = async (section: string) => {
   await supabaseClient.storage
     .from(QRIS_STORAGE_BUCKET)
     .remove([`landing/bg/${section}.webp`])
+}
+
+export const uploadNavLogo = async (file: File) => {
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? 'webp'
+  const allowed = ['png', 'jpg', 'jpeg', 'webp', 'svg']
+  if (!allowed.includes(extension)) {
+    return { url: null, error: { message: useLocaleStore().translate('config.imageMustBeImage') } }
+  }
+
+  const path = `${NAV_LOGO_STORAGE_PATH}.${extension}`
+  const supabaseClient = supabase()
+
+  const extensions = ['png', 'jpg', 'jpeg', 'webp', 'svg']
+  await Promise.all(
+    extensions.map((ext) =>
+      supabaseClient.storage.from(QRIS_STORAGE_BUCKET).remove([`${NAV_LOGO_STORAGE_PATH}.${ext}`]),
+    ),
+  )
+
+  const { error: uploadError } = await supabaseClient.storage
+    .from(QRIS_STORAGE_BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type })
+
+  if (uploadError) {
+    return { url: null, error: uploadError }
+  }
+
+  const { data } = supabaseClient.storage.from(QRIS_STORAGE_BUCKET).getPublicUrl(path)
+  return { url: `${data.publicUrl}?t=${Date.now()}`, error: null }
+}
+
+export const removeNavLogo = async () => {
+  const supabaseClient = supabase()
+  const extensions = ['png', 'jpg', 'jpeg', 'webp', 'svg']
+
+  await Promise.all(
+    extensions.map((extension) =>
+      supabaseClient.storage.from(QRIS_STORAGE_BUCKET).remove([`${NAV_LOGO_STORAGE_PATH}.${extension}`]),
+    ),
+  )
+
+  return updateShopConfig({ landing_nav_logo_url: null })
 }

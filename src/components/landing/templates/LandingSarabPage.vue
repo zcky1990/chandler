@@ -19,6 +19,7 @@ const { t } = useI18n()
 
 const displayTitle = computed(() => props.heroTitle || props.shopName)
 const displaySubtitle = computed(() => props.heroSubtitle || t('config.landingSarabHero'))
+const displayTagline = computed(() => props.heroTagline || t('config.landingSarabTagline'))
 const menuCount = computed(() => props.products.length)
 
 const heroStyle = computed(() => landingSectionStyle(props.heroBgImage, props.heroBgColor || '#09090b'))
@@ -54,35 +55,16 @@ const categoryBgColor = computed(() => props.carouselBgColor || '#09090b')
 </script>
 
 <template>
-  <ApplicationLayout show-staff-button>
+  <ApplicationLayout>
     <div class="w-full bg-zinc-950 text-white">
-      <div class="border-b border-zinc-800 bg-zinc-900 px-6 py-2 text-xs text-zinc-400">
-        <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
-          <div class="flex flex-wrap items-center gap-4">
-            <span v-if="shopPhone" class="flex items-center gap-1.5">
-              <Phone class="size-3" />
-              {{ shopPhone }}
-            </span>
-            <span v-if="contactEmail" class="flex items-center gap-1.5">
-              <Mail class="size-3" />
-              {{ contactEmail }}
-            </span>
-            <span v-if="shopAddress" class="flex items-center gap-1.5">
-              <MapPin class="size-3" />
-              {{ shopAddress }}
-            </span>
-          </div>
-          <span class="font-medium text-orange-400">{{ t('config.landingSarabFreeDelivery') }}</span>
-        </div>
-      </div>
-
-      <section id="hero" class="relative overflow-hidden" :style="heroStyle">
-        <div class="absolute inset-0 bg-gradient-to-br from-zinc-950/80 via-zinc-900/60 to-orange-950/30" />
-        <SarabNav :shop-name="shopName" :accent-color="primaryColor" />
+      <div class="landing-scroll-progress fixed top-0 right-0 left-0 z-[60] h-0.5 origin-left scale-x-0" :style="{ backgroundColor: primaryColor }" />
+      <section id="hero" class="landing-fade-in relative overflow-hidden" :style="heroStyle">
+        <div class="landing-parallax absolute inset-0 bg-gradient-to-br from-zinc-950/80 via-zinc-900/60 to-orange-950/30" />
+        <SarabNav :shop-name="shopName" :accent-color="primaryColor" :nav-logo-url="navLogoUrl" />
         <div class="relative z-10 mx-auto flex max-w-6xl flex-col items-center gap-12 px-6 py-20 lg:flex-row lg:py-28">
-          <div class="flex-1 text-center lg:text-left">
+          <div class="landing-hero-choreo landing-fade-up landing-delay-1 flex-1 text-center lg:text-left">
             <p class="mb-3 text-sm font-semibold tracking-widest text-orange-400 uppercase">
-              {{ t('config.landingSarabTagline') }}
+              {{ displayTagline }}
             </p>
             <h1 class="mb-6 text-4xl leading-tight font-extrabold tracking-tight md:text-5xl lg:text-6xl">
               {{ displayTitle }}
@@ -107,14 +89,8 @@ const categoryBgColor = computed(() => props.carouselBgColor || '#09090b')
                 </Button>
               </RouterLink>
             </div>
-            <div class="mt-12 grid grid-cols-2 gap-6 sm:grid-cols-4">
-              <div v-for="stat in whyStatsList" :key="stat.label">
-                <p class="text-2xl font-bold text-orange-400">{{ stat.value }}</p>
-                <p class="text-xs text-zinc-500">{{ stat.label }}</p>
-              </div>
-            </div>
           </div>
-          <div class="flex-1">
+          <div class="landing-fade-up landing-delay-2 flex-1">
             <img
               v-if="heroImageUrl"
               :src="heroImageUrl"
@@ -134,7 +110,7 @@ const categoryBgColor = computed(() => props.carouselBgColor || '#09090b')
       <section
         v-if="aboutEnabled"
         id="about"
-        class="px-6 py-20"
+        class="landing-fade-up px-6 py-20"
         :style="aboutStyle"
       >
         <div class="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">
@@ -158,7 +134,7 @@ const categoryBgColor = computed(() => props.carouselBgColor || '#09090b')
 
       <section
         v-if="whyEnabled !== false"
-        class="border-y border-zinc-800 px-6 py-16"
+        class="landing-fade-up border-y border-zinc-800 px-6 py-16"
         :style="whyStyle"
       >
         <div class="mx-auto max-w-6xl">
@@ -171,7 +147,8 @@ const categoryBgColor = computed(() => props.carouselBgColor || '#09090b')
             <div
               v-for="(feat, idx) in whyFeaturesList"
               :key="feat.title"
-              class="rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+              class="landing-stagger rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+              :style="{ '--i': idx }"
             >
               <component :is="featureIcons[idx] || Leaf" class="mb-4 size-8 text-orange-400" />
               <h3 class="mb-2 font-semibold">{{ feat.title }}</h3>
@@ -204,7 +181,7 @@ const categoryBgColor = computed(() => props.carouselBgColor || '#09090b')
 
       <SarabConfigurableSections v-bind="props" />
 
-      <section class="px-6 py-20" :style="{ background: `linear-gradient(135deg, ${primaryColor} 0%, color-mix(in srgb, ${primaryColor} 60%, #000) 100%)` }">
+      <section class="landing-fade-up px-6 py-20" :style="{ background: `linear-gradient(135deg, ${primaryColor} 0%, color-mix(in srgb, ${primaryColor} 60%, #000) 100%)` }">
         <div class="mx-auto max-w-3xl text-center">
           <h2 class="mb-4 text-3xl font-bold">{{ t('config.landingSarabCta') }}</h2>
           <p class="mb-8 text-lg text-orange-100">{{ t('config.landingSarabCtaDesc') }}</p>
@@ -217,7 +194,7 @@ const categoryBgColor = computed(() => props.carouselBgColor || '#09090b')
         </div>
       </section>
 
-      <section class="border-t border-zinc-800 bg-zinc-900 px-6 py-10">
+      <section class="landing-fade-up border-t border-zinc-800 bg-zinc-900 px-6 py-10">
         <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 text-sm text-zinc-400">
           <div class="flex items-center gap-2">
             <MapPin class="size-4 text-orange-400" />

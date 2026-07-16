@@ -3,6 +3,8 @@ import defaultThumb from '@/assets/default-thumbnail.webp'
 import sarabThumb from '@/assets/satab-thumbnail.webp'
 import spiceThumb from '@/assets/spice-thumbnail.webp'
 import yummyThumb from '@/assets/yummy-thumbnail.webp'
+import appleThumb from '@/assets/apple-thumbnail.webp'
+import fugaThumb from '@/assets/fuga-thumbnail.webp'
 
 const LANDING_SECTION_BG_LIGHT = {
   heroBgColor: '#ffffff',
@@ -57,6 +59,45 @@ const LANDING_ABOUT_WHY_SPICE_DISABLED = {
   whyBgColor: '#1c1917',
 }
 
+const LANDING_ABOUT_WHY_FUGA = {
+  aboutEnabled: true,
+  aboutLabel: null as string | null,
+  aboutTitle: null as string | null,
+  aboutDescription: null as string | null,
+  aboutImageUrl: null as string | null,
+  aboutBullets: null as string[] | null,
+  aboutBgColor: '#0f172a',
+  whyEnabled: true,
+  whyLabel: null as string | null,
+  whyTitle: null as string | null,
+  whyDescription: null as string | null,
+  whyFeatures: null as LandingFeatureItem[] | null,
+  whyStats: null as LandingStatItem[] | null,
+  whyBgColor: '#1e293b',
+}
+
+const LANDING_SECTION_BG_FUGA = {
+  ...LANDING_SECTION_BG_LIGHT,
+  heroBgColor: '#0f172a',
+}
+
+const LANDING_ABOUT_WHY_APPLE = {
+  aboutEnabled: true,
+  aboutLabel: null as string | null,
+  aboutTitle: null as string | null,
+  aboutDescription: null as string | null,
+  aboutImageUrl: null as string | null,
+  aboutBullets: null as string[] | null,
+  aboutBgColor: '#ffffff',
+  whyEnabled: true,
+  whyLabel: null as string | null,
+  whyTitle: null as string | null,
+  whyDescription: null as string | null,
+  whyFeatures: null as LandingFeatureItem[] | null,
+  whyStats: null as LandingStatItem[] | null,
+  whyBgColor: '#f5f5f7',
+}
+
 const LANDING_ABOUT_WHY_YUMMY = {
   aboutEnabled: true,
   aboutLabel: null as string | null,
@@ -79,7 +120,7 @@ export const LANDING_TEMPLATE_PRESETS: Record<LandingTemplate, LandingTemplatePr
     label: 'Default',
     thumbnail: defaultThumb,
     defaults: {
-      heroImageUrl: null, heroTitle: null, heroSubtitle: null, primaryColor: '#0f172a',
+      heroImageUrl: null, heroTitle: null, heroSubtitle: null, heroTagline: null, primaryColor: '#0f172a',
       carouselEnabled: true, carouselMaxItems: 8, carouselTitle: null, carouselBgColor: '#f1f5f9',
       testimonialsEnabled: false, testimonialsTitle: null, testimonialsData: null, testimonialsBgColor: '#ffffff',
       servicesEnabled: false, servicesTitle: null, servicesSubtitle: null, servicesWhatsapp: null, servicesData: null, servicesBgColor: '#f8fafc',
@@ -94,7 +135,7 @@ export const LANDING_TEMPLATE_PRESETS: Record<LandingTemplate, LandingTemplatePr
     label: 'Sarab',
     thumbnail: sarabThumb,
     defaults: {
-      heroImageUrl: null, heroTitle: null, heroSubtitle: null, primaryColor: '#ea580c',
+      heroImageUrl: null, heroTitle: null, heroSubtitle: null, heroTagline: null, primaryColor: '#ea580c',
       carouselEnabled: true, carouselMaxItems: 8, carouselTitle: null, carouselBgColor: '#09090b',
       testimonialsEnabled: false, testimonialsTitle: null, testimonialsData: null, testimonialsBgColor: '#18181b',
       servicesEnabled: false, servicesTitle: null, servicesSubtitle: null, servicesWhatsapp: null, servicesData: null, servicesBgColor: '#18181b',
@@ -109,7 +150,7 @@ export const LANDING_TEMPLATE_PRESETS: Record<LandingTemplate, LandingTemplatePr
     label: 'Spice Haven',
     thumbnail: spiceThumb,
     defaults: {
-      heroImageUrl: null, heroTitle: null, heroSubtitle: null, primaryColor: '#d97706',
+      heroImageUrl: null, heroTitle: null, heroSubtitle: null, heroTagline: null, primaryColor: '#d97706',
       carouselEnabled: true, carouselMaxItems: 8, carouselTitle: null, carouselBgColor: '#0c0a09',
       testimonialsEnabled: false, testimonialsTitle: null, testimonialsData: null, testimonialsBgColor: '#1c1917',
       servicesEnabled: false, servicesTitle: null, servicesSubtitle: null, servicesWhatsapp: null, servicesData: null, servicesBgColor: '#1c1917',
@@ -120,11 +161,41 @@ export const LANDING_TEMPLATE_PRESETS: Record<LandingTemplate, LandingTemplatePr
       ...LANDING_ABOUT_WHY_SPICE_DISABLED,
     },
   },
+  fuga: {
+    label: 'Fuga',
+    thumbnail: fugaThumb,
+    defaults: {
+      heroImageUrl: null, heroTitle: null, heroSubtitle: null, heroTagline: null, primaryColor: '#2563eb',
+      carouselEnabled: true, carouselMaxItems: 6, carouselTitle: null, carouselBgColor: '#1e293b',
+      testimonialsEnabled: false, testimonialsTitle: null, testimonialsData: null, testimonialsBgColor: '#1e293b',
+      servicesEnabled: false, servicesTitle: null, servicesSubtitle: null, servicesWhatsapp: null, servicesData: null, servicesBgColor: '#0f172a',
+      galleryEnabled: false, galleryTitle: null, gallerySubtitle: null, galleryImages: null, galleryBgColor: '#1e293b',
+      contactEnabled: false, contactTitle: null, contactSubtitle: null, contactAddress: null, contactPhone: null, contactEmail: null,
+      contactMapLat: -6.2088, contactMapLng: 106.8456, contactMapZoom: 15, contactBgColor: '#0f172a',
+      ...LANDING_SECTION_BG_FUGA,
+      ...LANDING_ABOUT_WHY_FUGA,
+    },
+  },
+  apple: {
+    label: 'Apple',
+    thumbnail: appleThumb,
+    defaults: {
+      heroImageUrl: null, heroTitle: null, heroSubtitle: null, heroTagline: null, primaryColor: '#1d1d1f',
+      carouselEnabled: true, carouselMaxItems: 6, carouselTitle: null, carouselBgColor: '#f5f5f7',
+      testimonialsEnabled: false, testimonialsTitle: null, testimonialsData: null, testimonialsBgColor: '#ffffff',
+      servicesEnabled: false, servicesTitle: null, servicesSubtitle: null, servicesWhatsapp: null, servicesData: null, servicesBgColor: '#000000',
+      galleryEnabled: false, galleryTitle: null, gallerySubtitle: null, galleryImages: null, galleryBgColor: '#ffffff',
+      contactEnabled: false, contactTitle: null, contactSubtitle: null, contactAddress: null, contactPhone: null, contactEmail: null,
+      contactMapLat: -6.2088, contactMapLng: 106.8456, contactMapZoom: 15, contactBgColor: '#f5f5f7',
+      ...LANDING_SECTION_BG_LIGHT,
+      ...LANDING_ABOUT_WHY_APPLE,
+    },
+  },
   yummy: {
     label: 'Yummy',
     thumbnail: yummyThumb,
     defaults: {
-      heroImageUrl: null, heroTitle: null, heroSubtitle: null, primaryColor: '#991b1b',
+      heroImageUrl: null, heroTitle: null, heroSubtitle: null, heroTagline: null, primaryColor: '#991b1b',
       carouselEnabled: true, carouselMaxItems: 8, carouselTitle: null, carouselBgColor: '#fef2f2',
       testimonialsEnabled: false, testimonialsTitle: null, testimonialsData: null, testimonialsBgColor: '#ffffff',
       servicesEnabled: false, servicesTitle: null, servicesSubtitle: null, servicesWhatsapp: null, servicesData: null, servicesBgColor: '#fee2e2',
@@ -148,6 +219,8 @@ export function getLandingConfig(
     heroImageUrl: overrides.heroImageUrl ?? d.heroImageUrl,
     heroTitle: overrides.heroTitle ?? d.heroTitle,
     heroSubtitle: overrides.heroSubtitle ?? d.heroSubtitle,
+    heroTagline: overrides.heroTagline ?? d.heroTagline,
+    navLogoUrl: overrides.navLogoUrl ?? null,
     primaryColor: overrides.primaryColor ?? d.primaryColor,
     carouselEnabled: overrides.carouselEnabled ?? d.carouselEnabled,
     carouselMaxItems: overrides.carouselMaxItems ?? d.carouselMaxItems,
@@ -210,6 +283,7 @@ export function extractLandingOverrides(config: {
   landing_hero_image_url?: string | null
   landing_hero_title?: string | null
   landing_hero_subtitle?: string | null
+  landing_hero_tagline?: string | null
   landing_primary_color?: string
   landing_carousel_enabled?: boolean
   landing_carousel_max_items?: number
@@ -271,6 +345,7 @@ export function extractLandingOverrides(config: {
     heroImageUrl: config.landing_hero_image_url ?? null,
     heroTitle: config.landing_hero_title ?? null,
     heroSubtitle: config.landing_hero_subtitle ?? null,
+    heroTagline: config.landing_hero_tagline ?? null,
     primaryColor: config.landing_primary_color ?? '',
     carouselEnabled: config.landing_carousel_enabled ?? undefined,
     carouselMaxItems: config.landing_carousel_max_items ?? undefined,
@@ -326,5 +401,6 @@ export function extractLandingOverrides(config: {
     contactBgImage: config.landing_contact_bg_image ?? null,
     bookBgColor: config.landing_book_bg_color ?? null,
     bookBgImage: config.landing_book_bg_image ?? null,
+    navLogoUrl: config.landing_nav_logo_url ?? null,
   }
 }

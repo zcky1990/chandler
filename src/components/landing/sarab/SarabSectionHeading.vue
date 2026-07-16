@@ -7,9 +7,9 @@ defineProps<{
 </script>
 
 <template>
-  <div class="mb-10 text-center">
+  <div class="landing-fade-up mb-10 text-center">
     <p
-      class="mb-2 text-sm font-semibold tracking-[0.2em] uppercase"
+      class="mb-2 text-sm font-semibold"
       :class="light ? 'text-orange-300' : 'text-orange-400'"
     >
       {{ label }}

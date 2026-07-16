@@ -44,7 +44,7 @@ const sectionStyle = computed(() => landingSectionStyle(props.bgImage, props.bgC
 </script>
 
 <template>
-  <section id="menu" class="px-6 py-20" :style="sectionStyle">
+  <section id="menu" class="landing-fade-up px-6 py-20" :style="sectionStyle">
     <div class="mx-auto max-w-6xl">
       <SarabSectionHeading
         :label="t('config.landingSarabMenuLabel')"
@@ -67,10 +67,11 @@ const sectionStyle = computed(() => landingSectionStyle(props.bgImage, props.bgC
 
       <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <RouterLink
-          v-for="product in activeProducts"
+          v-for="(product, idx) in activeProducts"
           :key="product.id"
           to="/order"
-          class="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 transition-all hover:border-orange-500/40 hover:shadow-lg hover:shadow-orange-500/10"
+          class="landing-stagger group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 transition-all hover:border-orange-500/40 hover:shadow-lg hover:shadow-orange-500/10 hover:-translate-y-1"
+          :style="{ '--i': idx }"
         >
           <div class="relative h-48 overflow-hidden bg-zinc-800">
             <img

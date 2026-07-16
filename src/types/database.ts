@@ -251,6 +251,7 @@ export type Profile = {
 
 export type ShopConfig = {
   id: string
+  app_title: string | null
   shop_name: string | null
   shop_address: string | null
   qris_image_url: string | null
@@ -285,6 +286,7 @@ export type ShopConfig = {
   landing_hero_image_url: string | null
   landing_hero_title: string | null
   landing_hero_subtitle: string | null
+  landing_hero_tagline: string | null
   landing_primary_color: string
   landing_carousel_enabled: boolean
   landing_carousel_max_items: number
@@ -345,11 +347,13 @@ export type ShopConfig = {
   landing_contact_bg_image: string | null
   landing_book_bg_color: string | null
   landing_book_bg_image: string | null
+  landing_nav_logo_url: string | null
   created_at: string
   updated_at: string
 }
 
 export type ShopConfigInput = {
+  app_title?: string | null
   shop_name?: string | null
   shop_address?: string | null
   qris_image_url?: string | null
@@ -384,6 +388,7 @@ export type ShopConfigInput = {
   landing_hero_image_url?: string | null
   landing_hero_title?: string | null
   landing_hero_subtitle?: string | null
+  landing_hero_tagline?: string | null
   landing_primary_color?: string
   landing_carousel_enabled?: boolean
   landing_carousel_max_items?: number
@@ -443,9 +448,10 @@ export type ShopConfigInput = {
   landing_contact_bg_image?: string | null
   landing_book_bg_color?: string | null
   landing_book_bg_image?: string | null
+  landing_nav_logo_url?: string | null
 }
 
-export type LandingTemplate = 'default' | 'sarab' | 'spicehaven' | 'yummy'
+export type LandingTemplate = 'default' | 'sarab' | 'spicehaven' | 'yummy' | 'apple' | 'fuga'
 
 export type LandingTestimonial = {
   name: string
@@ -477,6 +483,7 @@ export type LandingTemplateConfig = {
   heroImageUrl: string | null
   heroTitle: string | null
   heroSubtitle: string | null
+  heroTagline: string | null
   primaryColor: string
   carouselEnabled: boolean
   carouselMaxItems: number
@@ -536,6 +543,7 @@ export type LandingTemplateConfig = {
   contactBgImage: string | null
   bookBgColor: string | null
   bookBgImage: string | null
+  navLogoUrl: string | null
 }
 
 export type LandingTemplatePreset = {

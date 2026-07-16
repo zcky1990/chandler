@@ -32,7 +32,7 @@ const categories = computed(() => {
 </script>
 
 <template>
-  <section id="categories" class="px-6 py-20" :style="sectionStyle">
+  <section id="categories" class="landing-fade-up px-6 py-20" :style="sectionStyle">
     <div class="mx-auto max-w-6xl">
       <SarabSectionHeading
         :label="t('config.landingSarabCategoriesLabel')"
@@ -40,10 +40,11 @@ const categories = computed(() => {
       />
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <RouterLink
-          v-for="cat in categories"
+          v-for="(cat, idx) in categories"
           :key="cat.name"
           to="/order"
-          class="group rounded-2xl border border-zinc-800 bg-zinc-900/80 p-5 text-center transition-all hover:border-orange-500/50 hover:bg-zinc-900"
+          class="landing-stagger group rounded-2xl border border-zinc-800 bg-zinc-900/80 p-5 text-center transition-all hover:border-orange-500/50 hover:bg-zinc-900 hover:-translate-y-1"
+          :style="{ '--i': idx }"
         >
           <div
             class="mx-auto mb-3 flex size-12 items-center justify-center rounded-full"
