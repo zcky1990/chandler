@@ -182,8 +182,6 @@ function addProductFromMenu(product: { id: string }) {
                 </Field>
               </FieldGroup>
 
-              <Separator />
-
               <div class="grid gap-2 sm:grid-cols-2">
                 <Button
                   v-if="allowEatFirst && !requiresImmediatePayment"
@@ -220,11 +218,9 @@ function addProductFromMenu(product: { id: string }) {
                   {{ isSubmitting ? t('common.processing') : t('transaction.payQueue') }}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
 
-          <Card class="gap-0 py-0 shadow-sm">
-            <CardContent class="space-y-4 px-5 py-5">
+              <Separator />
+
               <div class="flex items-center gap-2">
                 <ShoppingCart class="size-5" />
                 <h2 class="font-semibold">{{ t('transaction.cart') }}</h2>
