@@ -70,6 +70,7 @@ const {
           :search-query="searchQuery"
           :is-loading="isLoading"
           :get-menu-quantity="getMenuQuantity"
+          group-by-category
           @update:search-query="searchQuery = $event"
           @update:category-filter="categoryFilter = $event"
           @add="addProductFromMenu"

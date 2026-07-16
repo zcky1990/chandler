@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { ImageIcon, Minus, Plus, Search } from '@lucide/vue'
 import MenuCategoryFilter from '@/components/menu/MenuCategoryFilter.vue'
 import { Button } from '@/components/ui/button'
@@ -8,14 +9,36 @@ import { useI18n } from '@/composables/useI18n'
 import { formatPrice } from '@/lib/format'
 import type { Product } from '@/types/database'
 
-defineProps<{
+const props = defineProps<{
   products: Product[]
   categories: { id: string, name: string }[]
   categoryFilter: string
   searchQuery: string
   isLoading: boolean
   getMenuQuantity: (productId: string) => number
+  groupByCategory?: boolean
 }>()
+
+const grouped = computed(() => {
+  if (!props.groupByCategory) return []
+  const groups: { name: string; products: Product[] }[] = []
+  const uncategorized: Product[] = []
+  for (const p of props.products) {
+    if (p.category_id && p.product_categories?.name) {
+      let g = groups.find((x) => x.name === p.product_categories!.name)
+      if (!g) {
+        g = { name: p.product_categories!.name, products: [] }
+        groups.push(g)
+      }
+      g.products.push(p)
+    } else {
+      uncategorized.push(p)
+    }
+  }
+  groups.sort((a, b) => a.name.localeCompare(b.name))
+  if (uncategorized.length > 0) groups.push({ name: 'Lainnya', products: uncategorized })
+  return groups
+})
 
 const { t } = useI18n()
 
@@ -60,10 +83,74 @@ const emit = defineEmits<{
       {{ t('order.noMenu') }}
     </div>
 
-    <div
-      v-else
-      class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
-    >
+    <div v-else>
+      <template v-if="groupByCategory">
+        <div v-for="group in grouped" :key="group.name" class="mb-6">
+          <h3 class="mb-3 text-sm font-semibold text-muted-foreground">{{ group.name }}</h3>
+          <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            <Card
+              v-for="product in group.products"
+              :key="product.id"
+              class="gap-0 overflow-hidden py-0"
+            >
+              <div class="relative h-44 w-full bg-muted/40">
+                <img
+                  v-if="product.image_url"
+                  :src="product.image_url"
+                  :alt="product.name"
+                  class="size-full object-cover"
+                >
+                <div
+                  v-else
+                  class="flex size-full items-center justify-center text-muted-foreground"
+                >
+                  <ImageIcon class="size-10 opacity-40" />
+                </div>
+              </div>
+
+              <CardContent class="space-y-1 px-4 pt-4">
+                <p class="line-clamp-2 font-semibold leading-snug">{{ product.name }}</p>
+                <p class="text-sm text-muted-foreground">
+                  {{ formatPrice(product.price) }}
+                  <span class="text-xs">{{ t('order.perServing') }}</span>
+                </p>
+              </CardContent>
+
+              <CardFooter class="flex items-center justify-between gap-2 px-4 pb-4">
+                <div class="flex items-center gap-1 rounded-lg border bg-background p-1">
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    class="size-7"
+                    @click="emit('decrementQuantity', product.id)"
+                  >
+                    <Minus class="size-3.5" />
+                  </Button>
+                  <span class="min-w-6 text-center text-sm font-medium tabular-nums">
+                    {{ getMenuQuantity(product.id) }}
+                  </span>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    class="size-7"
+                    :disabled="getMenuQuantity(product.id) >= product.stock_quantity"
+                    @click="emit('incrementQuantity', product.id, product.stock_quantity)"
+                  >
+                    <Plus class="size-3.5" />
+                  </Button>
+                </div>
+                <Button size="sm" class="shrink-0" @click="emit('add', product)">
+                  {{ t('common.add') }}
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
+      </template>
+      <div
+        v-else
+        class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+      >
       <Card
         v-for="product in products"
         :key="product.id"
@@ -126,6 +213,7 @@ const emit = defineEmits<{
           </Button>
         </CardFooter>
       </Card>
+    </div>
     </div>
   </section>
 </template>
