@@ -1,7 +1,6 @@
 import { supabase } from './supabase'
 import { productSchema } from '@/schema/schema'
 import { useLocaleStore } from '@/stores/useLocaleStore'
-import { recordInitialStockMovement } from './stock'
 import type { Product, ProductInput } from '@/types/database'
 import type { z } from 'zod'
 
@@ -70,7 +69,6 @@ function normalizeProductInput(input: z.infer<ReturnType<typeof productSchema>>)
     description: input.description ?? null,
     price: input.price,
     purchase_price: input.purchase_price ?? 0,
-    stock_quantity: input.stock_quantity,
     sku: input.sku ?? null,
     image_url: input.image_url ?? null,
     is_addons: input.is_addons ?? false,
@@ -196,18 +194,6 @@ export const createProduct = async (product: ProductInput) => {
 
   if (error || !data) {
     return { product: data as Product | null, error }
-  }
-
-  if (normalized.stock_quantity > 0) {
-    const { error: movementError } = await recordInitialStockMovement(
-      data.id,
-      normalized.stock_quantity,
-      normalized.purchase_price,
-    )
-
-    if (movementError) {
-      return { product: data as Product, error: movementError }
-    }
   }
 
   return { product: data as Product, error: null }

@@ -48,7 +48,7 @@ export type Product = {
   product_categories?: ProductCategorySummary | null
 }
 
-export type ProductInput = Omit<Product, 'id' | 'created_at' | 'updated_at' | 'product_categories'>
+export type ProductInput = Omit<Product, 'id' | 'created_at' | 'updated_at' | 'product_categories' | 'stock_quantity'> & { stock_quantity?: number }
 
 export type Customer = {
   id: string
