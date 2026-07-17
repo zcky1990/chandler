@@ -1164,7 +1164,7 @@ export const id = {
   'master.productNamePh': 'Nama produk',
   'master.productDescPh': 'Deskripsi produk',
   'master.purchasePriceDefault': 'Harga beli (default)',
-  'master.purchasePriceHint': 'Dipakai sebagai default saat restock. Batch lama tidak berubah.',
+  'master.purchasePriceHint': 'Harga referensi — biaya aktual per batch dicatat saat restock',
   'master.stockInitial': 'Stok awal',
   'master.stockCurrent': 'Stok saat ini',
   'master.stockRestockHint': 'Gunakan menu Restock untuk menambah stok.',

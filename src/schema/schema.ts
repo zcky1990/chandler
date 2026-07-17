@@ -34,7 +34,6 @@ export function productSchema() {
     description: z.string().nullable().optional(),
     price: z.coerce.number().min(0, { message: t('validation.priceNonNegative') }),
     purchase_price: z.coerce.number().min(0, { message: t('validation.purchasePriceNonNegative') }).default(0),
-    stock_quantity: z.coerce.number().int().min(0, { message: t('validation.stockNonNegative') }),
     sku: z.string().nullable().optional(),
     image_url: z.union([
       z.string().url({ message: t('validation.imageUrlInvalid') }),

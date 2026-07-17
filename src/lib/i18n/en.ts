@@ -1164,7 +1164,7 @@ export const en = {
   'master.productNamePh': 'Product name',
   'master.productDescPh': 'Product description',
   'master.purchasePriceDefault': 'Purchase price (default)',
-  'master.purchasePriceHint': 'Used as default when restocking. Existing batches are unchanged.',
+  'master.purchasePriceHint': 'Reference price — actual per-batch cost is recorded during restock',
   'master.stockInitial': 'Initial stock',
   'master.stockCurrent': 'Current stock',
   'master.stockRestockHint': 'Use the Restock menu to add stock.',

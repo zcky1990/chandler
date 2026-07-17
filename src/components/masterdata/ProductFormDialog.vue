@@ -345,7 +345,6 @@ async function handleSubmit() {
                 type="number"
                 min="0"
                 step="0.01"
-                required
               />
               <p class="text-xs text-muted-foreground">
                 {{ t('master.purchasePriceHint') }}
